@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>منصة تدريب ممرضات الأسنان — Apex Care Clinics</title>
+  <meta name="description" content="منصة تدريبية تفاعلية لممرضات الأسنان في عيادات أبكس كير"/>
+  <meta name="theme-color" content="#060e22"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦷</text></svg>"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #060e22; }
+    #root { min-height: 100vh; }
+    #loading {
+      position: fixed; inset: 0;
+      background: linear-gradient(150deg,#020812,#060e22);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: #e2e8f0; font-family: 'Tajawal', sans-serif;
+      z-index: 9999;
+    }
+    #loading div { font-size: 52px; margin-bottom: 16px; animation: pulse 1.5s ease-in-out infinite; }
+    #loading p { font-size: 15px; color: #64748b; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div>🦷</div>
+    <p>جارٍ التحميل...</p>
+  </div>
+  <div id="root"></div>
+
+  <!-- React + Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+// ══════════════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════════════
+const GAS_URL = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec";
+const GAS_OK  = () => !GAS_URL.includes("YOUR_DEPLOYMENT_ID");
+
+// ══════════════════════════════════════════════════════
+//  SEED DATA
+// ══════════════════════════════════════════════════════
+const SEED = {
+  specialties: [
+    { id:"gen", nameAr:"طب الأسنان العام", nameEn:"General Dentistry", icon:"🦷", color:"#38bdf8",
+      tools:[
+        {id:"t1",specialtyId:"gen",nameAr:"مرآة الفحص",nameEn:"Dental Mirror",useAr:"رؤية المناطق غير المباشرة وفحص التجويف الفموي",useEn:"Indirect vision & oral cavity examination"},
+        {id:"t2",specialtyId:"gen",nameAr:"مسبار اللثة",nameEn:"Periodontal Probe",useAr:"قياس عمق الجيوب اللثوية وتقييم صحة اللثة",useEn:"Measuring periodontal pocket depth"},
+        {id:"t3",specialtyId:"gen",nameAr:"خطاف الفحص (Explorer)",nameEn:"Explorer / Sickle Probe",useAr:"الكشف عن التسوس والعيوب السطحية",useEn:"Caries & surface defect detection"},
+        {id:"t4",specialtyId:"gen",nameAr:"منفث الهواء والماء",nameEn:"Air/Water Syringe",useAr:"تنظيف وتجفيف المنطقة المعالجة",useEn:"Rinsing & drying the treatment area"},
+        {id:"t5",specialtyId:"gen",nameAr:"ساحبة اللعاب HVE",nameEn:"High Volume Evacuator",useAr:"شفط المياه والمواد بشكل سريع",useEn:"Rapid fluid & debris evacuation"},
+        {id:"t6",specialtyId:"gen",nameAr:"ملقط الأسنان",nameEn:"Cotton Pliers",useAr:"حمل القطن والمواد الصغيرة ووضعها",useEn:"Handling cotton rolls & small items"},
+      ],
+      procedures:[
+        {id:"p1",specialtyId:"gen",nameAr:"الفحص السريري الشامل وتشخيص التسوس",nameEn:"Comprehensive Clinical Examination"},
+        {id:"p2",specialtyId:"gen",nameAr:"التنظيف الاحترافي (Prophylaxis)",nameEn:"Professional Dental Prophylaxis"},
+        {id:"p3",specialtyId:"gen",nameAr:"التخدير الموضعي للإجراءات المؤلمة",nameEn:"Local Anesthesia Administration"},
+        {id:"p4",specialtyId:"gen",nameAr:"تطبيق الفلورايد الوقائي",nameEn:"Fluoride Varnish Application"},
+      ],
+    },
+    { id:"endo", nameAr:"علاج جذور الأسنان", nameEn:"Endodontics", icon:"🔬", color:"#a78bfa",
+      tools:[
+        {id:"et1",specialtyId:"endo",nameAr:"مبارد K-Files / H-Files",nameEn:"Endodontic K/H Files",useAr:"تشكيل وتنظيف قنوات الجذر يدويًا",useEn:"Manual root canal shaping & cleaning"},
+        {id:"et2",specialtyId:"endo",nameAr:"مبرد روتاري NiTi",nameEn:"Rotary NiTi Files",useAr:"تشكيل قنوات الجذر آليًا بدقة عالية",useEn:"Mechanical root canal shaping"},
+        {id:"et3",specialtyId:"endo",nameAr:"Apex Locator الإلكتروني",nameEn:"Electronic Apex Locator",useAr:"تحديد طول الجذر إلكترونيًا بدقة",useEn:"Electronic working length determination"},
+        {id:"et4",specialtyId:"endo",nameAr:"Rubber Dam (المطاط العازل)",nameEn:"Rubber Dam System",useAr:"عزل السن وحماية المريض من ابتلاع الأدوات",useEn:"Tooth isolation & instrument safety"},
+        {id:"et5",specialtyId:"endo",nameAr:"نقاط الجوتا بيرشا",nameEn:"Gutta-Percha Points",useAr:"حشو قناة الجذر بعد التنظيف والتعقيم",useEn:"Root canal obturation material"},
+      ],
+      procedures:[
+        {id:"ep1",specialtyId:"endo",nameAr:"علاج العصب الكامل (RCT)",nameEn:"Root Canal Treatment (RCT)"},
+        {id:"ep2",specialtyId:"endo",nameAr:"إعادة علاج العصب (Re-RCT)",nameEn:"Root Canal Retreatment"},
+        {id:"ep3",specialtyId:"endo",nameAr:"جراحة نهاية الجذر (Apicoectomy)",nameEn:"Apicoectomy"},
+      ],
+    },
+    { id:"surgery", nameAr:"جراحة الفم والأسنان", nameEn:"Oral Surgery", icon:"⚕️", color:"#f87171",
+      tools:[
+        {id:"st1",specialtyId:"surgery",nameAr:"مرفع السن (Elevator)",nameEn:"Dental Elevator",useAr:"تحريك وفك ارتباط السن قبل الخلع",useEn:"Tooth elevation before extraction"},
+        {id:"st2",specialtyId:"surgery",nameAr:"كلابة الخلع العلوية/السفلية",nameEn:"Extraction Forceps",useAr:"خلع الأسنان بعد الرفع بالمرفع",useEn:"Tooth extraction after elevation"},
+        {id:"st3",specialtyId:"surgery",nameAr:"مشرط جراحي #15",nameEn:"Scalpel Blade #15",useAr:"إجراء الشق الجراحي في اللثة",useEn:"Surgical incision through gingiva"},
+        {id:"st4",specialtyId:"surgery",nameAr:"رافعة السمحاق (Periosteal Elevator)",nameEn:"Periosteal Elevator",useAr:"رفع اللثة والسمحاق لكشف العظم",useEn:"Flap & periosteum elevation"},
+        {id:"st5",specialtyId:"surgery",nameAr:"إبرة الخياطة وخيوطها",nameEn:"Suture Needle & Thread",useAr:"إغلاق الشق الجراحي بعد الانتهاء",useEn:"Surgical wound closure"},
+      ],
+      procedures:[
+        {id:"sp1",specialtyId:"surgery",nameAr:"خلع الأسنان البسيط",nameEn:"Simple Tooth Extraction"},
+        {id:"sp2",specialtyId:"surgery",nameAr:"خلع ضرس العقل المدفون جراحيًا",nameEn:"Surgical Wisdom Tooth Removal"},
+        {id:"sp3",specialtyId:"surgery",nameAr:"زراعة الأسنان (Implant)",nameEn:"Dental Implant Placement"},
+      ],
+    },
+    { id:"perio", nameAr:"اللثة وأمراضها", nameEn:"Periodontics", icon:"🌿", color:"#34d399",
+      tools:[
+        {id:"pert1",specialtyId:"perio",nameAr:"مسبار اللثة UNC-15",nameEn:"Periodontal Probe UNC-15",useAr:"قياس عمق الجيوب اللثوية ومستوى الارتباط",useEn:"Pocket depth & attachment level measurement"},
+        {id:"pert2",specialtyId:"perio",nameAr:"كاشط غريسي (Gracey Curette)",nameEn:"Gracey Curette",useAr:"تقليح وكشط تحت اللثة (SRP) بدقة",useEn:"Subgingival scaling & root planing"},
+        {id:"pert3",specialtyId:"perio",nameAr:"مقلح بالموجات فوق الصوتية",nameEn:"Ultrasonic Scaler",useAr:"إزالة الجير بالموجات فوق الصوتية بكفاءة",useEn:"Calculus removal via ultrasonic vibration"},
+      ],
+      procedures:[
+        {id:"perp1",specialtyId:"perio",nameAr:"تقليح وتنعيم الجذر (SRP)",nameEn:"Scaling & Root Planing (SRP)"},
+        {id:"perp2",specialtyId:"perio",nameAr:"جراحة اللثة (Periodontal Flap)",nameEn:"Periodontal Flap Surgery"},
+        {id:"perp3",specialtyId:"perio",nameAr:"رأب اللثة (Gingivectomy)",nameEn:"Gingivectomy & Gingivoplasty"},
+      ],
+    },
+    { id:"prostho", nameAr:"التركيبات السنية", nameEn:"Prosthodontics", icon:"👑", color:"#fb923c",
+      tools:[
+        {id:"prt1",specialtyId:"prostho",nameAr:"أطباق الطبع",nameEn:"Impression Trays",useAr:"أخذ طبعة الأسنان لصنع التركيبة",useEn:"Taking dental impressions for prostheses"},
+        {id:"prt2",specialtyId:"prostho",nameAr:"دليل الألوان VITA",nameEn:"Shade Guide VITA Classic",useAr:"مطابقة لون التاج مع أسنان المريض",useEn:"Crown shade matching to patient teeth"},
+        {id:"prt3",specialtyId:"prostho",nameAr:"خيط سحب اللثة",nameEn:"Gingival Retraction Cord",useAr:"إبعاد اللثة لأخذ طبعة التاج بدقة",useEn:"Gingival retraction for accurate impression"},
+        {id:"prt4",specialtyId:"prostho",nameAr:"الأسمنت اللاصق (Luting Cement)",nameEn:"Luting Cement",useAr:"تثبيت التاج أو الجسر بشكل نهائي",useEn:"Permanent crown/bridge cementation"},
+      ],
+      procedures:[
+        {id:"prp1",specialtyId:"prostho",nameAr:"تاج الزيركونيا/خزف",nameEn:"Zirconia / Ceramic Crown"},
+        {id:"prp2",specialtyId:"prostho",nameAr:"الجسر الثابت (Fixed Bridge)",nameEn:"Fixed Bridge"},
+        {id:"prp3",specialtyId:"prostho",nameAr:"طقم الأسنان الكامل",nameEn:"Complete Denture"},
+      ],
+    },
+    { id:"ortho", nameAr:"تقويم الأسنان", nameEn:"Orthodontics", icon:"😬", color:"#60a5fa",
+      tools:[
+        {id:"ot1",specialtyId:"ortho",nameAr:"البراكيت التقويمي",nameEn:"Orthodontic Brackets",useAr:"يُلصق على الأسنان للتحكم بحركتها عبر الأسلاك",useEn:"Bonded to teeth to engage archwires"},
+        {id:"ot2",specialtyId:"ortho",nameAr:"سلك التقويم NiTi/SS",nameEn:"Archwire NiTi / Stainless Steel",useAr:"التوجيه الأساسي لحركة الأسنان",useEn:"Primary tooth movement guidance"},
+        {id:"ot3",specialtyId:"ortho",nameAr:"قاطع الأسلاك الخلفي",nameEn:"Distal End Cutter",useAr:"قص طرف السلك الزائد خلف الأسنان",useEn:"Trim excess archwire distal end"},
+        {id:"ot4",specialtyId:"ortho",nameAr:"كماشة Bird Beak",nameEn:"Bird Beak Plier",useAr:"تشكيل الأسلاك وعمل الانحناءات",useEn:"Wire bending & loop formation"},
+      ],
+      procedures:[
+        {id:"op1",specialtyId:"ortho",nameAr:"تركيب جهاز تقويم ثابت (Braces)",nameEn:"Fixed Braces Placement"},
+        {id:"op2",specialtyId:"ortho",nameAr:"Invisalign / Clear Aligners",nameEn:"Invisalign Clear Aligners"},
+        {id:"op3",specialtyId:"ortho",nameAr:"الريتينر للحفاظ على النتائج",nameEn:"Fixed / Removable Retainer"},
+      ],
+    },
+    { id:"restorative", nameAr:"الحشوات والترميم", nameEn:"Restorative Dentistry", icon:"🔩", color:"#2dd4bf",
+      tools:[
+        {id:"rt1",specialtyId:"restorative",nameAr:"بنشة الحفر (Dental Bur)",nameEn:"Dental Bur Diamond/Carbide",useAr:"حفر وتشكيل تجويف الحشو في السن",useEn:"Cavity preparation & tooth shaping"},
+        {id:"rt2",specialtyId:"restorative",nameAr:"الكمبوزيت (Composite Resin)",nameEn:"Composite Resin",useAr:"مادة الحشو الجمالي البيضاء",useEn:"Tooth-colored filling material"},
+        {id:"rt3",specialtyId:"restorative",nameAr:"مصباح التصليب LED",nameEn:"LED Curing Light",useAr:"تصليب الكمبوزيت بالضوء الأزرق",useEn:"Light-polymerize composite resin"},
+        {id:"rt4",specialtyId:"restorative",nameAr:"Matrix + Wedge",nameEn:"Matrix Band & Wedge",useAr:"تشكيل جدار الحشو بين الأسنان",useEn:"Proximal wall formation for fillings"},
+        {id:"rt5",specialtyId:"restorative",nameAr:"أوراق الإطباق",nameEn:"Articulating Paper",useAr:"الكشف عن نقاط الإطباق الزائدة وتعديلها",useEn:"High occlusal point detection & adjustment"},
+      ],
+      procedures:[
+        {id:"rp1",specialtyId:"restorative",nameAr:"الحشو بالكمبوزيت",nameEn:"Composite Resin Filling"},
+        {id:"rp2",specialtyId:"restorative",nameAr:"Inlay / Onlay غير مباشر",nameEn:"Inlay & Onlay Restorations"},
+        {id:"rp3",specialtyId:"restorative",nameAr:"ترميم السن المكسور",nameEn:"Fractured Tooth Restoration"},
+      ],
+    },
+    { id:"pedo", nameAr:"طب أسنان الأطفال", nameEn:"Pedodontics", icon:"🧒", color:"#f9a8d4",
+      tools:[
+        {id:"pdt1",specialtyId:"pedo",nameAr:"تاج الستانلس ستيل (SSC)",nameEn:"Stainless Steel Crown (SSC)",useAr:"تاج معدني جاهز لحماية أرحاء الحليب التالفة",useEn:"Preformed crown for damaged primary molars"},
+        {id:"pdt2",specialtyId:"pedo",nameAr:"مادة الختم (Fissure Sealant)",nameEn:"Fissure Sealant Material",useAr:"سد شقوق الأسنان الدائمة لمنع التسوس",useEn:"Preventive sealing of occlusal fissures"},
+        {id:"pdt3",specialtyId:"pedo",nameAr:"هلام التخدير السطحي",nameEn:"Topical Anesthetic Gel",useAr:"تخدير سطحي ذو نكهة قبل الإبرة لتقليل الألم",useEn:"Flavored surface anesthesia before injection"},
+      ],
+      procedures:[
+        {id:"pdp1",specialtyId:"pedo",nameAr:"علاج وترميم أسنان الحليب",nameEn:"Primary Teeth Restoration"},
+        {id:"pdp2",specialtyId:"pedo",nameAr:"ختم الشقوق الوقائي",nameEn:"Fissure Sealants"},
+        {id:"pdp3",specialtyId:"pedo",nameAr:"خلع أسنان الحليب",nameEn:"Primary Tooth Extraction"},
+      ],
+    },
+  ],
+  ipcModules: [
+    { id:"donning", nameAr:"ارتداء معدات الوقاية — Donning", nameEn:"Donning Personal Protective Equipment", icon:"🧤", color:"#60a5fa",
+      steps:[
+        {id:"dn1",moduleId:"donning",textAr:"1️⃣ نظافة اليدين أولاً: اغسل بالماء والصابون أو المطهر الكحولي — 20 ثانية على الأقل",textEn:"1️⃣ Hand hygiene first: wash with soap/water or alcohol rub — min. 20 seconds"},
+        {id:"dn2",moduleId:"donning",textAr:"2️⃣ الجاون الواقي: ارتدِه من الأمام واربط الأربطة من الخلف بإحكام",textEn:"2️⃣ Protective gown: put on from front, tie securely at back"},
+        {id:"dn3",moduleId:"donning",textAr:"3️⃣ الكمامة (Surgical / N95): ضعها وتأكد من إحكام إغلاقها على الأنف",textEn:"3️⃣ Mask (Surgical / N95): apply and ensure nose bridge is sealed"},
+        {id:"dn4",moduleId:"donning",textAr:"4️⃣ واقي العينين أو الدرع الوجهي: ضعه فوق الكمامة",textEn:"4️⃣ Eye protection or face shield: apply over mask"},
+        {id:"dn5",moduleId:"donning",textAr:"5️⃣ القفازات: ارتدِها أخيرًا بحيث تغطي أسفل كم الجاون",textEn:"5️⃣ Gloves: put on last, ensuring they cover gown cuffs"},
+        {id:"dn6",moduleId:"donning",textAr:"🔁 التسلسل: يدان ← جاون ← كمامة ← نظارة ← قفازات",textEn:"🔁 Sequence: Hands → Gown → Mask → Eye Protection → Gloves"},
+      ],
+    },
+    { id:"doffing", nameAr:"خلع معدات الوقاية — Doffing", nameEn:"Doffing Personal Protective Equipment", icon:"🚫", color:"#f87171",
+      steps:[
+        {id:"df1",moduleId:"doffing",textAr:"⚠️ الخلع هو أخطر خطوة — معظم التلوث يحدث هنا! ابقِ يديك بعيدتين عن وجهك",textEn:"⚠️ Doffing is the HIGHEST-RISK step — keep hands away from face at all times!"},
+        {id:"df2",moduleId:"doffing",textAr:"1️⃣ القفازات: اقرص الخارجي بعيدًا عن الجلد وبادله من الداخل للخارج",textEn:"1️⃣ Gloves: pinch outer surface, peel inside-out away from skin"},
+        {id:"df3",moduleId:"doffing",textAr:"2️⃣ نظّف يديك بالكحول فور خلع القفازات مباشرةً",textEn:"2️⃣ Sanitize hands immediately after glove removal"},
+        {id:"df4",moduleId:"doffing",textAr:"3️⃣ الجاون: اخلعه لفًا من الأمام للخلف ليكون الجزء الملوث في الداخل",textEn:"3️⃣ Gown: roll front-to-back, keeping contaminated side folded inside"},
+        {id:"df5",moduleId:"doffing",textAr:"4️⃣ نظّف يديك بالكحول مرة أخرى بعد خلع الجاون",textEn:"4️⃣ Sanitize hands again after removing gown"},
+        {id:"df6",moduleId:"doffing",textAr:"5️⃣ الدرع الوجهي: اخلعه من الأربطة الخلفية دون لمس الأمام إطلاقًا",textEn:"5️⃣ Face shield: remove from back straps without touching front surface"},
+        {id:"df7",moduleId:"doffing",textAr:"6️⃣ الكمامة: اخلعها من الأربطة/الأذنين دون لمس الجزء الأمامي",textEn:"6️⃣ Mask: remove by straps/ties without touching front of mask"},
+        {id:"df8",moduleId:"doffing",textAr:"7️⃣ اغسل يديك بالماء والصابون نهائيًا — 40 إلى 60 ثانية",textEn:"7️⃣ Final handwash with soap & water — 40–60 seconds"},
+        {id:"df9",moduleId:"doffing",textAr:"🔁 التسلسل: قفازات ← يدان ← جاون ← يدان ← نظارة ← كمامة ← يدان",textEn:"🔁 Sequence: Gloves → Hands → Gown → Hands → Eye Prot. → Mask → Hands"},
+      ],
+    },
+    { id:"five_moments", nameAr:"اللحظات الخمس لنظافة اليدين (WHO)", nameEn:"WHO 5 Moments for Hand Hygiene", icon:"⏱", color:"#fbbf24",
+      steps:[
+        {id:"fm1",moduleId:"five_moments",textAr:"اللحظة 1️⃣ — قبل لمس المريض: لحمايته من الميكروبات الموجودة على يديك",textEn:"Moment 1️⃣ — BEFORE touching a patient: protect patient from germs on your hands"},
+        {id:"fm2",moduleId:"five_moments",textAr:"اللحظة 2️⃣ — قبل الإجراء المعقم: قبل أي لمس لموقع يستدعي التعقيم",textEn:"Moment 2️⃣ — BEFORE clean/aseptic procedure: before any aseptic-risk contact"},
+        {id:"fm3",moduleId:"five_moments",textAr:"اللحظة 3️⃣ — بعد التعرض لسوائل الجسم: بعد ملامسة الدم أو اللعاب",textEn:"Moment 3️⃣ — AFTER body fluid exposure risk: after contact with blood/saliva"},
+        {id:"fm4",moduleId:"five_moments",textAr:"اللحظة 4️⃣ — بعد لمس المريض: بعد أي تواصل مع جسم المريض",textEn:"Moment 4️⃣ — AFTER touching a patient: after any patient body contact"},
+        {id:"fm5",moduleId:"five_moments",textAr:"اللحظة 5️⃣ — بعد لمس محيط المريض: حتى بدون لمس المريض مباشرة",textEn:"Moment 5️⃣ — AFTER touching patient surroundings: even without direct contact"},
+        {id:"fm6",moduleId:"five_moments",textAr:"📌 في طب الأسنان: القفازات لا تُغني أبدًا عن نظافة اليدين",textEn:"📌 In dentistry: Gloves NEVER replace hand hygiene before/after procedures"},
+      ],
+    },
+    { id:"sterilization", nameAr:"التعقيم ومكافحة العدوى في العيادة", nameEn:"Dental Sterilization & Infection Control", icon:"🔬", color:"#c084fc",
+      steps:[
+        {id:"sr1",moduleId:"sterilization",textAr:"📦 مستويات التطهير: تعقيم كامل ← مستوى عالٍ ← متوسط ← منخفض",textEn:"📦 Disinfection levels: Sterilization → High → Intermediate → Low-level"},
+        {id:"sr2",moduleId:"sterilization",textAr:"🔧 الأدوات الحيوية (مبارد، كاشطات): أوتوكليف Class B — 134°C لمدة 18 دقيقة",textEn:"🔧 Critical instruments (files, curettes): Class B Autoclave — 134°C / 18 min"},
+        {id:"sr3",moduleId:"sterilization",textAr:"🦷 الشنبر (Handpiece): تعقيم إلزامي بالأوتوكليف بعد كل مريض",textEn:"🦷 Dental handpiece: mandatory autoclave sterilization between every patient"},
+        {id:"sr4",moduleId:"sterilization",textAr:"🧹 الأسطح: تطهير بكحول 70٪ أو هايبوكلوريت بعد كل مريض",textEn:"🧹 Surfaces: 70% alcohol or hypochlorite disinfection after each patient"},
+        {id:"sr5",moduleId:"sterilization",textAr:"🛡 الحواجز: تغطية الأزرار والمضخات بالبلاستيك وتغييرها بين المرضى",textEn:"🛡 Barriers: plastic wrap on buttons/tubing, change between patients"},
+        {id:"sr6",moduleId:"sterilization",textAr:"📋 التتبع: ترقيم الحزم + مؤشرات كيميائية + Spore Test أسبوعيًا",textEn:"📋 Tracking: package numbers + chemical indicators + weekly spore test"},
+        {id:"sr7",moduleId:"sterilization",textAr:"🗑 الحاد والمدبب: حاويات خاصة — يُمنع منعًا باتًا إعادة غطاء الإبرة بيد واحدة",textEn:"🗑 Sharps: dedicated containers — NEVER recap needles single-handed"},
+      ],
+    },
+    { id:"handwash", nameAr:"غسل اليدين الصحيح — خطوات WHO", nameEn:"Correct Handwashing Technique — WHO", icon:"🚿", color:"#6ee7b7",
+      steps:[
+        {id:"hw1",moduleId:"handwash",textAr:"1️⃣ ابلل يديك بالماء الجاري ثم ضع الصابون على راحتي اليدين",textEn:"1️⃣ Wet hands under running water, apply soap to palms"},
+        {id:"hw2",moduleId:"handwash",textAr:"2️⃣ افرك كف اليد على الأخرى في حركات دائرية",textEn:"2️⃣ Rub palm to palm in circular motions"},
+        {id:"hw3",moduleId:"handwash",textAr:"3️⃣ افرك ظهر كل يد بكف الأخرى بأصابع متشابكة",textEn:"3️⃣ Rub back of each hand with interlaced fingers"},
+        {id:"hw4",moduleId:"handwash",textAr:"4️⃣ افرك بين الأصابع — كف على كف بأصابع متشابكة",textEn:"4️⃣ Interlace fingers palm to palm, rub between them"},
+        {id:"hw5",moduleId:"handwash",textAr:"5️⃣ افرك ظهر الأصابع على الكف المقابل",textEn:"5️⃣ Rub backs of fingers against opposite palm"},
+        {id:"hw6",moduleId:"handwash",textAr:"6️⃣ افرك الإبهام دوريًا في كف اليد المقابلة",textEn:"6️⃣ Rotationally rub each thumb in opposite palm"},
+        {id:"hw7",moduleId:"handwash",textAr:"7️⃣ افرك أطراف الأصابع دوريًا في الكف المقابل",textEn:"7️⃣ Rotationally rub fingertips in opposite palm"},
+        {id:"hw8",moduleId:"handwash",textAr:"8️⃣ اشطف يديك جيدًا تحت الماء الجاري",textEn:"8️⃣ Rinse hands thoroughly under running water"},
+        {id:"hw9",moduleId:"handwash",textAr:"9️⃣ جفّف بمنشفة ورقية نظيفة وأغلق الصنبور بها",textEn:"9️⃣ Dry with clean paper towel, use it to close tap"},
+        {id:"hw10",moduleId:"handwash",textAr:"⏱ الوقت المطلوب: 40–60 ث (صابون وماء) | 20–30 ث (كحول)",textEn:"⏱ Required duration: 40–60 sec (soap/water) | 20–30 sec (rub)"},
+      ],
+    },
+  ],
+  quizzes: {
+    gen:[
+      {id:"q1",groupId:"gen",questionAr:"ما الأداة التي تُستخدم لرؤية المناطق غير المباشرة داخل الفم؟",questionEn:"Which instrument provides indirect vision inside the mouth?",optionsAr:["مسبار اللثة","مرآة الفحص","ملقط الأسنان","منفث الهواء"],optionsEn:["Periodontal Probe","Dental Mirror","Cotton Pliers","Air Syringe"],answer:1},
+      {id:"q2",groupId:"gen",questionAr:"ما وظيفة HVE الرئيسية في عيادة الأسنان؟",questionEn:"What is the primary function of the HVE?",optionsAr:["أخذ الطبعة","قياس عمق اللثة","شفط المياه والمواد بسرعة","تصليب الحشو"],optionsEn:["Taking impressions","Measuring pockets","Rapid fluid evacuation","Curing composite"],answer:2},
+    ],
+    endo:[
+      {id:"q10",groupId:"endo",questionAr:"ما وظيفة الـ Apex Locator في علاج الجذور؟",questionEn:"What is the Apex Locator used for in RCT?",optionsAr:["تصليب مواد الحشو","تحديد طول الجذر إلكترونيًا","عزل السن","شفط اللعاب"],optionsEn:["Curing filling","Electronic root length determination","Tooth isolation","Saliva aspiration"],answer:1},
+    ],
+    "ipc_donning":[
+      {id:"qi1",groupId:"ipc_donning",questionAr:"ما التسلسل الصحيح لارتداء معدات الوقاية الشخصية (PPE)؟",questionEn:"What is the correct PPE donning sequence?",optionsAr:["قفازات ← كمامة ← جاون","يدان ← جاون ← كمامة ← نظارة ← قفازات","كمامة ← قفازات ← يدان","نظارة ← يدان ← كمامة"],optionsEn:["Gloves → Mask → Gown","Hands → Gown → Mask → Eye → Gloves","Mask → Gloves → Hands","Eye → Hands → Mask"],answer:1},
+    ],
+    "ipc_five_moments":[
+      {id:"qi5",groupId:"ipc_five_moments",questionAr:"هل ارتداء القفازات يُغني عن نظافة اليدين؟",questionEn:"Do gloves replace the need for hand hygiene?",optionsAr:["نعم دائمًا","نعم في بعض الحالات","لا — نظافة اليدين إلزامية دائمًا","فقط في الجراحة"],optionsEn:["Yes always","Yes sometimes","No — hand hygiene is always mandatory","Surgery only"],answer:2},
+    ],
+    "ipc_sterilization":[
+      {id:"qi7",groupId:"ipc_sterilization",questionAr:"ما درجة حرارة وزمن الأوتوكليف Class B الصحيحين؟",questionEn:"What are the correct Class B autoclave parameters?",optionsAr:["121°C / 15 دقيقة","100°C / 5 دقائق","134°C / 18 دقيقة","150°C / 10 دقائق"],optionsEn:["121°C / 15 min","100°C / 5 min","134°C / 18 min","150°C / 10 min"],answer:2},
+    ],
+  },
+  users:[
+    {id:"u1",username:"admin",password:"admin123",name:"إبراهيم اللحيدي",role:"admin"},
+    {id:"u2",username:"nurse1",password:"1234",name:"سارة أحمد",role:"nurse"},
+    {id:"u3",username:"nurse2",password:"1234",name:"نورة العتيبي",role:"nurse"},
+  ],
+};
+
+const gid  = () => Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-3);
+const deep = x  => JSON.parse(JSON.stringify(x));
+
+async function api(action, params={}, token=null) {
+  if (!GAS_OK()) throw new Error("GAS_NOT_CONFIGURED");
+  const body = { action, ...params, ...(token ? {token} : {}) };
+  const res  = await fetch(GAS_URL, { method:"POST", body:JSON.stringify(body), headers:{"Content-Type":"text/plain"} });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || "api_error");
+  return json;
+}
+
+// ══════════════════════════════════════════════════════
+//  APP ROOT
+// ══════════════════════════════════════════════════════
+function App() {
+  const [lang,  setLang]  = useState("ar");
+  const [db,    setDb]    = useState(deep(SEED));
+  const [user,  setUser]  = useState(null);
+  const [token, setToken] = useState(null);
+  const [sync,  setSync]  = useState("offline");
+  const [toast, setToast] = useState(null);
+
+  const t = (ar, en) => lang === "ar" ? ar : en;
+
+  // إخفاء شاشة التحميل بعد أول render
+  useEffect(() => {
+    const el = document.getElementById('loading');
+    if (el) el.style.display = 'none';
+  }, []);
+
+  const toast$ = useCallback((msg, type="ok") => {
+    setToast({msg, type});
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  const syncAll = async (tk) => {
+    setSync("syncing");
+    try {
+      const r = await api("getAll", {}, tk || token);
+      const q = {};
+      Object.entries(r.data.quizzes||{}).forEach(([k,arr]) => {
+        q[k] = arr.map(x => ({...x,
+          optionsAr: typeof x.optionsAr==="string" ? JSON.parse(x.optionsAr||"[]") : (x.optionsAr||[]),
+          optionsEn: typeof x.optionsEn==="string" ? JSON.parse(x.optionsEn||"[]") : (x.optionsEn||[]),
+          answer: parseInt(x.answer)||0,
+        }));
+      });
+      setDb(d => ({...d, specialties:r.data.specialties, ipcModules:r.data.ipcModules, quizzes:q}));
+      setSync("ok");
+    } catch { setSync("error"); }
+  };
+
+  useEffect(() => { if (GAS_OK()) syncAll(); }, []);
+
+  const doLogin = async (u, p) => {
+    if (GAS_OK()) {
+      setSync("syncing");
+      try {
+        const r = await api("login", {username:u, password:p});
+        setUser(r.user); setToken(r.token);
+        await syncAll(r.token);
+        return r.user;
+      } catch { setSync("error"); }
+    }
+    const found = db.users.find(x => x.username===u && x.password===p);
+    if (found) { setUser(found); return found; }
+    return null;
+  };
+
+  const doLogout = () => { setUser(null); setToken(null); };
+
+  // Optimistic mutation
+  const mut = async (gasAction, gasParams, localFn) => {
+    setDb(d => { const n=deep(d); localFn(n); return n; });
+    if (GAS_OK() && token) {
+      setSync("syncing");
+      try { await api(gasAction, gasParams, token); setSync("ok"); }
+      catch { setSync("error"); toast$(t("فشل الحفظ في الخادم","Server save failed"), "err"); }
+    }
+  };
+
+  if (!user) return (
+    <LoginScreen lang={lang} setLang={setLang} t={t} sync={sync} onLogin={doLogin} toast={toast} />
+  );
+
+  if (user.role === "admin") return (
+    <AdminPortal lang={lang} setLang={setLang} t={t} db={db} user={user} token={token}
+      sync={sync} syncAll={syncAll} toast={toast} toast$={toast$}
+      mut={mut} onLogout={doLogout} />
+  );
+
+  return (
+    <NursePortal lang={lang} setLang={setLang} t={t} db={db} user={user}
+      sync={sync} syncAll={syncAll} token={token} toast={toast} toast$={toast$}
+      onLogout={doLogout} />
+  );
+}
+
+// ══════════════════════════════════════════════════════
+//  SHARED: DESIGN TOKENS
+// ══════════════════════════════════════════════════════
+const V = {
+  hi:"#38bdf8", pur:"#818cf8", grn:"#34d399", red:"#f87171",
+  org:"#fb923c", yel:"#fbbf24", pink:"#f9a8d4", muted:"#64748b",
+};
+
+// ══════════════════════════════════════════════════════
+//  LOGIN SCREEN
+// ══════════════════════════════════════════════════════
+function LoginScreen({ lang, setLang, t, sync, onLogin, toast }) {
+  const [u, setU] = useState("");
+  const [p, setP] = useState("");
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+  const dir = lang==="ar"?"rtl":"ltr";
+
+  const S = {
+    wrap:  { direction:dir, fontFamily:lang==="ar"?"'Tajawal',sans-serif":"'Inter',sans-serif", minHeight:"100vh", background:"linear-gradient(150deg,#020812 0%,#060e22 60%,#040b1a 100%)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 },
+    box:   { width:"100%", maxWidth:400 },
+    card:  { background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:16, padding:28 },
+    inp:   { background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.11)", borderRadius:9, padding:"10px 14px", color:"#e2e8f0", fontSize:14, width:"100%", boxSizing:"border-box", outline:"none", fontFamily:"inherit" },
+    lbl:   { fontSize:12, color:V.muted, marginBottom:4, display:"block", fontWeight:700 },
+    pri:   { padding:"11px 20px", borderRadius:10, border:"none", cursor:"pointer", fontWeight:800, fontSize:14, background:"linear-gradient(135deg,#38bdf8,#6366f1)", color:"#fff", width:"100%", fontFamily:"inherit" },
+    toast: (tp) => ({ position:"fixed", top:18, [dir==="rtl"?"right":"left"]:18, padding:"10px 16px", borderRadius:10, zIndex:999, fontWeight:700, fontSize:13, fontFamily:"inherit", background:tp==="ok"?"rgba(16,185,129,0.94)":"rgba(239,68,68,0.94)", color:"#fff" }),
+  };
+
+  const submit = async () => {
+    if (!u || !p) return;
+    setLoading(true); setErr("");
+    const found = await onLogin(u, p);
+    if (!found) setErr(t("اسم المستخدم أو كلمة المرور غير صحيحة","Invalid username or password"));
+    setLoading(false);
+  };
+
+  return (
+    <div style={S.wrap}>
+      <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+      {toast && <div style={S.toast(toast.type)}>{toast.msg}</div>}
+      <div style={S.box}>
+        {/* Logo */}
+        <div style={{textAlign:"center", marginBottom:28}}>
+          <div style={{fontSize:52, marginBottom:10}}>🦷</div>
+          <div style={{fontWeight:900, fontSize:22, background:"linear-gradient(135deg,#38bdf8,#818cf8)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent"}}>
+            {t("منصة تدريب ممرضات الأسنان","Dental Nurse Training Platform")}
+          </div>
+          <div style={{color:V.muted, fontSize:12, marginTop:5}}>Apex Care Clinics · {t("القصيم","Al-Qassim")}</div>
+          {!GAS_OK() && <div style={{marginTop:10, padding:"5px 12px", borderRadius:8, background:"rgba(251,191,36,0.1)", border:"1px solid rgba(251,191,36,0.2)", fontSize:11, color:V.yel, display:"inline-block"}}>⚠️ {t("وضع تجريبي","Demo mode")}</div>}
+        </div>
+
+        <div style={S.card}>
+          <div style={{marginBottom:14}}>
+            <label style={S.lbl}>{t("اسم المستخدم","Username")}</label>
+            <input style={S.inp} value={u} onChange={e=>setU(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} autoComplete="username"/>
+          </div>
+          <div style={{marginBottom:18}}>
+            <label style={S.lbl}>{t("كلمة المرور","Password")}</label>
+            <input style={S.inp} type="password" value={p} onChange={e=>setP(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} autoComplete="current-password"/>
+          </div>
+          {err && <div style={{color:"#fca5a5", fontSize:12, marginBottom:12}}>{err}</div>}
+          <button onClick={submit} style={S.pri} disabled={loading}>{loading ? t("جارٍ الدخول...","Logging in...") : t("دخول","Login")}</button>
+        </div>
+
+        <div style={{display:"flex", gap:8, justifyContent:"center", marginTop:14}}>
+          {["ar","en"].map(l => (
+            <button key={l} onClick={()=>setLang(l)} style={{padding:"6px 16px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:700, fontSize:12, fontFamily:"inherit", background:lang===l?"linear-gradient(135deg,#38bdf8,#6366f1)":"rgba(255,255,255,0.05)", color:lang===l?"#fff":"#64748b"}}>
+              {l==="ar"?"العربية":"English"}
+            </button>
+          ))}
+        </div>
+        <div style={{textAlign:"center", color:"#1e293b", fontSize:11, marginTop:10}}>
+          {t("تجريبي: nurse1/1234 | admin/admin123","Demo: nurse1/1234 | admin/admin123")}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+//  NURSE PORTAL — تجربة تعلم نظيفة وبدون تعديل
+// ══════════════════════════════════════════════════════
+function NursePortal({ lang, setLang, t, db, user, sync, syncAll, token, toast, toast$, onLogout }) {
+  const [page, setPage]     = useState("home"); // home|spec|ipc|ipc_detail|quiz
+  const [activeSpec, setAS] = useState(null);
+  const [activeIPC,  setAI] = useState(null);
+  const [quiz, setQuiz]     = useState(null);
+  const [search, setSearch] = useState("");
+  const [activeTab, setTab] = useState("tools"); // tools|procedures
+
+  const dir = lang==="ar" ? "rtl" : "ltr";
+
+  const filtered = db.specialties.filter(s =>
+    !search ||
+    s.nameAr.includes(search) ||
+    s.nameEn.toLowerCase().includes(search.toLowerCase()) ||
+    s.tools?.some(tl => tl.nameAr?.includes(search) || tl.nameEn?.toLowerCase().includes(search.toLowerCase()))
+  );
+
+  const startQuiz = gId => {
+    const qs = db.quizzes[gId] || [];
+    if (!qs.length) { toast$(t("لا يوجد اختبار بعد","No quiz yet for this section"), "info"); return; }
+    setQuiz({ groupId:gId, questions:qs, idx:0, score:0, done:false });
+    setPage("quiz");
+  };
+
+  const answerQ = i => {
+    const q = quiz.questions[quiz.idx];
+    const ok = i === (q.answer || 0);
+    const ns = quiz.score + (ok ? 1 : 0);
+    const ni = quiz.idx + 1;
+    setQuiz(q => ({...q, idx:ni, score:ns, done: ni >= q.questions.length}));
+  };
+
+  // ── STYLES (Nurse: warm, clean, focused on learning)
+  const S = {
+    app:  { direction:dir, fontFamily:lang==="ar"?"'Tajawal',sans-serif":"'Inter',sans-serif", background:"linear-gradient(150deg,#03070f 0%,#070e20 55%,#05091a 100%)", minHeight:"100vh", color:"#e2e8f0" },
+    hdr:  { position:"sticky", top:0, zIndex:100, background:"rgba(3,7,15,0.9)", backdropFilter:"blur(20px)", borderBottom:"1px solid rgba(56,189,248,0.1)", padding:"10px 18px", display:"flex", alignItems:"center", justifyContent:"space-between" },
+    pg:   { padding:"18px 16px", maxWidth:860, margin:"0 auto" },
+    card: { background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:13, padding:16, marginBottom:12 },
+    inp:  { background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:9, padding:"10px 14px", color:"#e2e8f0", fontSize:13, width:"100%", boxSizing:"border-box", outline:"none", fontFamily:"inherit" },
+    pri:  { padding:"9px 18px", borderRadius:9, border:"none", cursor:"pointer", fontWeight:800, fontSize:13, background:"linear-gradient(135deg,#38bdf8,#6366f1)", color:"#fff", fontFamily:"inherit" },
+    sec:  (c="#38bdf8") => ({ padding:"6px 14px", borderRadius:8, border:`1px solid ${c}30`, cursor:"pointer", fontWeight:700, fontSize:12, background:`${c}0f`, color:c, fontFamily:"inherit" }),
+    row:  { display:"flex", gap:10, alignItems:"flex-start", padding:"10px 0", borderBottom:"1px solid rgba(255,255,255,0.05)" },
+    tag:  (c="#38bdf8") => ({ background:`${c}1c`, color:c, padding:"2px 8px", borderRadius:20, fontSize:11, fontWeight:700, flexShrink:0 }),
+    spC:  (c) => ({ background:`linear-gradient(135deg,${c}0e,${c}03)`, border:`1px solid ${c}22`, borderRadius:13, padding:15, cursor:"pointer", transition:"transform 0.15s,box-shadow 0.15s" }),
+    step: (c) => ({ background:`${c}0b`, border:`1px solid ${c}1e`, borderRadius:9, padding:"10px 13px", marginBottom:8, lineHeight:1.75, fontSize:13 }),
+    tab2: (a,c="#38bdf8") => ({ padding:"8px 18px", borderRadius:9, cursor:"pointer", fontWeight:700, fontSize:12, border:"none", fontFamily:"inherit", background:a?`linear-gradient(135deg,${c},${c}bb)`:"rgba(255,255,255,0.04)", color:a?"#fff":"#64748b" }),
+    back: { display:"flex", alignItems:"center", gap:5, cursor:"pointer", color:V.hi, fontWeight:700, fontSize:13, marginBottom:12 },
+    h2:   { fontSize:15, fontWeight:900, marginBottom:12, display:"flex", alignItems:"center", gap:8 },
+    logo: { fontWeight:900, fontSize:15, background:"linear-gradient(135deg,#34d399,#60a5fa)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" },
+    sync: (s) => ({ padding:"2px 9px", borderRadius:20, fontSize:10, fontWeight:700, background:s==="ok"?"rgba(52,211,153,0.14)":s==="syncing"?"rgba(251,191,36,0.14)":s==="error"?"rgba(248,113,113,0.14)":"rgba(100,116,139,0.14)", color:s==="ok"?"#6ee7b7":s==="syncing"?"#fbbf24":s==="error"?"#fca5a5":"#94a3b8" }),
+    tst:  (tp) => ({ position:"fixed", top:16, [dir==="rtl"?"right":"left"]:16, padding:"10px 16px", borderRadius:10, zIndex:999, fontWeight:700, fontSize:13, fontFamily:"inherit", background:tp==="ok"?"rgba(16,185,129,0.94)":tp==="err"?"rgba(239,68,68,0.94)":"rgba(59,130,246,0.94)", color:"#fff" }),
+  };
+
+  const Header = () => (
+    <div style={S.hdr}>
+      <div style={{display:"flex", alignItems:"center", gap:8}}>
+        <span style={{fontSize:18}}>🩺</span>
+        <span style={S.logo}>{t("بوابة التمريض","Nurse Portal")}</span>
+      </div>
+      <div style={{display:"flex", gap:6, alignItems:"center"}}>
+        <span style={S.sync(sync)}>{sync==="ok"?t("✓ متزامن","✓ Synced"):sync==="syncing"?t("...","..."):sync==="error"?t("خطأ","Err"):t("محلي","Local")}</span>
+        {GAS_OK()&&sync!=="syncing"&&<button onClick={()=>syncAll(token)} style={S.sec()}>🔄</button>}
+        <button onClick={()=>setLang(l=>l==="ar"?"en":"ar")} style={S.sec()}>{lang==="ar"?"EN":"ع"}</button>
+        <div style={{display:"flex", alignItems:"center", gap:6, padding:"4px 10px", borderRadius:8, background:"rgba(255,255,255,0.04)", fontSize:12}}>
+          <span style={{color:V.grn}}>●</span>
+          <span style={{fontWeight:700}}>{user.name}</span>
+        </div>
+        <button onClick={onLogout} style={{...S.sec(V.red), fontSize:11}}>↩ {t("خروج","Logout")}</button>
+      </div>
+    </div>
+  );
+
+  // QUIZ PAGE
+  if (page==="quiz" && quiz) {
+    if (quiz.done) {
+      const pct = Math.round((quiz.score/quiz.questions.length)*100);
+      return (
+        <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+          <Header/>
+          {toast && <div style={S.tst(toast.type)}>{toast.msg}</div>}
+          <div style={S.pg}>
+            <div style={{...S.card, textAlign:"center", padding:32}}>
+              <div style={{fontSize:56}}>{pct>=70?"🎉":"📚"}</div>
+              <div style={{fontSize:20, fontWeight:900, margin:"10px 0 6px"}}>{pct>=70 ? t("ممتاز! اجتزت الاختبار","Excellent! You passed!") : t("راجع المحتوى وحاول مجددًا","Review content & try again")}</div>
+              <div style={{fontSize:38, fontWeight:900, color:pct>=70?V.grn:V.red, margin:"6px 0"}}>{pct}%</div>
+              <div style={{color:V.muted, fontSize:13, marginBottom:22}}>{quiz.score} / {quiz.questions.length} {t("إجابة صحيحة","correct answers")}</div>
+              {/* Score circles */}
+              <div style={{display:"flex", justifyContent:"center", gap:6, marginBottom:22}}>
+                {quiz.questions.map((_,i) => {
+                  const answered = i < quiz.idx;
+                  return <div key={i} style={{width:10,height:10,borderRadius:"50%",background:answered?(i<quiz.score?V.grn:V.red):"rgba(255,255,255,0.15)"}}/>;
+                })}
+              </div>
+              <div style={{display:"flex", gap:10, justifyContent:"center"}}>
+                <button onClick={()=>setPage("home")} style={S.pri}>{t("الرئيسية","Home")}</button>
+                <button onClick={()=>setQuiz(q=>({...q,idx:0,score:0,done:false}))} style={S.sec()}>{t("إعادة الاختبار","Retry Quiz")}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    const q = quiz.questions[quiz.idx];
+    const opts = lang==="ar" ? (q.optionsAr||[]) : (q.optionsEn||[]);
+    return (
+      <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+        <Header/>
+        {toast && <div style={S.tst(toast.type)}>{toast.msg}</div>}
+        <div style={S.pg}>
+          <div style={S.card}>
+            <div style={{display:"flex", justifyContent:"space-between", marginBottom:12}}>
+              <span style={{color:V.muted, fontSize:12, fontWeight:700}}>{t("السؤال","Question")} {quiz.idx+1} / {quiz.questions.length}</span>
+              <span style={S.tag()}>{quiz.score} {t("نقطة","pts")}</span>
+            </div>
+            <div style={{height:5, background:"rgba(255,255,255,0.06)", borderRadius:10, marginBottom:18}}>
+              <div style={{width:`${(quiz.idx/quiz.questions.length)*100}%`, height:"100%", background:"linear-gradient(90deg,#38bdf8,#818cf8)", borderRadius:10, transition:"width 0.4s"}}/>
+            </div>
+            <div style={{fontSize:16, fontWeight:800, marginBottom:18, lineHeight:1.65}}>{t(q.questionAr, q.questionEn)}</div>
+            {opts.map((opt,i) => (
+              <div key={i} onClick={()=>answerQ(i)}
+                style={{background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:9, padding:"11px 15px", cursor:"pointer", marginBottom:7, fontSize:13, transition:"all 0.12s"}}
+                onMouseEnter={e=>{e.currentTarget.style.background="rgba(56,189,248,0.1)";e.currentTarget.style.borderColor="rgba(56,189,248,0.3)";}}
+                onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.04)";e.currentTarget.style.borderColor="rgba(255,255,255,0.08)";}}>
+                <span style={{color:V.muted, marginInlineEnd:9, fontWeight:700}}>{String.fromCharCode(65+i)}.</span>{opt}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // SPECIALTY DETAIL
+  if (page==="spec" && activeSpec) {
+    const sp = activeSpec;
+    return (
+      <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+        <Header/>
+        {toast && <div style={S.tst(toast.type)}>{toast.msg}</div>}
+        <div style={S.pg}>
+          <div style={S.back} onClick={()=>setPage("home")}>‹ {t("العودة للرئيسية","Back to Home")}</div>
+
+          {/* Specialty Header */}
+          <div style={{...S.card, background:`linear-gradient(135deg,${sp.color}10,${sp.color}03)`, border:`1px solid ${sp.color}22`}}>
+            <div style={{display:"flex", alignItems:"center", gap:13, flexWrap:"wrap"}}>
+              <span style={{fontSize:38}}>{sp.icon}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:20, fontWeight:900}}>{t(sp.nameAr, sp.nameEn)}</div>
+                <div style={{fontSize:11, color:V.muted, marginTop:2}}>{t(sp.nameEn, sp.nameAr)}</div>
+              </div>
+              <div style={{display:"flex", gap:8, flexWrap:"wrap"}}>
+                <span style={S.tag()}>{sp.tools?.length||0} {t("أداة","tools")}</span>
+                <span style={S.tag(V.grn)}>{sp.procedures?.length||0} {t("إجراء","procs")}</span>
+                {(db.quizzes[sp.id]||[]).length>0 && (
+                  <button onClick={()=>startQuiz(sp.id)} style={S.pri}>🧪 {t("ابدأ الاختبار","Start Quiz")}</button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Tab Switch */}
+          <div style={{display:"flex", gap:7, marginBottom:14}}>
+            <button style={S.tab2(activeTab==="tools", sp.color)} onClick={()=>setTab("tools")}>🔧 {t("الأدوات","Tools")} ({sp.tools?.length||0})</button>
+            <button style={S.tab2(activeTab==="procedures", V.grn)} onClick={()=>setTab("procedures")}>📋 {t("الإجراءات","Procedures")} ({sp.procedures?.length||0})</button>
+          </div>
+
+          {/* Tools */}
+          {activeTab==="tools" && (
+            <div style={S.card}>
+              {(sp.tools||[]).length===0 && <div style={{color:V.muted, textAlign:"center", padding:20, fontSize:13}}>{t("لا توجد أدوات","No tools available")}</div>}
+              {(sp.tools||[]).map((tool,i) => (
+                <div key={tool.id} style={S.row}>
+                  <span style={S.tag(sp.color)}>{i+1}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:700, fontSize:14}}>{tool.nameAr}</div>
+                    <div style={{fontSize:11, color:V.muted, marginBottom:3}}>{tool.nameEn}</div>
+                    <div style={{fontSize:13, color:"#94a3b8", lineHeight:1.6}}>🎯 {t(tool.useAr, tool.useEn)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Procedures */}
+          {activeTab==="procedures" && (
+            <div style={S.card}>
+              {(sp.procedures||[]).length===0 && <div style={{color:V.muted, textAlign:"center", padding:20, fontSize:13}}>{t("لا توجد إجراءات","No procedures available")}</div>}
+              {(sp.procedures||[]).map((proc,i) => (
+                <div key={proc.id} style={S.row}>
+                  <span style={S.tag(V.grn)}>{i+1}</span>
+                  <span style={{flex:1, fontSize:14, fontWeight:600, lineHeight:1.5}}>{t(proc.nameAr, proc.nameEn)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Quiz CTA */}
+          {(db.quizzes[sp.id]||[]).length > 0 && (
+            <div style={{...S.card, textAlign:"center", background:"linear-gradient(135deg,rgba(56,189,248,0.07),rgba(99,102,241,0.07))", border:"1px solid rgba(56,189,248,0.15)"}}>
+              <div style={{fontSize:28, marginBottom:6}}>🧪</div>
+              <div style={{fontWeight:800, marginBottom:4}}>{t("هل أنت مستعد للاختبار؟","Ready for the quiz?")}</div>
+              <div style={{color:V.muted, fontSize:12, marginBottom:14}}>{(db.quizzes[sp.id]||[]).length} {t("أسئلة","questions")}</div>
+              <button onClick={()=>startQuiz(sp.id)} style={S.pri}>{t("ابدأ الاختبار","Start Quiz")}</button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // IPC DETAIL
+  if (page==="ipc_detail" && activeIPC) {
+    const mod = activeIPC;
+    const qKey = "ipc_" + mod.id;
+    return (
+      <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+        <Header/>
+        {toast && <div style={S.tst(toast.type)}>{toast.msg}</div>}
+        <div style={S.pg}>
+          <div style={S.back} onClick={()=>setPage("ipc")}>‹ {t("مكافحة العدوى","Infection Control")}</div>
+          <div style={{...S.card, background:`linear-gradient(135deg,${mod.color}0f,${mod.color}03)`, border:`1px solid ${mod.color}22`}}>
+            <div style={{display:"flex", alignItems:"center", gap:11, flexWrap:"wrap"}}>
+              <span style={{fontSize:32}}>{mod.icon}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:17, fontWeight:900}}>{t(mod.nameAr, mod.nameEn)}</div>
+                <div style={{color:V.muted, fontSize:11, marginTop:2}}>{mod.steps?.length||0} {t("خطوة","steps")}</div>
+              </div>
+              {(db.quizzes[qKey]||[]).length>0 && <button onClick={()=>startQuiz(qKey)} style={S.pri}>🧪 {t("اختبار","Quiz")}</button>}
+            </div>
+          </div>
+
+          <div style={S.card}>
+            {(mod.steps||[]).map((step,i) => (
+              <div key={step.id} style={S.step(mod.color)}>
+                <span style={{...S.tag(mod.color), marginInlineEnd:8, flexShrink:0, marginTop:2}}>{i+1}</span>
+                <span style={{flex:1}}>{t(step.textAr, step.textEn)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // IPC LIST
+  if (page==="ipc") return (
+    <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+      <Header/>
+      {toast && <div style={S.tst(toast.type)}>{toast.msg}</div>}
+      <div style={S.pg}>
+        <div style={S.back} onClick={()=>setPage("home")}>‹ {t("الرئيسية","Home")}</div>
+        <div style={S.h2}>🛡 {t("مكافحة العدوى والتعقيم","Infection Control & Sterilization")}</div>
+        {db.ipcModules.map(mod => (
+          <div key={mod.id} style={{...S.spC(mod.color), marginBottom:9}} onClick={()=>{setAI(mod);setPage("ipc_detail");}}>
+            <div style={{display:"flex", alignItems:"center", gap:11}}>
+              <span style={{fontSize:26}}>{mod.icon}</span>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:800, fontSize:14}}>{t(mod.nameAr, mod.nameEn)}</div>
+                <div style={{fontSize:11, color:V.muted, marginTop:2}}>
+                  {mod.steps?.length||0} {t("خطوة","steps")}
+                  {(db.quizzes["ipc_"+mod.id]||[]).length>0 && ` · 🧪 ${(db.quizzes["ipc_"+mod.id]||[]).length} ${t("سؤال","Qs")}`}
+                </div>
+              </div>
+              <span style={{color:mod.color, fontSize:18}}>›</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // HOME
+  return (
+    <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+      <Header/>
+      {toast && <div style={S.tst(toast.type)}>{toast.msg}</div>}
+      <div style={S.pg}>
+        {/* Welcome banner */}
+        <div style={{...S.card, background:"linear-gradient(135deg,rgba(52,211,153,0.08),rgba(56,189,248,0.06))", border:"1px solid rgba(52,211,153,0.15)", marginBottom:14}}>
+          <div style={{display:"flex", alignItems:"center", gap:12}}>
+            <div style={{fontSize:36}}>👩‍⚕️</div>
+            <div>
+              <div style={{fontSize:16, fontWeight:900}}>👋 {t(`مرحبًا، ${user.name}`,`Welcome, ${user.name}`)}</div>
+              <div style={{color:V.muted, fontSize:12, marginTop:3}}>{t("اختري تخصصًا أو وحدة للتعلم والمراجعة","Choose a specialty or module to study")}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Search */}
+        <input style={{...S.inp, marginBottom:14}} placeholder={t("🔍 ابحث عن أداة أو تخصص...","🔍 Search tools or specialties...")} value={search} onChange={e=>setSearch(e.target.value)}/>
+
+        {/* IPC Banner */}
+        <div style={{...S.spC("#34d399"), marginBottom:14}} onClick={()=>setPage("ipc")}>
+          <div style={{display:"flex", alignItems:"center", gap:11}}>
+            <span style={{fontSize:28}}>🛡</span>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:800, fontSize:14}}>{t("مكافحة العدوى والتعقيم","Infection Control & Sterilization")}</div>
+              <div style={{fontSize:11, color:V.muted, marginTop:3}}>
+                {db.ipcModules.length} {t("وحدة","modules")} · Donning · Doffing · {t("اللحظات الخمس","5 Moments")}
+              </div>
+            </div>
+            <span style={{color:"#34d399", fontSize:18}}>›</span>
+          </div>
+        </div>
+
+        {/* Specialties */}
+        <div style={S.h2}>🦷 {t("التخصصات الطبية","Medical Specialties")} <span style={S.tag()}>{filtered.length}</span></div>
+        <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:9}}>
+          {filtered.map(sp => (
+            <div key={sp.id} style={S.spC(sp.color)}
+              onClick={()=>{setAS(sp);setTab("tools");setPage("spec");}}
+              onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 24px ${sp.color}18`;}}
+              onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}>
+              <div style={{fontSize:24, marginBottom:5}}>{sp.icon}</div>
+              <div style={{fontWeight:800, fontSize:13}}>{t(sp.nameAr, sp.nameEn)}</div>
+              <div style={{fontSize:11, color:V.muted, marginTop:3}}>
+                {sp.tools?.length||0} {t("أداة","tools")} · {sp.procedures?.length||0} {t("إجراء","procs")}
+              </div>
+              {(db.quizzes[sp.id]||[]).length>0 && (
+                <div style={{marginTop:7}}><span style={S.tag(V.yel)}>🧪 {(db.quizzes[sp.id]||[]).length} {t("سؤال","Qs")}</span></div>
+              )}
+            </div>
+          ))}
+        </div>
+        {!filtered.length && <div style={{textAlign:"center", color:V.muted, padding:28, fontSize:13}}>{t("لا توجد نتائج","No results found")}</div>}
+
+        {/* Stats */}
+        <div style={{...S.card, marginTop:14}}>
+          <div style={{display:"flex", gap:10, justifyContent:"space-around", textAlign:"center"}}>
+            {[
+              [db.specialties.length, t("قسم","Specs"), V.hi],
+              [db.specialties.reduce((a,s)=>a+(s.tools?.length||0),0), t("أداة","Tools"), V.pur],
+              [db.ipcModules.length, "IPC", V.grn],
+              [Object.values(db.quizzes).reduce((a,q)=>a+q.length,0), t("سؤال","Q's"), V.yel],
+            ].map(([n,l,c]) => (
+              <div key={l}><div style={{fontSize:22, fontWeight:900, color:c}}>{n}</div><div style={{fontSize:10, color:V.muted}}>{l}</div></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+//  ADMIN PORTAL — لوحة تحكم كاملة
+// ══════════════════════════════════════════════════════
+function AdminPortal({ lang, setLang, t, db, user, token, sync, syncAll, toast, toast$, mut, onLogout }) {
+  const [page, setPage]     = useState("dashboard"); // dashboard|spec_detail|ipc_detail
+  const [activeSpec, setAS] = useState(null);
+  const [activeIPC,  setAI] = useState(null);
+  const [tab,  setTab]      = useState("specialties");
+  const [modal, setModal]   = useState(null); // {type, item?, extra?}
+  const dir = lang==="ar" ? "rtl" : "ltr";
+
+  // ── CRUD helpers
+  const addSpec    = async f => { const id=gid(),item={...f,id,tools:[],procedures:[]}; await mut("addSpecialty",f,d=>d.specialties.push(item)); toast$(t("تم إضافة القسم","Specialty added")); };
+  const updSpec    = async (id,f) => { await mut("updateSpecialty",{id,...f},d=>{const i=d.specialties.findIndex(s=>s.id===id);if(i>=0)Object.assign(d.specialties[i],f);}); if(activeSpec?.id===id)setAS(s=>({...s,...f})); toast$(t("تم التحديث","Updated")); };
+  const delSpec    = async id => { if(!confirm(t("حذف القسم وكل محتوياته؟","Delete specialty and all its content?")))return; await mut("deleteSpecialty",{id},d=>{d.specialties=d.specialties.filter(s=>s.id!==id);delete d.quizzes[id];}); if(activeSpec?.id===id){setAS(null);setPage("dashboard");} toast$(t("تم الحذف","Deleted")); };
+  const addTool    = async (spId,f) => { const id=gid(),item={...f,id,specialtyId:spId}; await mut("addTool",{specialtyId:spId,...f},d=>{const s=d.specialties.find(x=>x.id===spId);if(s)s.tools.push(item);}); setAS(s=>s?.id===spId?{...s,tools:[...s.tools,item]}:s); toast$(t("تم إضافة الأداة","Tool added")); };
+  const updTool    = async (spId,id,f) => { await mut("updateTool",{id,...f},d=>{const s=d.specialties.find(x=>x.id===spId);if(s){const i=s.tools.findIndex(t=>t.id===id);if(i>=0)Object.assign(s.tools[i],f);}}); setAS(s=>s?.id===spId?{...s,tools:s.tools.map(t=>t.id===id?{...t,...f}:t)}:s); toast$(t("تم التحديث","Updated")); };
+  const delTool    = async (spId,id) => { await mut("deleteTool",{id},d=>{const s=d.specialties.find(x=>x.id===spId);if(s)s.tools=s.tools.filter(t=>t.id!==id);}); setAS(s=>s?.id===spId?{...s,tools:s.tools.filter(t=>t.id!==id)}:s); toast$(t("تم الحذف","Deleted")); };
+  const addProc    = async (spId,f) => { const id=gid(),item={...f,id,specialtyId:spId}; await mut("addProcedure",{specialtyId:spId,...f},d=>{const s=d.specialties.find(x=>x.id===spId);if(s)s.procedures.push(item);}); setAS(s=>s?.id===spId?{...s,procedures:[...s.procedures,item]}:s); toast$(t("تم إضافة الإجراء","Procedure added")); };
+  const updProc    = async (spId,id,f) => { await mut("updateProcedure",{id,...f},d=>{const s=d.specialties.find(x=>x.id===spId);if(s){const i=s.procedures.findIndex(p=>p.id===id);if(i>=0)Object.assign(s.procedures[i],f);}}); setAS(s=>s?.id===spId?{...s,procedures:s.procedures.map(p=>p.id===id?{...p,...f}:p)}:s); toast$(t("تم التحديث","Updated")); };
+  const delProc    = async (spId,id) => { await mut("deleteProcedure",{id},d=>{const s=d.specialties.find(x=>x.id===spId);if(s)s.procedures=s.procedures.filter(p=>p.id!==id);}); setAS(s=>s?.id===spId?{...s,procedures:s.procedures.filter(p=>p.id!==id)}:s); toast$(t("تم الحذف","Deleted")); };
+  const addIPC     = async f => { const id=gid(),item={...f,id,steps:[]}; await mut("addIPCModule",f,d=>d.ipcModules.push(item)); toast$(t("تم الإضافة","Added")); };
+  const updIPC     = async (id,f) => { await mut("updateIPCModule",{id,...f},d=>{const i=d.ipcModules.findIndex(m=>m.id===id);if(i>=0)Object.assign(d.ipcModules[i],f);}); if(activeIPC?.id===id)setAI(m=>({...m,...f})); toast$(t("تم التحديث","Updated")); };
+  const delIPC     = async id => { if(!confirm(t("حذف الوحدة؟","Delete module?")))return; await mut("deleteIPCModule",{id},d=>{d.ipcModules=d.ipcModules.filter(m=>m.id!==id);}); if(activeIPC?.id===id){setAI(null);setPage("dashboard");} toast$(t("تم الحذف","Deleted")); };
+  const addStep    = async (modId,f) => { const id=gid(),item={...f,id,moduleId:modId}; await mut("addIPCStep",{moduleId:modId,...f},d=>{const m=d.ipcModules.find(x=>x.id===modId);if(m)m.steps.push(item);}); setAI(m=>m?.id===modId?{...m,steps:[...m.steps,item]}:m); toast$(t("تم الإضافة","Added")); };
+  const updStep    = async (modId,id,f) => { await mut("updateIPCStep",{id,...f},d=>{const m=d.ipcModules.find(x=>x.id===modId);if(m){const i=m.steps.findIndex(s=>s.id===id);if(i>=0)Object.assign(m.steps[i],f);}}); setAI(m=>m?.id===modId?{...m,steps:m.steps.map(s=>s.id===id?{...s,...f}:s)}:m); toast$(t("تم التحديث","Updated")); };
+  const delStep    = async (modId,id) => { await mut("deleteIPCStep",{id},d=>{const m=d.ipcModules.find(x=>x.id===modId);if(m)m.steps=m.steps.filter(s=>s.id!==id);}); setAI(m=>m?.id===modId?{...m,steps:m.steps.filter(s=>s.id!==id)}:m); toast$(t("تم الحذف","Deleted")); };
+  const addQ       = async (gId,f) => { const id=gid(),item={...f,id,groupId:gId}; await mut("addQuiz",{groupId:gId,...f},d=>{if(!d.quizzes[gId])d.quizzes[gId]=[];d.quizzes[gId].push(item);}); toast$(t("تم إضافة السؤال","Question added")); };
+  const updQ       = async (gId,id,f) => { await mut("updateQuiz",{id,...f},d=>{if(d.quizzes[gId]){const i=d.quizzes[gId].findIndex(x=>x.id===id);if(i>=0)Object.assign(d.quizzes[gId][i],f);}}); toast$(t("تم التحديث","Updated")); };
+  const delQ       = async (gId,id) => { await mut("deleteQuiz",{id},d=>{if(d.quizzes[gId])d.quizzes[gId]=d.quizzes[gId].filter(x=>x.id!==id);}); toast$(t("تم الحذف","Deleted")); };
+  const addUser    = async f => { const id=gid(),item={...f,id}; await mut("addUser",f,d=>d.users.push(item)); toast$(t("تم إضافة المستخدم","User added")); };
+  const delUser    = async id => { if(id===user?.id){toast$(t("لا يمكن حذف حسابك","Cannot delete own account"),"err");return;} await mut("deleteUser",{id},d=>{d.users=d.users.filter(u=>u.id!==id);}); toast$(t("تم الحذف","Deleted")); };
+
+  // ── STYLES (Admin: high-density, more professional, darker)
+  const S = {
+    app:  { direction:dir, fontFamily:lang==="ar"?"'Tajawal',sans-serif":"'Inter',sans-serif", background:"linear-gradient(150deg,#020508 0%,#050c18 55%,#040a14 100%)", minHeight:"100vh", color:"#e2e8f0" },
+    hdr:  { position:"sticky", top:0, zIndex:100, background:"rgba(2,5,8,0.94)", backdropFilter:"blur(24px)", borderBottom:"1px solid rgba(139,92,246,0.18)", padding:"10px 18px", display:"flex", alignItems:"center", justifyContent:"space-between" },
+    pg:   { padding:"18px 16px", maxWidth:960, margin:"0 auto" },
+    card: { background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:12, padding:15, marginBottom:11 },
+    inp:  { background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:8, padding:"8px 12px", color:"#e2e8f0", fontSize:13, width:"100%", boxSizing:"border-box", outline:"none", fontFamily:"inherit" },
+    ta:   { background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:8, padding:"8px 12px", color:"#e2e8f0", fontSize:13, width:"100%", boxSizing:"border-box", minHeight:60, resize:"vertical", fontFamily:"inherit" },
+    lbl:  { fontSize:11, color:V.muted, marginBottom:3, display:"block", fontWeight:700 },
+    pri:  { padding:"8px 16px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:800, fontSize:12, background:"linear-gradient(135deg,#8b5cf6,#6366f1)", color:"#fff", fontFamily:"inherit" },
+    sec:  (c="#8b5cf6") => ({ padding:"5px 12px", borderRadius:7, border:`1px solid ${c}30`, cursor:"pointer", fontWeight:700, fontSize:11, background:`${c}10`, color:c, fontFamily:"inherit" }),
+    del:  { padding:"4px 10px", borderRadius:6, border:"1px solid rgba(248,113,113,0.25)", cursor:"pointer", fontWeight:700, fontSize:11, background:"rgba(248,113,113,0.08)", color:V.red, fontFamily:"inherit" },
+    edt:  { padding:"4px 10px", borderRadius:6, border:"1px solid rgba(251,191,36,0.25)", cursor:"pointer", fontWeight:700, fontSize:11, background:"rgba(251,191,36,0.08)", color:V.yel, fontFamily:"inherit" },
+    row:  { display:"flex", gap:8, alignItems:"flex-start", padding:"8px 0", borderBottom:"1px solid rgba(255,255,255,0.04)" },
+    tag:  (c="#8b5cf6") => ({ background:`${c}18`, color:c, padding:"2px 7px", borderRadius:20, fontSize:10, fontWeight:700, flexShrink:0 }),
+    tab:  (a) => ({ padding:"7px 14px", borderRadius:8, cursor:"pointer", fontWeight:700, fontSize:12, border:"none", fontFamily:"inherit", background:a?"linear-gradient(135deg,#8b5cf6,#6366f1)":"rgba(255,255,255,0.04)", color:a?"#fff":"#64748b" }),
+    back: { display:"flex", alignItems:"center", gap:5, cursor:"pointer", color:"#a78bfa", fontWeight:700, fontSize:13, marginBottom:12 },
+    h2:   { fontSize:15, fontWeight:900, marginBottom:12, display:"flex", alignItems:"center", gap:7 },
+    logo: { fontWeight:900, fontSize:15, background:"linear-gradient(135deg,#8b5cf6,#a78bfa)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" },
+    sync: (s) => ({ padding:"2px 9px", borderRadius:20, fontSize:10, fontWeight:700, background:s==="ok"?"rgba(52,211,153,0.14)":s==="syncing"?"rgba(251,191,36,0.14)":s==="error"?"rgba(248,113,113,0.14)":"rgba(100,116,139,0.14)", color:s==="ok"?"#6ee7b7":s==="syncing"?"#fbbf24":s==="error"?"#fca5a5":"#94a3b8" }),
+    mdlBg:{ position:"fixed", inset:0, background:"rgba(0,0,0,0.82)", zIndex:500, display:"flex", alignItems:"center", justifyContent:"center", padding:14 },
+    mdl:  { background:"#050c18", border:"1px solid rgba(139,92,246,0.25)", borderRadius:14, padding:22, width:"100%", maxWidth:460, maxHeight:"90vh", overflowY:"auto" },
+    tst:  (tp) => ({ position:"fixed", top:16, [dir==="rtl"?"right":"left"]:16, padding:"10px 16px", borderRadius:10, zIndex:999, fontWeight:700, fontSize:13, fontFamily:"inherit", background:tp==="ok"?"rgba(16,185,129,0.94)":tp==="err"?"rgba(239,68,68,0.94)":"rgba(59,130,246,0.94)", color:"#fff" }),
+    grid2:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:9 },
+    kpi:  (c) => ({ background:`rgba(255,255,255,0.025)`, border:`1px solid ${c}22`, borderRadius:11, padding:"14px 16px", textAlign:"center" }),
+    step: (c) => ({ background:`${c}09`, border:`1px solid ${c}1c`, borderRadius:8, padding:"8px 12px", marginBottom:7, display:"flex", gap:8, alignItems:"flex-start" }),
+    spR:  { background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:10, padding:"11px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:10 },
+  };
+
+  // ── MODAL
+  const EditModal = () => {
+    if (!modal) return null;
+    const {type, item, extra} = modal;
+    const init = () => {
+      if (type==="spec")    return {nameAr:item?.nameAr||"",nameEn:item?.nameEn||"",icon:item?.icon||"🦷",color:item?.color||"#38bdf8"};
+      if (type==="tool")    return {nameAr:item?.nameAr||"",nameEn:item?.nameEn||"",useAr:item?.useAr||"",useEn:item?.useEn||""};
+      if (type==="proc")    return {nameAr:item?.nameAr||"",nameEn:item?.nameEn||""};
+      if (type==="ipcmod")  return {nameAr:item?.nameAr||"",nameEn:item?.nameEn||"",icon:item?.icon||"🛡",color:item?.color||"#60a5fa"};
+      if (type==="ipcstep") return {textAr:item?.textAr||"",textEn:item?.textEn||""};
+      if (type==="quiz")    return {questionAr:item?.questionAr||"",questionEn:item?.questionEn||"",optionsAr:(item?.optionsAr||["","","",""]).join("\n"),optionsEn:(item?.optionsEn||["","","",""]).join("\n"),answer:item?.answer||0};
+      if (type==="user")    return {name:"",username:"",password:"",role:"nurse"};
+      return {};
+    };
+    const [form, setForm] = useState(init);
+    const set = (k,v) => setForm(f=>({...f,[k]:v}));
+    const F = ({label,k,multi=false,inputType="text"}) => (
+      <div style={{marginBottom:10}}>
+        <label style={S.lbl}>{label}</label>
+        {multi?<textarea style={S.ta} value={form[k]||""} onChange={e=>set(k,e.target.value)}/>
+              :<input style={S.inp} type={inputType} value={form[k]||""} onChange={e=>set(k,e.target.value)}/>}
+      </div>
+    );
+    const save = () => {
+      if (type==="spec")    { item?updSpec(item.id,form):addSpec(form); }
+      if (type==="tool")    { item?updTool(extra.spId,item.id,form):addTool(extra.spId,form); }
+      if (type==="proc")    { item?updProc(extra.spId,item.id,form):addProc(extra.spId,form); }
+      if (type==="ipcmod")  { item?updIPC(item.id,form):addIPC(form); }
+      if (type==="ipcstep") { item?updStep(extra.modId,item.id,form):addStep(extra.modId,form); }
+      if (type==="quiz") {
+        const ar = form.optionsAr.split("\n").map(s=>s.trim()).filter(Boolean);
+        const en = form.optionsEn.split("\n").map(s=>s.trim()).filter(Boolean);
+        const q  = {...form, optionsAr:ar, optionsEn:en, answer:parseInt(form.answer)||0};
+        item ? updQ(extra.gId,item.id,q) : addQ(extra.gId,q);
+      }
+      if (type==="user") { addUser(form); }
+      setModal(null);
+    };
+    const titles = {spec:t("القسم","Specialty"),tool:t("أداة","Tool"),proc:t("إجراء","Procedure"),ipcmod:t("وحدة IPC","IPC Module"),ipcstep:t("خطوة","Step"),quiz:t("سؤال اختبار","Quiz Question"),user:t("مستخدم","User")};
+    return (
+      <div style={S.mdlBg} onClick={e=>e.target===e.currentTarget&&setModal(null)}>
+        <div style={S.mdl}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+            <div style={{fontWeight:900,fontSize:14}}>{item?t("تعديل","Edit"):t("إضافة","Add")} — {titles[type]}</div>
+            <button onClick={()=>setModal(null)} style={S.del}>✕</button>
+          </div>
+          {(type==="spec"||type==="tool"||type==="proc"||type==="ipcmod")&&<><F label={t("الاسم بالعربي","Name (Arabic)")} k="nameAr"/><F label={t("الاسم بالإنجليزي","Name (English)")} k="nameEn"/></>}
+          {(type==="spec"||type==="ipcmod")&&<><F label={t("الأيقونة","Icon (emoji)")} k="icon"/><F label={t("اللون","Color (hex)")} k="color"/></>}
+          {type==="tool"&&<><F label={t("الاستخدام بالعربي","Use (Arabic)")} k="useAr" multi/><F label={t("الاستخدام بالإنجليزي","Use (English)")} k="useEn" multi/></>}
+          {type==="ipcstep"&&<><F label={t("النص بالعربي","Step text (Arabic)")} k="textAr" multi/><F label={t("النص بالإنجليزي","Step text (English)")} k="textEn" multi/></>}
+          {type==="quiz"&&<>
+            <F label={t("السؤال عربي","Question (Arabic)")} k="questionAr" multi/>
+            <F label={t("السؤال إنجليزي","Question (English)")} k="questionEn" multi/>
+            <F label={t("الخيارات عربي — سطر/خيار","Options Arabic — one per line")} k="optionsAr" multi/>
+            <F label={t("الخيارات إنجليزي — سطر/خيار","Options English — one per line")} k="optionsEn" multi/>
+            <div style={{marginBottom:10}}>
+              <label style={S.lbl}>{t("رقم الإجابة الصحيحة (يبدأ من 0)","Correct answer index (0-based)")}</label>
+              <input style={S.inp} type="number" min="0" max="3" value={form.answer||0} onChange={e=>set("answer",e.target.value)}/>
+            </div>
+          </>}
+          {type==="user"&&<>
+            <F label={t("الاسم الكامل","Full name")} k="name"/>
+            <F label={t("اسم المستخدم","Username")} k="username"/>
+            <F label={t("كلمة المرور","Password")} k="password" inputType="password"/>
+            <div style={{marginBottom:10}}>
+              <label style={S.lbl}>{t("الدور","Role")}</label>
+              <select style={S.inp} value={form.role||"nurse"} onChange={e=>set("role",e.target.value)}>
+                <option value="nurse">{t("ممرضة","Nurse")}</option>
+                <option value="admin">{t("مدير","Admin")}</option>
+              </select>
+            </div>
+          </>}
+          <button onClick={save} style={{...S.pri,width:"100%",marginTop:6}}>{t("حفظ","Save")}</button>
+        </div>
+      </div>
+    );
+  };
+
+  const Header = () => (
+    <div style={S.hdr}>
+      <div style={{display:"flex", alignItems:"center", gap:8}}>
+        <span style={{fontSize:18}}>⚙️</span>
+        <span style={S.logo}>{t("لوحة إدارة المنصة","Platform Admin Portal")}</span>
+      </div>
+      <div style={{display:"flex", gap:6, alignItems:"center", flexWrap:"wrap"}}>
+        <span style={S.sync(sync)}>{sync==="ok"?t("✓ متزامن","✓ Synced"):sync==="syncing"?t("...","..."):sync==="error"?t("خطأ","Err"):t("محلي","Local")}</span>
+        {GAS_OK()&&sync!=="syncing"&&<button onClick={()=>syncAll(token)} style={S.sec()}>🔄</button>}
+        <button onClick={()=>setLang(l=>l==="ar"?"en":"ar")} style={S.sec()}>{lang==="ar"?"EN":"ع"}</button>
+        <div style={{display:"flex", alignItems:"center", gap:6, padding:"4px 10px", borderRadius:8, background:"rgba(139,92,246,0.1)", border:"1px solid rgba(139,92,246,0.2)", fontSize:12}}>
+          <span style={{color:"#a78bfa"}}>⚙️</span>
+          <span style={{fontWeight:700, color:"#a78bfa"}}>{user.name}</span>
+        </div>
+        <button onClick={onLogout} style={{...S.sec(V.red), fontSize:11}}>↩ {t("خروج","Logout")}</button>
+      </div>
+    </div>
+  );
+
+  // ── SPECIALTY DETAIL PAGE (Admin)
+  if (page==="spec_detail" && activeSpec) {
+    const sp = activeSpec;
+    const spQ = db.quizzes[sp.id] || [];
+    return (
+      <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+        <Header/>{toast&&<div style={S.tst(toast.type)}>{toast.msg}</div>}
+        <EditModal/>
+        <div style={S.pg}>
+          <div style={S.back} onClick={()=>setPage("dashboard")}>‹ {t("لوحة التحكم","Dashboard")}</div>
+          <div style={{...S.card, background:`linear-gradient(135deg,${sp.color}0e,${sp.color}03)`, border:`1px solid ${sp.color}22`, marginBottom:14}}>
+            <div style={{display:"flex", alignItems:"center", gap:11, flexWrap:"wrap"}}>
+              <span style={{fontSize:30}}>{sp.icon}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:17, fontWeight:900}}>{sp.nameAr}</div>
+                <div style={{fontSize:11, color:V.muted}}>{sp.nameEn}</div>
+              </div>
+              <div style={{display:"flex", gap:6}}>
+                <button onClick={()=>setModal({type:"spec",item:sp})} style={S.edt}>✏️ {t("تعديل","Edit")}</button>
+                <button onClick={()=>delSpec(sp.id)} style={S.del}>🗑 {t("حذف","Delete")}</button>
+              </div>
+            </div>
+          </div>
+
+          {/* Tools */}
+          <div style={S.card}>
+            <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:11}}>
+              <div style={S.h2}>🔧 {t("الأدوات","Tools")} <span style={S.tag()}>{sp.tools?.length||0}</span></div>
+              <button onClick={()=>setModal({type:"tool",item:null,extra:{spId:sp.id}})} style={S.sec()}>➕ {t("إضافة","Add")}</button>
+            </div>
+            {!(sp.tools?.length) && <div style={{color:V.muted,textAlign:"center",padding:14,fontSize:12}}>{t("لا توجد أدوات بعد","No tools yet")}</div>}
+            {(sp.tools||[]).map((tool,i)=>(
+              <div key={tool.id} style={S.row}>
+                <span style={S.tag()}>{i+1}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:13}}>{tool.nameAr} <span style={{color:V.muted,fontSize:11}}>/ {tool.nameEn}</span></div>
+                  <div style={{fontSize:12,color:"#94a3b8",marginTop:2}}>🎯 {tool.useAr}</div>
+                </div>
+                <div style={{display:"flex",gap:5}}>
+                  <button onClick={()=>setModal({type:"tool",item:tool,extra:{spId:sp.id}})} style={S.edt}>✏️</button>
+                  <button onClick={()=>delTool(sp.id,tool.id)} style={S.del}>🗑</button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Procedures */}
+          <div style={S.card}>
+            <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:11}}>
+              <div style={S.h2}>📋 {t("الإجراءات","Procedures")} <span style={S.tag(V.grn)}>{sp.procedures?.length||0}</span></div>
+              <button onClick={()=>setModal({type:"proc",item:null,extra:{spId:sp.id}})} style={S.sec(V.grn)}>➕ {t("إضافة","Add")}</button>
+            </div>
+            {!(sp.procedures?.length) && <div style={{color:V.muted,textAlign:"center",padding:14,fontSize:12}}>{t("لا توجد إجراءات","No procedures yet")}</div>}
+            {(sp.procedures||[]).map((proc,i)=>(
+              <div key={proc.id} style={S.row}>
+                <span style={S.tag(V.grn)}>{i+1}</span>
+                <span style={{flex:1,fontSize:13,fontWeight:600}}>{t(proc.nameAr,proc.nameEn)}</span>
+                <div style={{display:"flex",gap:5}}>
+                  <button onClick={()=>setModal({type:"proc",item:proc,extra:{spId:sp.id}})} style={S.edt}>✏️</button>
+                  <button onClick={()=>delProc(sp.id,proc.id)} style={S.del}>🗑</button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Quiz Questions */}
+          <div style={S.card}>
+            <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:11}}>
+              <div style={S.h2}>🧪 {t("أسئلة الاختبار","Quiz Questions")} <span style={S.tag(V.yel)}>{spQ.length}</span></div>
+              <button onClick={()=>setModal({type:"quiz",item:null,extra:{gId:sp.id}})} style={S.sec(V.yel)}>➕ {t("إضافة سؤال","Add Q")}</button>
+            </div>
+            {spQ.map((q,i)=>(
+              <div key={q.id} style={S.row}>
+                <span style={S.tag(V.yel)}>{i+1}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:12,fontWeight:700}}>{q.questionAr}</div>
+                  <div style={{fontSize:11,color:V.muted}}>✓ {(q.optionsAr||[])[q.answer||0]}</div>
+                </div>
+                <div style={{display:"flex",gap:5}}>
+                  <button onClick={()=>setModal({type:"quiz",item:q,extra:{gId:sp.id}})} style={S.edt}>✏️</button>
+                  <button onClick={()=>delQ(sp.id,q.id)} style={S.del}>🗑</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── IPC DETAIL PAGE (Admin)
+  if (page==="ipc_detail" && activeIPC) {
+    const mod = activeIPC;
+    const qKey = "ipc_"+mod.id;
+    const mQ   = db.quizzes[qKey] || [];
+    return (
+      <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+        <Header/>{toast&&<div style={S.tst(toast.type)}>{toast.msg}</div>}
+        <EditModal/>
+        <div style={S.pg}>
+          <div style={S.back} onClick={()=>setPage("dashboard")}>‹ {t("لوحة التحكم","Dashboard")}</div>
+          <div style={{...S.card, background:`linear-gradient(135deg,${mod.color}0e,${mod.color}03)`, border:`1px solid ${mod.color}22`}}>
+            <div style={{display:"flex", alignItems:"center", gap:10, flexWrap:"wrap"}}>
+              <span style={{fontSize:28}}>{mod.icon}</span>
+              <div style={{flex:1}}><div style={{fontSize:16, fontWeight:900}}>{t(mod.nameAr, mod.nameEn)}</div></div>
+              <div style={{display:"flex", gap:6}}>
+                <button onClick={()=>setModal({type:"ipcmod",item:mod})} style={S.edt}>✏️</button>
+                <button onClick={()=>delIPC(mod.id)} style={S.del}>🗑 {t("حذف","Del")}</button>
+              </div>
+            </div>
+          </div>
+
+          <div style={S.card}>
+            <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:11}}>
+              <div style={S.h2}>📝 {t("الخطوات","Steps")} <span style={S.tag(mod.color)}>{mod.steps?.length||0}</span></div>
+              <button onClick={()=>setModal({type:"ipcstep",item:null,extra:{modId:mod.id}})} style={S.sec(mod.color)}>➕ {t("إضافة","Add")}</button>
+            </div>
+            {(mod.steps||[]).map((step,i)=>(
+              <div key={step.id} style={S.step(mod.color)}>
+                <span style={{...S.tag(mod.color), marginInlineEnd:8}}>{i+1}</span>
+                <div style={{flex:1, fontSize:12, lineHeight:1.7}}>{t(step.textAr, step.textEn)}</div>
+                <div style={{display:"flex", gap:5, flexShrink:0}}>
+                  <button onClick={()=>setModal({type:"ipcstep",item:step,extra:{modId:mod.id}})} style={S.edt}>✏️</button>
+                  <button onClick={()=>delStep(mod.id,step.id)} style={S.del}>🗑</button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={S.card}>
+            <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:11}}>
+              <div style={S.h2}>🧪 {t("أسئلة الاختبار","Quiz Questions")} <span style={S.tag(V.yel)}>{mQ.length}</span></div>
+              <button onClick={()=>setModal({type:"quiz",item:null,extra:{gId:qKey}})} style={S.sec(V.yel)}>➕</button>
+            </div>
+            {mQ.map((q,i)=>(
+              <div key={q.id} style={S.row}>
+                <span style={S.tag(V.yel)}>{i+1}</span>
+                <div style={{flex:1, fontSize:12}}>{q.questionAr}</div>
+                <div style={{display:"flex",gap:5}}>
+                  <button onClick={()=>setModal({type:"quiz",item:q,extra:{gId:qKey}})} style={S.edt}>✏️</button>
+                  <button onClick={()=>delQ(qKey,q.id)} style={S.del}>🗑</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── MAIN DASHBOARD
+  const totalTools  = db.specialties.reduce((a,s)=>a+(s.tools?.length||0),0);
+  const totalProcs  = db.specialties.reduce((a,s)=>a+(s.procedures?.length||0),0);
+  const totalQs     = Object.values(db.quizzes).reduce((a,q)=>a+q.length,0);
+  const nurses      = db.users.filter(u=>u.role==="nurse");
+  const admins      = db.users.filter(u=>u.role==="admin");
+
+  return (
+    <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+      <Header/>{toast&&<div style={S.tst(toast.type)}>{toast.msg}</div>}
+      <EditModal/>
+      <div style={S.pg}>
+
+        {/* KPI Row */}
+        <div style={{...S.grid2, gridTemplateColumns:"repeat(4,1fr)", marginBottom:14}}>
+          {[
+            [db.specialties.length, t("قسم","Specialties"), "🦷", V.hi],
+            [totalTools,            t("أداة","Tools"),       "🔧", V.pur],
+            [totalProcs,            t("إجراء","Procedures"), "📋", V.grn],
+            [totalQs,               t("سؤال اختبار","Quiz Qs"),"🧪", V.yel],
+          ].map(([n,l,ic,c])=>(
+            <div key={l} style={S.kpi(c)}>
+              <div style={{fontSize:20, marginBottom:4}}>{ic}</div>
+              <div style={{fontSize:22, fontWeight:900, color:c}}>{n}</div>
+              <div style={{fontSize:10, color:V.muted}}>{l}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Tabs */}
+        <div style={{display:"flex", gap:5, marginBottom:14, flexWrap:"wrap"}}>
+          {["specialties","ipc","users","settings"].map(t2=>(
+            <button key={t2} style={S.tab(tab===t2)} onClick={()=>setTab(t2)}>
+              {t2==="specialties"?t("🦷 الأقسام","🦷 Specialties"):t2==="ipc"?t("🛡 IPC","🛡 IPC"):t2==="users"?t("👥 المستخدمون","👥 Users"):t("⚙️ إعدادات","⚙️ Settings")}
+            </button>
+          ))}
+        </div>
+
+        {/* SPECIALTIES TAB */}
+        {tab==="specialties"&&<div>
+          <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:11}}>
+            <div style={{fontWeight:800, fontSize:14}}>{t("الأقسام الطبية","Medical Specialties")} ({db.specialties.length})</div>
+            <button onClick={()=>setModal({type:"spec",item:null})} style={S.sec()}>➕ {t("إضافة قسم","New Specialty")}</button>
+          </div>
+          {db.specialties.map(sp=>(
+            <div key={sp.id} style={S.spR}>
+              <span style={{fontSize:20}}>{sp.icon}</span>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:800,fontSize:13}}>{sp.nameAr}</div>
+                <div style={{fontSize:11,color:V.muted,display:"flex",gap:10,marginTop:2}}>
+                  <span>🔧 {sp.tools?.length||0} {t("أداة","tools")}</span>
+                  <span>📋 {sp.procedures?.length||0} {t("إجراء","procs")}</span>
+                  <span>🧪 {(db.quizzes[sp.id]||[]).length} {t("سؤال","Qs")}</span>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:5}}>
+                <button onClick={()=>{setAS(sp);setPage("spec_detail");}} style={S.sec()}>📂 {t("تفاصيل","Details")}</button>
+                <button onClick={()=>setModal({type:"spec",item:sp})} style={S.edt}>✏️</button>
+                <button onClick={()=>delSpec(sp.id)} style={S.del}>🗑</button>
+              </div>
+            </div>
+          ))}
+        </div>}
+
+        {/* IPC TAB */}
+        {tab==="ipc"&&<div>
+          <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:11}}>
+            <div style={{fontWeight:800,fontSize:14}}>{t("وحدات مكافحة العدوى","Infection Control Modules")} ({db.ipcModules.length})</div>
+            <button onClick={()=>setModal({type:"ipcmod",item:null})} style={S.sec()}>➕ {t("وحدة جديدة","New Module")}</button>
+          </div>
+          {db.ipcModules.map(mod=>(
+            <div key={mod.id} style={S.spR}>
+              <span style={{fontSize:20}}>{mod.icon}</span>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:800,fontSize:13}}>{mod.nameAr}</div>
+                <div style={{fontSize:11,color:V.muted,display:"flex",gap:10,marginTop:2}}>
+                  <span>📝 {mod.steps?.length||0} {t("خطوة","steps")}</span>
+                  <span>🧪 {(db.quizzes["ipc_"+mod.id]||[]).length} {t("سؤال","Qs")}</span>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:5}}>
+                <button onClick={()=>{setAI(mod);setPage("ipc_detail");}} style={S.sec()}>📂 {t("تفاصيل","Details")}</button>
+                <button onClick={()=>setModal({type:"ipcmod",item:mod})} style={S.edt}>✏️</button>
+                <button onClick={()=>delIPC(mod.id)} style={S.del}>🗑</button>
+              </div>
+            </div>
+          ))}
+        </div>}
+
+        {/* USERS TAB */}
+        {tab==="users"&&<div>
+          <div style={{...S.grid2, marginBottom:12}}>
+            {[[nurses.length,t("ممرضة","Nurses"),V.grn,"👩‍⚕️"],[admins.length,t("مدير","Admins"),V.pur,"⚙️"]].map(([n,l,c,ic])=>(
+              <div key={l} style={S.kpi(c)}><div style={{fontSize:22}}>{ic}</div><div style={{fontSize:20,fontWeight:900,color:c}}>{n}</div><div style={{fontSize:11,color:V.muted}}>{l}</div></div>
+            ))}
+          </div>
+          <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:11}}>
+            <div style={{fontWeight:800,fontSize:13}}>{t("قائمة المستخدمين","User List")} ({db.users.length})</div>
+            <button onClick={()=>setModal({type:"user",item:null})} style={S.sec()}>➕ {t("مستخدم جديد","New User")}</button>
+          </div>
+          {db.users.map(u=>(
+            <div key={u.id} style={S.spR}>
+              <div style={{width:32,height:32,borderRadius:"50%",background:u.role==="admin"?"rgba(139,92,246,0.2)":"rgba(52,211,153,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>
+                {u.role==="admin"?"⚙️":"👩‍⚕️"}
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:13}}>{u.name}</div>
+                <div style={{fontSize:11,color:V.muted}}>@{u.username}</div>
+              </div>
+              <span style={S.tag(u.role==="admin"?V.pur:V.grn)}>{u.role}</span>
+              {u.id!==user?.id&&<button onClick={()=>delUser(u.id)} style={S.del}>🗑</button>}
+            </div>
+          ))}
+        </div>}
+
+        {/* SETTINGS TAB */}
+        {tab==="settings"&&<div>
+          <div style={S.card}>
+            <div style={{fontWeight:900,marginBottom:11,fontSize:13}}>🔗 {t("إعدادات GAS","GAS Connection")}</div>
+            <div style={{background:"rgba(0,0,0,0.3)",padding:"8px 12px",borderRadius:8,fontSize:11,color:"#94a3b8",wordBreak:"break-all",marginBottom:10}}>{GAS_URL}</div>
+            <span style={S.tag(GAS_OK()?V.grn:V.yel)}>{GAS_OK()?t("✓ متصل","✓ Connected"):t("⚠️ غير مضبوط","⚠️ Not configured")}</span>
+          </div>
+          <div style={S.card}>
+            <div style={{fontWeight:800,marginBottom:10,fontSize:13}}>📋 {t("خطوات الربط","Setup Steps")}</div>
+            {[
+              t("1. افتح Code.gs في Google Apps Script","1. Open Code.gs in Google Apps Script"),
+              t("2. ضع معرّف الـ Spreadsheet في SS_ID","2. Set your Spreadsheet ID in SS_ID"),
+              t("3. شغّل دالة setupSpreadsheet() مرة واحدة","3. Run setupSpreadsheet() once from editor"),
+              t("4. انشر: Deploy > New deployment > Web App","4. Deploy > New deployment > Web app"),
+              t("5. Execute as: Me | Who has access: Anyone","5. Execute as: Me | Who has access: Anyone"),
+              t("6. انسخ رابط النشر وضعه في GAS_URL بهذا الملف","6. Paste the Deployment URL into GAS_URL in this file"),
+            ].map((s,i)=><div key={i} style={{fontSize:12,color:"#94a3b8",marginBottom:6}}>• {s}</div>)}
+          </div>
+          <div style={S.card}>
+            <div style={{fontWeight:800,marginBottom:8,fontSize:13}}>📊 {t("هيكل Google Sheets","Sheets Structure")}</div>
+            {["Users","Specialties","Tools","Procedures","IPC_Modules","IPC_Steps","Quizzes","Logs"].map(sh=>(
+              <div key={sh} style={{...S.row,padding:"5px 0"}}><span style={S.tag()}>{sh}</span></div>
+            ))}
+          </div>
+        </div>}
+      </div>
+    </div>
+  );
+}
+
+    // Mount — loading screen is hidden from inside App via useEffect
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(App));
+  </script>
+</body>
+</html>
