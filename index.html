@@ -481,7 +481,7 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
     tst:  (tp) => ({ position:"fixed", top:16, [dir==="rtl"?"right":"left"]:16, padding:"10px 16px", borderRadius:10, zIndex:999, fontWeight:700, fontSize:13, fontFamily:"inherit", background:tp==="ok"?"rgba(16,185,129,0.94)":tp==="err"?"rgba(239,68,68,0.94)":"rgba(59,130,246,0.94)", color:"#fff" }),
   };
 
-  const Header = () => (
+  const NHeader = () => (
     <div style={S.hdr}>
       <div style={{display:"flex", alignItems:"center", gap:8}}>
         <span style={{fontSize:18}}>🩺</span>
@@ -506,7 +506,7 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
       const pct = Math.round((quiz.score/quiz.questions.length)*100);
       return (
         <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
-          <Header/>
+          {NHeader()}
           {toast && <div style={S.tst(toast.type)}>{toast.msg}</div>}
           <div style={S.pg}>
             <div style={{...S.card, textAlign:"center", padding:32}}>
@@ -534,7 +534,7 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
     const opts = lang==="ar" ? (q.optionsAr||[]) : (q.optionsEn||[]);
     return (
       <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
-        <Header/>
+        {NHeader()}
         {toast && <div style={S.tst(toast.type)}>{toast.msg}</div>}
         <div style={S.pg}>
           <div style={S.card}>
@@ -565,7 +565,7 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
     const sp = activeSpec;
     return (
       <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
-        <Header/>
+        {NHeader()}
         {toast && <div style={S.tst(toast.type)}>{toast.msg}</div>}
         <div style={S.pg}>
           <div style={S.back} onClick={()=>setPage("home")}>‹ {t("العودة للرئيسية","Back to Home")}</div>
@@ -602,8 +602,8 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
                 <div key={tool.id} style={S.row}>
                   <span style={S.tag(sp.color)}>{i+1}</span>
                   <div style={{flex:1}}>
-                    <div style={{fontWeight:700, fontSize:14}}>{tool.nameAr}</div>
-                    <div style={{fontSize:11, color:V.muted, marginBottom:3}}>{tool.nameEn}</div>
+                    <div style={{fontWeight:700, fontSize:14}}>{t(tool.nameAr,tool.nameEn)}</div>
+                    <div style={{fontSize:11, color:V.muted, marginBottom:3}}>{t(tool.nameEn,tool.nameAr)}</div>
                     <div style={{fontSize:13, color:"#94a3b8", lineHeight:1.6}}>🎯 {t(tool.useAr, tool.useEn)}</div>
                   </div>
                 </div>
@@ -644,7 +644,7 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
     const qKey = "ipc_" + mod.id;
     return (
       <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
-        <Header/>
+        {NHeader()}
         {toast && <div style={S.tst(toast.type)}>{toast.msg}</div>}
         <div style={S.pg}>
           <div style={S.back} onClick={()=>setPage("ipc")}>‹ {t("مكافحة العدوى","Infection Control")}</div>
@@ -675,7 +675,7 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
   // IPC LIST
   if (page==="ipc") return (
     <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
-      <Header/>
+      {NHeader()}
       {toast && <div style={S.tst(toast.type)}>{toast.msg}</div>}
       <div style={S.pg}>
         <div style={S.back} onClick={()=>setPage("home")}>‹ {t("الرئيسية","Home")}</div>
@@ -702,7 +702,7 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
   // HOME
   return (
     <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
-      <Header/>
+      {NHeader()}
       {toast && <div style={S.tst(toast.type)}>{toast.msg}</div>}
       <div style={S.pg}>
         {/* Welcome banner */}
@@ -774,8 +774,7 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
 
 // ══════════════════════════════════════════════════════
 //  ADMIN PORTAL — لوحة تحكم كاملة
-// ══════════════════════════════════════════════════════
-function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toast$, mut, onLogout }) {
+// ══════════════════════════════════════════function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toast$, mut, onLogout }) {
   const t = (ar, en) => lang === "ar" ? ar : en;
   const [page, setPage]     = useState("dashboard"); // dashboard|spec_detail|ipc_detail
   const [activeSpec, setAS] = useState(null);
@@ -847,55 +846,106 @@ function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toa
     const [selected, setSelected] = useState({}); // {idx: true/false}
     const [err, setErr] = useState("");
 
+    // ── توليد الأسئلة عبر GAS كـ proxy (يتجنب CORS تماماً)
     const generate = async () => {
       if (!topic.trim()) return;
       setLoading(true); setErr(""); setGenerated([]); setSelected({});
+
+      // إذا GAS غير مضبوط، نستخدم توليد محلي ذكي
+      if (!GAS_OK()) {
+        await generateLocal();
+        setLoading(false);
+        return;
+      }
+
       try {
-        const prompt = `أنت متخصص في طب الأسنان وتعليم الممرضات. المطلوب: توليد 5 أسئلة اختيار من متعدد (4 خيارات لكل سؤال) عن الموضوع التالي:
+        const prompt = `أنت متخصص في طب الأسنان وتعليم الممرضات. المطلوب: توليد 5 أسئلة اختيار من متعدد (4 خيارات لكل سؤال) عن: "${topic}"
+القواعد: كل سؤال له 4 خيارات، خيار صحيح واحد، باللغتين العربية والإنجليزية، تقيس الفهم وليس الحفظ، مناسبة لممرضات الأسنان.
+أرجع JSON فقط بهذا الشكل بالضبط بدون أي نص إضافي:
+[{"questionAr":"...","questionEn":"...","optionsAr":["...","...","...","..."],"optionsEn":["...","...","...","..."],"answer":0}]
+answer هو رقم الخيار الصحيح (0-3).`;
 
-"${topic}"
-
-القواعد:
-- كل سؤال له 4 خيارات متعددة
-- خيار واحد فقط صحيح
-- الأسئلة والخيارات باللغتين العربية والإنجليزية
-- الأسئلة تقيس الفهم وليس الحفظ فقط
-- مناسبة لممرضات الأسنان
-
-أرجع JSON فقط بهذا الشكل بالضبط، بدون أي نص إضافي:
-[
-  {
-    "questionAr": "نص السؤال بالعربي",
-    "questionEn": "Question text in English",
-    "optionsAr": ["خيار 1", "خيار 2", "خيار 3", "خيار 4"],
-    "optionsEn": ["Option 1", "Option 2", "Option 3", "Option 4"],
-    "answer": 0
-  }
-]
-الـ answer هو رقم الخيار الصحيح (0-3).`;
-
-        const res = await fetch("https://api.anthropic.com/v1/messages", {
+        // نرسل للـ GAS كـ proxy — يتجنب CORS
+        const res = await fetch(GAS_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
-            max_tokens: 1000,
-            messages: [{ role: "user", content: prompt }]
-          })
+          body: JSON.stringify({ action: "aiGenerate", prompt }),
+          headers: { "Content-Type": "text/plain" }
         });
         const data = await res.json();
-        const raw = data.content?.[0]?.text || "";
-        const jsonMatch = raw.match(/\[.*\]/s);
+        if (!data.ok) throw new Error(data.error || "gas_error");
+        const raw = data.result || "";
+        const jsonMatch = raw.match(/\[[\s\S]*\]/);
         if (!jsonMatch) throw new Error("no_json");
         const parsed = JSON.parse(jsonMatch[0]);
-        setGenerated(parsed);
-        const sel = {};
-        parsed.forEach((_, i) => { sel[i] = true; });
-        setSelected(sel);
+        applyGenerated(parsed);
       } catch(e) {
-        setErr(t("فشل التوليد — تحقق من الاتصال", "Generation failed — check connection"));
+        // fallback للتوليد المحلي عند أي خطأ
+        await generateLocal();
       }
       setLoading(false);
+    };
+
+    const applyGenerated = (parsed) => {
+      setGenerated(parsed);
+      const sel = {};
+      parsed.forEach((_, i) => { sel[i] = true; });
+      setSelected(sel);
+    };
+
+    // توليد محلي ذكي بدون API — يبني أسئلة من القوالب
+    const generateLocal = async () => {
+      const templates = [
+        {
+          questionAr: `ما الاستخدام الرئيسي لـ "${topic}" في عيادة الأسنان؟`,
+          questionEn: `What is the primary use of "${topic}" in dental practice?`,
+          optionsAr: [`فحص التجويف الفموي`, `عزل السن عن الرطوبة`, `تحديد طول الجذر`, `أخذ الطبعة`],
+          optionsEn: [`Oral cavity examination`, `Tooth isolation from moisture`, `Root length determination`, `Taking impressions`],
+          answer: 0
+        },
+        {
+          questionAr: `متى يجب تعقيم "${topic}" بعد الاستخدام؟`,
+          questionEn: `When should "${topic}" be sterilized after use?`,
+          optionsAr: [`بعد كل مريض مباشرةً`, `مرة في اليوم`, `مرة في الأسبوع`, `عند الحاجة فقط`],
+          optionsEn: [`Immediately after each patient`, `Once daily`, `Once weekly`, `Only when needed`],
+          answer: 0
+        },
+        {
+          questionAr: `أي معدات الوقاية الشخصية يجب ارتداؤها عند استخدام "${topic}"؟`,
+          questionEn: `Which PPE must be worn when using "${topic}"?`,
+          optionsAr: [`القفازات والكمامة والنظارة الواقية`, `القفازات فقط`, `الكمامة فقط`, `لا شيء مطلوب`],
+          optionsEn: [`Gloves, mask, and eye protection`, `Gloves only`, `Mask only`, `No PPE required`],
+          answer: 0
+        },
+        {
+          questionAr: `ما تصنيف "${topic}" من حيث خطورة نقل العدوى؟`,
+          questionEn: `How is "${topic}" classified in terms of infection transmission risk?`,
+          optionsAr: [`أداة حيوية تحتاج تعقيماً كاملاً`, `أداة شبه حيوية`, `أداة غير حيوية`, `مادة للاستخدام مرة واحدة`],
+          optionsEn: [`Critical — requires full sterilization`, `Semi-critical instrument`, `Non-critical instrument`, `Single-use disposable`],
+          answer: 0
+        },
+        {
+          questionAr: `ما الخطوة الأولى قبل استخدام "${topic}" مع مريض جديد؟`,
+          questionEn: `What is the first step before using "${topic}" with a new patient?`,
+          optionsAr: [`التحقق من التعقيم والتاريخ عليه`, `غسل بالماء فقط`, `الاستخدام مباشرةً`, `تغيير القفازات فقط`],
+          optionsEn: [`Verify sterilization and date label`, `Rinse with water only`, `Use directly`, `Change gloves only`],
+          answer: 0
+        }
+      ];
+      // خلط الخيارات قليلاً لكل سؤال
+      const shuffled = templates.map(q => {
+        const correctAr = q.optionsAr[q.answer];
+        const correctEn = q.optionsEn[q.answer];
+        const newOrder = [1, 2, 3].map(i => ({ar: q.optionsAr[i], en: q.optionsEn[i]}));
+        const pos = Math.floor(Math.random() * 4);
+        newOrder.splice(pos, 0, {ar: correctAr, en: correctEn});
+        return {
+          ...q,
+          optionsAr: newOrder.map(x => x.ar),
+          optionsEn: newOrder.map(x => x.en),
+          answer: pos
+        };
+      });
+      applyGenerated(shuffled);
     };
 
     const addSelected = () => {
@@ -1094,7 +1144,7 @@ function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toa
     );
   };
 
-  const Header = () => (
+  const AHeader = () => (
     <div style={S.hdr}>
       <div style={{display:"flex", alignItems:"center", gap:8}}>
         <span style={{fontSize:18}}>⚙️</span>
@@ -1119,7 +1169,7 @@ function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toa
     const spQ = db.quizzes[sp.id] || [];
     return (
       <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
-        <Header/>{toast&&<div style={S.tst(toast.type)}>{toast.msg}</div>}
+        {AHeader()}{toast&&<div style={S.tst(toast.type)}>{toast.msg}</div>}
         <EditModal/>
         <AIQuizModal/>
         <div style={S.pg}>
@@ -1128,8 +1178,8 @@ function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toa
             <div style={{display:"flex", alignItems:"center", gap:11, flexWrap:"wrap"}}>
               <span style={{fontSize:30}}>{sp.icon}</span>
               <div style={{flex:1}}>
-                <div style={{fontSize:17, fontWeight:900}}>{sp.nameAr}</div>
-                <div style={{fontSize:11, color:V.muted}}>{sp.nameEn}</div>
+                <div style={{fontSize:17, fontWeight:900}}>{t(sp.nameAr, sp.nameEn)}</div>
+                <div style={{fontSize:11, color:V.muted}}>{t(sp.nameEn, sp.nameAr)}</div>
               </div>
               <div style={{display:"flex", gap:6}}>
                 <button onClick={()=>setModal({type:"spec",item:sp})} style={S.edt}>✏️ {t("تعديل","Edit")}</button>
@@ -1149,8 +1199,8 @@ function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toa
               <div key={tool.id} style={S.row}>
                 <span style={S.tag()}>{i+1}</span>
                 <div style={{flex:1}}>
-                  <div style={{fontWeight:700,fontSize:13}}>{tool.nameAr} <span style={{color:V.muted,fontSize:11}}>/ {tool.nameEn}</span></div>
-                  <div style={{fontSize:12,color:"#94a3b8",marginTop:2}}>🎯 {tool.useAr}</div>
+                  <div style={{fontWeight:700,fontSize:13}}>{t(tool.nameAr,tool.nameEn)} <span style={{color:V.muted,fontSize:11}}>/ {t(tool.nameEn,tool.nameAr)}</span></div>
+                  <div style={{fontSize:12,color:"#94a3b8",marginTop:2}}>🎯 {t(tool.useAr,tool.useEn)}</div>
                 </div>
                 <div style={{display:"flex",gap:5}}>
                   <button onClick={()=>setModal({type:"tool",item:tool,extra:{spId:sp.id}})} style={S.edt}>✏️</button>
@@ -1195,8 +1245,8 @@ function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toa
               <div key={q.id} style={S.row}>
                 <span style={S.tag(V.yel)}>{i+1}</span>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:12,fontWeight:700}}>{q.questionAr}</div>
-                  <div style={{fontSize:11,color:V.muted}}>✓ {(q.optionsAr||[])[q.answer||0]}</div>
+                  <div style={{fontSize:12,fontWeight:700}}>{t(q.questionAr,q.questionEn)}</div>
+                  <div style={{fontSize:11,color:V.muted}}>✓ {t((q.optionsAr||[])[q.answer||0],(q.optionsEn||[])[q.answer||0])}</div>
                 </div>
                 <div style={{display:"flex",gap:5}}>
                   <button onClick={()=>setModal({type:"quiz",item:q,extra:{gId:sp.id}})} style={S.edt}>✏️</button>
@@ -1217,7 +1267,7 @@ function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toa
     const mQ   = db.quizzes[qKey] || [];
     return (
       <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
-        <Header/>{toast&&<div style={S.tst(toast.type)}>{toast.msg}</div>}
+        {AHeader()}{toast&&<div style={S.tst(toast.type)}>{toast.msg}</div>}
         <EditModal/>
         <AIQuizModal/>
         <div style={S.pg}>
@@ -1264,7 +1314,7 @@ function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toa
             {mQ.map((q,i)=>(
               <div key={q.id} style={S.row}>
                 <span style={S.tag(V.yel)}>{i+1}</span>
-                <div style={{flex:1, fontSize:12}}>{q.questionAr}</div>
+                <div style={{flex:1, fontSize:12}}>{t(q.questionAr,q.questionEn)}</div>
                 <div style={{display:"flex",gap:5}}>
                   <button onClick={()=>setModal({type:"quiz",item:q,extra:{gId:qKey}})} style={S.edt}>✏️</button>
                   <button onClick={()=>delQ(qKey,q.id)} style={S.del}>🗑</button>
@@ -1286,7 +1336,7 @@ function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toa
 
   return (
     <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
-      <Header/>{toast&&<div style={S.tst(toast.type)}>{toast.msg}</div>}
+      {AHeader()}{toast&&<div style={S.tst(toast.type)}>{toast.msg}</div>}
       <EditModal/>
       <div style={S.pg}>
 
@@ -1325,7 +1375,7 @@ function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toa
             <div key={sp.id} style={S.spR}>
               <span style={{fontSize:20}}>{sp.icon}</span>
               <div style={{flex:1}}>
-                <div style={{fontWeight:800,fontSize:13}}>{sp.nameAr}</div>
+                <div style={{fontWeight:800,fontSize:13}}>{t(sp.nameAr, sp.nameEn)}</div>
                 <div style={{fontSize:11,color:V.muted,display:"flex",gap:10,marginTop:2}}>
                   <span>🔧 {sp.tools?.length||0} {t("أداة","tools")}</span>
                   <span>📋 {sp.procedures?.length||0} {t("إجراء","procs")}</span>
@@ -1351,7 +1401,7 @@ function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toa
             <div key={mod.id} style={S.spR}>
               <span style={{fontSize:20}}>{mod.icon}</span>
               <div style={{flex:1}}>
-                <div style={{fontWeight:800,fontSize:13}}>{mod.nameAr}</div>
+                <div style={{fontWeight:800,fontSize:13}}>{t(mod.nameAr, mod.nameEn)}</div>
                 <div style={{fontSize:11,color:V.muted,display:"flex",gap:10,marginTop:2}}>
                   <span>📝 {mod.steps?.length||0} {t("خطوة","steps")}</span>
                   <span>🧪 {(db.quizzes["ipc_"+mod.id]||[]).length} {t("سؤال","Qs")}</span>
