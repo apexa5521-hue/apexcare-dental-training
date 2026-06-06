@@ -880,7 +880,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
         const parsed = JSON.parse(jsonMatch[0]);
         applyGenerated(parsed);
       } catch(e) {
-        // fallback للتوليد المحلي عند أي خطأ
+        // fallback للتوليد الذكي المحلي عند أي خطأ GAS
         await generateLocal();
       }
       setLoading(false);
@@ -894,60 +894,151 @@ answer هو رقم الخيار الصحيح (0-3).`;
     };
 
     // توليد محلي ذكي بدون API — يبني أسئلة من القوالب
+    // ── Smart local generator — English-first, topic-aware
     const generateLocal = async () => {
-      const templates = [
-        {
-          questionAr: `ما الاستخدام الرئيسي لـ "${topic}" في عيادة الأسنان؟`,
-          questionEn: `What is the primary use of "${topic}" in dental practice?`,
-          optionsAr: [`فحص التجويف الفموي`, `عزل السن عن الرطوبة`, `تحديد طول الجذر`, `أخذ الطبعة`],
-          optionsEn: [`Oral cavity examination`, `Tooth isolation from moisture`, `Root length determination`, `Taking impressions`],
-          answer: 0
-        },
-        {
-          questionAr: `متى يجب تعقيم "${topic}" بعد الاستخدام؟`,
-          questionEn: `When should "${topic}" be sterilized after use?`,
-          optionsAr: [`بعد كل مريض مباشرةً`, `مرة في اليوم`, `مرة في الأسبوع`, `عند الحاجة فقط`],
-          optionsEn: [`Immediately after each patient`, `Once daily`, `Once weekly`, `Only when needed`],
-          answer: 0
-        },
-        {
-          questionAr: `أي معدات الوقاية الشخصية يجب ارتداؤها عند استخدام "${topic}"؟`,
-          questionEn: `Which PPE must be worn when using "${topic}"?`,
-          optionsAr: [`القفازات والكمامة والنظارة الواقية`, `القفازات فقط`, `الكمامة فقط`, `لا شيء مطلوب`],
-          optionsEn: [`Gloves, mask, and eye protection`, `Gloves only`, `Mask only`, `No PPE required`],
-          answer: 0
-        },
-        {
-          questionAr: `ما تصنيف "${topic}" من حيث خطورة نقل العدوى؟`,
-          questionEn: `How is "${topic}" classified in terms of infection transmission risk?`,
-          optionsAr: [`أداة حيوية تحتاج تعقيماً كاملاً`, `أداة شبه حيوية`, `أداة غير حيوية`, `مادة للاستخدام مرة واحدة`],
-          optionsEn: [`Critical — requires full sterilization`, `Semi-critical instrument`, `Non-critical instrument`, `Single-use disposable`],
-          answer: 0
-        },
-        {
-          questionAr: `ما الخطوة الأولى قبل استخدام "${topic}" مع مريض جديد؟`,
-          questionEn: `What is the first step before using "${topic}" with a new patient?`,
-          optionsAr: [`التحقق من التعقيم والتاريخ عليه`, `غسل بالماء فقط`, `الاستخدام مباشرةً`, `تغيير القفازات فقط`],
-          optionsEn: [`Verify sterilization and date label`, `Rinse with water only`, `Use directly`, `Change gloves only`],
-          answer: 0
-        }
+      const topicClean = topic.trim();
+
+      // Dental knowledge base — maps keywords to specific Q&A sets
+      const knowledgeBase = [
+        // ── Mirrors & Vision
+        { keys: ["mirror","مرآة"], qs: [
+          { qEn:"What is the primary function of the dental mirror?", qAr:"ما الوظيفة الرئيسية لمرآة الفحص؟", opts: [{en:"Indirect vision and tissue retraction",ar:"الرؤية غير المباشرة وإبعاد الأنسجة"},{en:"Measuring pocket depth",ar:"قياس عمق الجيب"},{en:"Removing calculus",ar:"إزالة الجير"},{en:"Drying the field",ar:"تجفيف الميدان"}], ans:0 },
+          { qEn:"How should a dental mirror be held for best control?", qAr:"كيف يُمسك مرآة الفحص للتحكم الأمثل؟", opts: [{en:"Pen grasp with finger rest",ar:"القبضة القلمية مع دعامة إصبع"},{en:"Palm grasp",ar:"القبضة الراحية"},{en:"Two-finger pinch",ar:"قبضة الإصبعين"},{en:"Overhand grasp",ar:"القبضة العلوية"}], ans:0 },
+          { qEn:"Which surface of the mirror is used for indirect vision?", qAr:"أي سطح من المرآة يُستخدم للرؤية غير المباشرة؟", opts: [{en:"The reflective (front) surface",ar:"السطح العاكس الأمامي"},{en:"The back surface",ar:"السطح الخلفي"},{en:"Either surface equally",ar:"أي سطح بالتساوي"},{en:"The handle",ar:"المقبض"}], ans:0 },
+        ]},
+        # ── Probe / Explorer
+        { keys: ["probe","explorer","مسبار","خطاف"], qs: [
+          { qEn:"What does a periodontal probe measure?", qAr:"ماذا يقيس مسبار اللثة؟", opts: [{en:"Pocket depth and attachment level",ar:"عمق الجيب ومستوى الارتباط"},{en:"Crown length",ar:"طول التاج"},{en:"Root length",ar:"طول الجذر"},{en:"Bone density",ar:"كثافة العظم"}], ans:0 },
+          { qEn:"What is the explorer primarily used to detect?", qAr:"ما الغرض الرئيسي من خطاف الفحص؟", opts: [{en:"Caries and surface defects",ar:"التسوس والعيوب السطحية"},{en:"Pocket depth",ar:"عمق الجيب"},{en:"Tooth mobility",ar:"حركة السن"},{en:"Bone loss",ar:"فقدان العظم"}], ans:0 },
+          { qEn:"What sensation indicates caries when using an explorer?", qAr:"ما الإحساس الذي يدل على التسوس عند استخدام الخطاف؟", opts: [{en:"Catch or stick in softened enamel",ar:"إحساس بالالتصاق في المينا المتسوسة"},{en:"Smooth glide",ar:"انزلاق سلس"},{en:"Clicking sound",ar:"صوت طقطقة"},{en:"Vibration",ar:"اهتزاز"}], ans:0 },
+        ]},
+        # ── HVE / Suction
+        { keys: ["hve","suction","evacuator","ساحبة","شفط"], qs: [
+          { qEn:"What is the High Volume Evacuator (HVE) used for?", qAr:"ما استخدام ساحبة اللعاب عالية السرعة؟", opts: [{en:"Rapid removal of fluids and debris",ar:"إزالة السوائل والمواد بسرعة"},{en:"Delivering air to dry the field",ar:"توصيل الهواء لتجفيف الميدان"},{en:"Measuring suction pressure",ar:"قياس ضغط الشفط"},{en:"Irrigating the canal",ar:"ري القناة"}], ans:0 },
+          { qEn:"Where should the HVE tip be placed during handpiece use?", qAr:"أين يجب وضع رأس الساحبة أثناء استخدام الشنبر؟", opts: [{en:"Adjacent to the tooth being treated",ar:"بجانب السن المعالجة"},{en:"At the back of the throat",ar:"في مؤخرة الحلق"},{en:"On the tongue",ar:"على اللسان"},{en:"Outside the mouth",ar:"خارج الفم"}], ans:0 },
+          { qEn:"How does HVE reduce aerosol contamination?", qAr:"كيف تقلل الساحبة من تلوث الهواء؟", opts: [{en:"By capturing aerosols at the source",ar:"بالتقاط الهباء الجوي من المصدر"},{en:"By filtering room air",ar:"بتصفية هواء الغرفة"},{en:"By pressurizing the room",ar:"بضغط الغرفة"},{en:"It does not reduce aerosols",ar:"لا تقلل منه"}], ans:0 },
+        ]},
+        # ── Apex Locator
+        { keys: ["apex","locator","أبكس","جذر"], qs: [
+          { qEn:"What does an electronic apex locator determine?", qAr:"ماذا يحدد الـ Apex Locator الإلكتروني؟", opts: [{en:"Working length of the root canal",ar:"الطول العملي لقناة الجذر"},{en:"Canal curvature",ar:"انحناء القناة"},{en:"Root diameter",ar:"قطر الجذر"},{en:"Pulp vitality",ar:"حيوية اللب"}], ans:0 },
+          { qEn:"When is apex locator reading most accurate?", qAr:"متى تكون قراءة الـ Apex Locator أكثر دقة؟", opts: [{en:"When canal is slightly moist",ar:"عندما تكون القناة رطبة قليلاً"},{en:"When canal is completely dry",ar:"عندما تكون القناة جافة تماماً"},{en:"When filled with sodium hypochlorite",ar:"عندما تكون ممتلئة بـ NaOCl"},{en:"After final obturation",ar:"بعد الحشو النهائي"}], ans:0 },
+          { qEn:"What number on the apex locator indicates the apex?", qAr:"ما الرقم على الـ Apex Locator يشير للذروة؟", opts: [{en:"0.0 (or the apex zone marker)",ar:"0.0 أو مؤشر منطقة الذروة"},{en:"1.0",ar:"1.0"},{en:"5.0",ar:"5.0"},{en:"Any stable reading",ar:"أي قراءة ثابتة"}], ans:0 },
+        ]},
+        # ── Rubber Dam
+        { keys: ["rubber dam","مطاط","عازل"], qs: [
+          { qEn:"What is the main purpose of a rubber dam in endodontics?", qAr:"ما الغرض الرئيسي من المطاط العازل في علاج الجذور؟", opts: [{en:"Isolate tooth and prevent instrument ingestion",ar:"عزل السن ومنع ابتلاع الأدوات"},{en:"Improve visibility only",ar:"تحسين الرؤية فقط"},{en:"Control bleeding",ar:"التحكم في النزيف"},{en:"Measure pocket depth",ar:"قياس عمق الجيب"}], ans:0 },
+          { qEn:"Which instrument is used to punch the rubber dam?", qAr:"أي أداة تُستخدم لثقب المطاط العازل؟", opts: [{en:"Rubber dam punch",ar:"مثقاب المطاط"},{en:"Explorer",ar:"الخطاف"},{en:"Scalpel",ar:"المشرط"},{en:"Excavator",ar:"الحفار"}], ans:0 },
+        ]},
+        # ── Sterilization / IPC
+        { keys: ["steril","autoclave","تعقيم","أوتوكليف"], qs: [
+          { qEn:"What are the correct parameters for Class B autoclave sterilization?", qAr:"ما المعاملات الصحيحة لأوتوكليف Class B؟", opts: [{en:"134°C for 18 minutes",ar:"134°C لمدة 18 دقيقة"},{en:"121°C for 30 minutes",ar:"121°C لمدة 30 دقيقة"},{en:"100°C for 20 minutes",ar:"100°C لمدة 20 دقيقة"},{en:"150°C for 10 minutes",ar:"150°C لمدة 10 دقائق"}], ans:0 },
+          { qEn:"Critical dental instruments require which level of processing?", qAr:"الأدوات الحيوية تتطلب أي مستوى من المعالجة؟", opts: [{en:"Full sterilization",ar:"تعقيم كامل"},{en:"High-level disinfection",ar:"تطهير عالي المستوى"},{en:"Intermediate disinfection",ar:"تطهير متوسط"},{en:"Low-level disinfection",ar:"تطهير منخفض"}], ans:0 },
+          { qEn:"How often should the autoclave spore test be performed?", qAr:"كم مرة يجب إجراء اختبار جراثيم الأوتوكليف؟", opts: [{en:"Weekly",ar:"أسبوعياً"},{en:"Daily",ar:"يومياً"},{en:"Monthly",ar:"شهرياً"},{en:"After each use",ar:"بعد كل استخدام"}], ans:0 },
+        ]},
+        # ── Donning / Doffing PPE
+        { keys: ["donning","doffing","ppe","وقاية","قفاز","ارتداء","خلع"], qs: [
+          { qEn:"What is the correct sequence for donning PPE?", qAr:"ما التسلسل الصحيح لارتداء معدات الوقاية؟", opts: [{en:"Hands → Gown → Mask → Eye protection → Gloves",ar:"يدان ← جاون ← كمامة ← نظارة ← قفازات"},{en:"Gloves → Mask → Gown → Hands",ar:"قفازات ← كمامة ← جاون ← يدان"},{en:"Mask → Gloves → Gown",ar:"كمامة ← قفازات ← جاون"},{en:"Gown → Gloves → Mask",ar:"جاون ← قفازات ← كمامة"}], ans:0 },
+          { qEn:"Why is doffing considered the highest-risk PPE step?", qAr:"لماذا يُعتبر الخلع أخطر خطوات معدات الوقاية؟", opts: [{en:"Contamination can transfer to skin and clothing",ar:"يمكن نقل التلوث للجلد والملابس"},{en:"Equipment is most expensive",ar:"المعدات الأغلى ثمناً"},{en:"Takes the longest time",ar:"يستغرق أطول وقت"},{en:"Requires extra personnel",ar:"يتطلب موظفين إضافيين"}], ans:0 },
+          { qEn:"What should be done immediately after removing gloves during doffing?", qAr:"ماذا يجب فعله فور خلع القفازات؟", opts: [{en:"Perform hand hygiene immediately",ar:"نظافة اليدين فوراً"},{en:"Remove the gown first",ar:"خلع الجاون أولاً"},{en:"Remove the mask",ar:"خلع الكمامة"},{en:"Leave the room",ar:"مغادرة الغرفة"}], ans:0 },
+        ]},
+        # ── Hand Hygiene / 5 Moments
+        { keys: ["hand","hygiene","moment","غسل","يدين","لحظ"], qs: [
+          { qEn:"According to WHO, how long should handwashing with soap take?", qAr:"وفق WHO، كم يجب أن تستغرق عملية غسل اليدين بالصابون؟", opts: [{en:"40–60 seconds",ar:"40–60 ثانية"},{en:"10–15 seconds",ar:"10–15 ثانية"},{en:"5 seconds",ar:"5 ثوانٍ"},{en:"2 minutes",ar:"دقيقتان"}], ans:0 },
+          { qEn:"What is WHO Moment 2 for hand hygiene?", qAr:"ما هي اللحظة الثانية للـ WHO لنظافة اليدين؟", opts: [{en:"Before a clean/aseptic procedure",ar:"قبل الإجراء النظيف/المعقم"},{en:"After touching a patient",ar:"بعد لمس المريض"},{en:"After body fluid exposure",ar:"بعد التعرض لسوائل الجسم"},{en:"Before entering the room",ar:"قبل دخول الغرفة"}], ans:0 },
+          { qEn:"Do gloves replace the need for hand hygiene in dentistry?", qAr:"هل ترتدي القفازات يُغني عن نظافة اليدين؟", opts: [{en:"No — hand hygiene is always required",ar:"لا — نظافة اليدين إلزامية دائماً"},{en:"Yes, if double-gloved",ar:"نعم إذا ارتديت طبقتين"},{en:"Only for non-invasive procedures",ar:"فقط للإجراءات غير الاجتياحية"},{en:"Yes for clean procedures",ar:"نعم للإجراءات النظيفة"}], ans:0 },
+        ]},
+        # ── Composite / Restorative
+        { keys: ["composite","resin","حشو","كمبوزيت","ترميم"], qs: [
+          { qEn:"What activates composite resin polymerization?", qAr:"ما الذي يُفعّل بلمرة الراتنج المركب؟", opts: [{en:"Blue LED curing light (400–500 nm)",ar:"مصباح LED الأزرق (400-500 نانومتر)"},{en:"Heat application",ar:"تطبيق الحرارة"},{en:"Ultraviolet light",ar:"الأشعة فوق البنفسجية"},{en:"Chemical catalyst only",ar:"محفز كيميائي فقط"}], ans:0 },
+          { qEn:"What is the purpose of articulating paper after a composite filling?", qAr:"ما الغرض من أوراق الإطباق بعد الحشو؟", opts: [{en:"Detect and adjust high occlusal contacts",ar:"الكشف عن نقاط الإطباق الزائدة وتعديلها"},{en:"Polish the restoration",ar:"تلميع الترميم"},{en:"Check shade matching",ar:"التحقق من مطابقة اللون"},{en:"Measure depth of preparation",ar:"قياس عمق الحفر"}], ans:0 },
+        ]},
+        # ── Extraction / Surgery
+        { keys: ["extract","elevator","forcep","خلع","مرفع","كلابة","جراح"], qs: [
+          { qEn:"What is the primary role of a dental elevator before extraction?", qAr:"ما الدور الرئيسي للمرفع قبل الخلع؟", opts: [{en:"Loosen and elevate the tooth from its socket",ar:"تحريك وفك ارتباط السن من تجويفه"},{en:"Anesthetize the area",ar:"تخدير المنطقة"},{en:"Control bleeding",ar:"التحكم في النزيف"},{en:"Remove the crown",ar:"إزالة التاج"}], ans:0 },
+          { qEn:"What is the correct post-extraction instruction regarding biting on gauze?", qAr:"ما التعليمات الصحيحة للعض على الشاش بعد الخلع؟", opts: [{en:"Bite firmly for 30–45 minutes",ar:"اعض بإحكام لمدة 30-45 دقيقة"},{en:"Bite gently for 5 minutes",ar:"اعض برفق لمدة 5 دقائق"},{en:"Do not bite at all",ar:"لا تعض إطلاقاً"},{en:"Bite for 2 hours",ar:"اعض لمدة ساعتين"}], ans:0 },
+        ]},
+        # ── Periodontics
+        { keys: ["periodon","scal","curette","لثة","كاشط","تقليح"], qs: [
+          { qEn:"What is Scaling and Root Planing (SRP)?", qAr:"ما هو التقليح وتنعيم الجذر (SRP)؟", opts: [{en:"Removal of calculus and smoothing root surface",ar:"إزالة الجير وتنعيم سطح الجذر"},{en:"Surgical flap procedure",ar:"جراحة الرفرف"},{en:"Crown lengthening",ar:"إطالة التاج"},{en:"Bone grafting",ar:"ترقيع العظم"}], ans:0 },
+          { qEn:"Which Gracey curette is used for posterior subgingival scaling?", qAr:"أي كاشط غريسي يُستخدم للتقليح الخلفي تحت اللثة؟", opts: [{en:"Gracey 11/12 and 13/14",ar:"غريسي 11/12 و 13/14"},{en:"Gracey 1/2",ar:"غريسي 1/2"},{en:"Universal curette only",ar:"الكاشط الشامل فقط"},{en:"Gracey 5/6",ar:"غريسي 5/6"}], ans:0 },
+        ]},
+        # ── Orthodontics
+        { keys: ["ortho","bracket","archwire","تقويم","براكيت","سلك"], qs: [
+          { qEn:"What is the function of NiTi archwire in initial orthodontic treatment?", qAr:"ما وظيفة سلك NiTi في بداية العلاج التقويمي؟", opts: [{en:"Light continuous force for initial alignment",ar:"قوة خفيفة مستمرة للمحاذاة الأولية"},{en:"Heavy force for extraction spaces",ar:"قوة ثقيلة لفراغات الخلع"},{en:"Retention after treatment",ar:"الاحتفاظ بعد العلاج"},{en:"Anchorage control only",ar:"التحكم في الارتساء فقط"}], ans:0 },
+          { qEn:"What does debonding mean in orthodontics?", qAr:"ما معنى الـ Debonding في تقويم الأسنان؟", opts: [{en:"Removal of brackets at end of treatment",ar:"إزالة البراكيت عند انتهاء العلاج"},{en:"Placement of brackets",ar:"تركيب البراكيت"},{en:"Adjusting archwire",ar:"تعديل السلك"},{en:"Taking impressions",ar:"أخذ الطبعة"}], ans:0 },
+        ]},
+        # ── Prosthodontics
+        { keys: ["crown","prosth","impressi","تاج","تركيب","طبعة"], qs: [
+          { qEn:"What is gingival retraction cord used for in crown preparation?", qAr:"ما استخدام خيط سحب اللثة في تحضير التاج؟", opts: [{en:"Retract gingiva for accurate finish line impression",ar:"إبعاد اللثة للطبعة الدقيقة للحدود"},{en:"Control bleeding",ar:"التحكم في النزيف"},{en:"Anesthetize the gingiva",ar:"تخدير اللثة"},{en:"Mark the finish line",ar:"تحديد حدود التحضير"}], ans:0 },
+          { qEn:"What does the VITA shade guide help determine?", qAr:"ماذا يساعد دليل ألوان VITA في تحديده؟", opts: [{en:"Crown color matching to natural teeth",ar:"مطابقة لون التاج للأسنان الطبيعية"},{en:"Crown size",ar:"حجم التاج"},{en:"Material strength",ar:"متانة المادة"},{en:"Occlusal clearance",ar:"خلوص الإطباق"}], ans:0 },
+        ]},
+        # ── Pediatric
+        { keys: ["pedo","child","primary","ssc","أطفال","حليب","ختم"], qs: [
+          { qEn:"What is the purpose of a Stainless Steel Crown (SSC) in pediatric dentistry?", qAr:"ما الغرض من التاج المعدني (SSC) في طب أسنان الأطفال؟", opts: [{en:"Restore and protect grossly decayed primary molars",ar:"ترميم وحماية أرحاء الحليب شديدة التسوس"},{en:"Aesthetic restoration only",ar:"ترميم جمالي فقط"},{en:"Space maintenance only",ar:"حافظ مسافة فقط"},{en:"Replace missing teeth",ar:"تعويض الأسنان المفقودة"}], ans:0 },
+          { qEn:"When is a fissure sealant indicated?", qAr:"متى يُشار إلى ختم الشقوق؟", opts: [{en:"On caries-free newly erupted permanent molars",ar:"على أرحاء دائمة حديثة البزوغ خالية من التسوس"},{en:"On teeth with active caries",ar:"على الأسنان ذات التسوس النشط"},{en:"On primary teeth only",ar:"على أسنان الحليب فقط"},{en:"After root canal treatment",ar:"بعد علاج العصب"}], ans:0 },
+        ]},
       ];
-      // خلط الخيارات قليلاً لكل سؤال
-      const shuffled = templates.map(q => {
-        const correctAr = q.optionsAr[q.answer];
-        const correctEn = q.optionsEn[q.answer];
-        const newOrder = [1, 2, 3].map(i => ({ar: q.optionsAr[i], en: q.optionsEn[i]}));
-        const pos = Math.floor(Math.random() * 4);
-        newOrder.splice(pos, 0, {ar: correctAr, en: correctEn});
+
+      // Match topic to knowledge base
+      const topicLower = topicClean.toLowerCase();
+      let matched = null;
+      for (const kb of knowledgeBase) {
+        if (kb.keys.some(k => topicLower.includes(k))) {
+          matched = kb;
+          break;
+        }
+      }
+
+      let finalQs;
+      if (matched && matched.qs.length >= 3) {
+        // Use matched questions, pad with general if needed
+        finalQs = [...matched.qs];
+        // Add general questions if less than 5
+        if (finalQs.length < 5) {
+          const general = buildGeneral(topicClean);
+          finalQs = [...finalQs, ...general].slice(0, 5);
+        }
+      } else {
+        // No match — build general questions about the topic
+        finalQs = buildGeneral(topicClean);
+      }
+
+      // Shuffle answer positions
+      const shuffled = finalQs.map(q => {
+        const correct = { en: q.opts[q.ans].en, ar: q.opts[q.ans].ar };
+        const others  = q.opts.filter((_,i) => i !== q.ans);
+        const pos     = Math.floor(Math.random() * 4);
+        const reordered = [...others];
+        reordered.splice(pos, 0, correct);
         return {
-          ...q,
-          optionsAr: newOrder.map(x => x.ar),
-          optionsEn: newOrder.map(x => x.en),
-          answer: pos
+          questionAr:  q.qAr,
+          questionEn:  q.qEn,
+          optionsAr:   reordered.map(o => o.ar),
+          optionsEn:   reordered.map(o => o.en),
+          answer:      pos
         };
       });
+
       applyGenerated(shuffled);
     };
+
+    const buildGeneral = (topic) => [
+      { qEn:`What is the primary clinical purpose of ${topic}?`,
+        qAr:`ما الغرض السريري الرئيسي من ${topic}؟`,
+        opts:[{en:"Direct patient treatment application",ar:"التطبيق العلاجي المباشر للمريض"},{en:"Administrative record keeping",ar:"الحفظ الإداري للسجلات"},{en:"Laboratory analysis only",ar:"التحليل المختبري فقط"},{en:"Patient education only",ar:"تثقيف المريض فقط"}], ans:0 },
+      { qEn:`Which sterilization method is required for ${topic} if it contacts sterile tissue?`,
+        qAr:`أي طريقة تعقيم مطلوبة لـ ${topic} إذا لامست أنسجة معقمة؟`,
+        opts:[{en:"Full sterilization via autoclave",ar:"تعقيم كامل بالأوتوكليف"},{en:"High-level disinfection",ar:"تطهير عالي المستوى"},{en:"Wipe with 70% alcohol",ar:"مسح بكحول 70%"},{en:"No processing required",ar:"لا معالجة مطلوبة"}], ans:0 },
+      { qEn:`What PPE is mandatory when handling ${topic} chairside?`,
+        qAr:`أي معدات وقاية إلزامية عند التعامل مع ${topic} بجانب كرسي الطبيب؟`,
+        opts:[{en:"Gloves, mask, eye protection and gown",ar:"قفازات وكمامة ونظارة وجاون"},{en:"Gloves only",ar:"قفازات فقط"},{en:"Mask only",ar:"كمامة فقط"},{en:"No PPE needed",ar:"لا معدات وقاية مطلوبة"}], ans:0 },
+      { qEn:`Before using ${topic} on a new patient, the dental nurse should verify:`,
+        qAr:`قبل استخدام ${topic} مع مريض جديد، يجب على ممرضة الأسنان التحقق من:`,
+        opts:[{en:"Sterilization packaging integrity and expiry date",ar:"سلامة التغليف وتاريخ انتهاء التعقيم"},{en:"The patient's insurance details",ar:"تفاصيل تأمين المريض"},{en:"The room temperature",ar:"درجة حرارة الغرفة"},{en:"The instrument color",ar:"لون الأداة"}], ans:0 },
+      { qEn:`What should be documented after using ${topic} in a clinical procedure?`,
+        qAr:`ما الذي يجب توثيقه بعد استخدام ${topic} في إجراء سريري؟`,
+        opts:[{en:"Procedure details, batch number and sterilization record",ar:"تفاصيل الإجراء ورقم الدفعة وسجل التعقيم"},{en:"Patient's name only",ar:"اسم المريض فقط"},{en:"Time of procedure only",ar:"وقت الإجراء فقط"},{en:"No documentation needed",ar:"لا توثيق مطلوب"}], ans:0 },
+    ];
 
     const addSelected = () => {
       generated.forEach((q, i) => {
@@ -969,7 +1060,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
               <span style={{fontSize:22}}>✨</span>
               <div>
                 <div style={{fontWeight:900, fontSize:15, color:"#e9d5ff"}}>{t("توليد أسئلة بالذكاء الاصطناعي","AI Quiz Generator")}</div>
-                <div style={{fontSize:11, color:"#7c3aed"}}>{t("مشغّل بـ Claude","Powered by Claude")}</div>
+                <div style={{fontSize:11, color:"#7c3aed"}}>{GAS_OK() ? t("مشغّل بـ Claude AI","Powered by Claude AI") : t("توليد ذكي محلي + Claude عبر GAS","Smart local + Claude via GAS")}</div>
               </div>
             </div>
             <button onClick={()=>setAiModal(null)} style={S.del}>✕</button>
@@ -999,7 +1090,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
           {loading && (
             <div style={{textAlign:"center", padding:28, color:"#c4b5fd"}}>
               <div style={{fontSize:32, marginBottom:8, animation:"spin 1s linear infinite"}}>✨</div>
-              <div style={{fontSize:13}}>{t("جارٍ توليد الأسئلة...","Generating questions...")}</div>
+              <div style={{fontSize:13}}>{t("جارٍ توليد الأسئلة بالذكاء الاصطناعي...","Generating AI questions...")}</div>
               <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
             </div>
           )}
