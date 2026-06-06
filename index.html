@@ -276,7 +276,7 @@ function App() {
     if (el) el.style.display = 'none';
   }, []);
 
-  const toast$ = useCallback((msg, type="ok") => {
+  const toastFn = useCallback((msg, type="ok") => {
     setToast({msg, type});
     setTimeout(() => setToast(null), 3000);
   }, []);
@@ -323,7 +323,7 @@ function App() {
     if (GAS_OK() && token) {
       setSync("syncing");
       try { await api(gasAction, gasParams, token); setSync("ok"); }
-      catch { setSync("error"); toast$(t("فشل الحفظ في الخادم","Server save failed"), "err"); }
+      catch { setSync("error"); toastFn(t("فشل الحفظ في الخادم","Server save failed"), "err"); }
     }
   };
 
@@ -332,14 +332,14 @@ function App() {
   );
 
   if (user.role === "admin") return (
-    <AdminPortal lang={lang} setLang={setLang} db={db} user={user} token={token}
-      sync={sync} syncAll={syncAll} toast={toast} toast$={toast$}
+    <AdminPortal key={lang} lang={lang} setLang={setLang} db={db} user={user} token={token}
+      sync={sync} syncAll={syncAll} toast={toast} toastFn={toastFn}
       mut={mut} onLogout={doLogout} />
   );
 
   return (
-    <NursePortal lang={lang} setLang={setLang} db={db} user={user}
-      sync={sync} syncAll={syncAll} token={token} toast={toast} toast$={toast$}
+    <NursePortal key={lang} lang={lang} setLang={setLang} db={db} user={user}
+      sync={sync} syncAll={syncAll} token={token} toast={toast} toastFn={toastFn}
       onLogout={doLogout} />
   );
 }
@@ -427,7 +427,7 @@ function LoginScreen({ lang, setLang, sync, onLogin, toast }) {
 // ══════════════════════════════════════════════════════
 //  NURSE PORTAL — تجربة تعلم نظيفة وبدون تعديل
 // ══════════════════════════════════════════════════════
-function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toast$, onLogout }) {
+function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toastFn, onLogout }) {
   const t = (ar, en) => lang === "ar" ? ar : en;
   const [page, setPage]     = useState("home"); // home|spec|ipc|ipc_detail|quiz
   const [activeSpec, setAS] = useState(null);
@@ -447,7 +447,7 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
 
   const startQuiz = gId => {
     const qs = db.quizzes[gId] || [];
-    if (!qs.length) { toast$(t("لا يوجد اختبار بعد","No quiz yet for this section"), "info"); return; }
+    if (!qs.length) { toastFn(t("لا يوجد اختبار بعد","No quiz yet for this section"), "info"); return; }
     setQuiz({ groupId:gId, questions:qs, idx:0, score:0, done:false });
     setPage("quiz");
   };
@@ -774,7 +774,8 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
 
 // ══════════════════════════════════════════════════════
 //  ADMIN PORTAL — لوحة تحكم كاملة
-// ══════════════════════════════════════════function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toast$, mut, onLogout }) {
+// ══════════════════════════════════════════
+function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toastFn, mut, onLogout }) {
   const t = (ar, en) => lang === "ar" ? ar : en;
   const [page, setPage]     = useState("dashboard"); // dashboard|spec_detail|ipc_detail
   const [activeSpec, setAS] = useState(null);
@@ -785,26 +786,26 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
   const dir = lang==="ar" ? "rtl" : "ltr";
 
   // ── CRUD helpers
-  const addSpec    = async f => { const id=gid(),item={...f,id,tools:[],procedures:[]}; await mut("addSpecialty",f,d=>d.specialties.push(item)); toast$(t("تم إضافة القسم","Specialty added")); };
-  const updSpec    = async (id,f) => { await mut("updateSpecialty",{id,...f},d=>{const i=d.specialties.findIndex(s=>s.id===id);if(i>=0)Object.assign(d.specialties[i],f);}); if(activeSpec?.id===id)setAS(s=>({...s,...f})); toast$(t("تم التحديث","Updated")); };
-  const delSpec    = async id => { if(!confirm(t("حذف القسم وكل محتوياته؟","Delete specialty and all its content?")))return; await mut("deleteSpecialty",{id},d=>{d.specialties=d.specialties.filter(s=>s.id!==id);delete d.quizzes[id];}); if(activeSpec?.id===id){setAS(null);setPage("dashboard");} toast$(t("تم الحذف","Deleted")); };
-  const addTool    = async (spId,f) => { const id=gid(),item={...f,id,specialtyId:spId}; await mut("addTool",{specialtyId:spId,...f},d=>{const s=d.specialties.find(x=>x.id===spId);if(s)s.tools.push(item);}); setAS(s=>s?.id===spId?{...s,tools:[...s.tools,item]}:s); toast$(t("تم إضافة الأداة","Tool added")); };
-  const updTool    = async (spId,id,f) => { await mut("updateTool",{id,...f},d=>{const s=d.specialties.find(x=>x.id===spId);if(s){const i=s.tools.findIndex(t=>t.id===id);if(i>=0)Object.assign(s.tools[i],f);}}); setAS(s=>s?.id===spId?{...s,tools:s.tools.map(t=>t.id===id?{...t,...f}:t)}:s); toast$(t("تم التحديث","Updated")); };
-  const delTool    = async (spId,id) => { await mut("deleteTool",{id},d=>{const s=d.specialties.find(x=>x.id===spId);if(s)s.tools=s.tools.filter(t=>t.id!==id);}); setAS(s=>s?.id===spId?{...s,tools:s.tools.filter(t=>t.id!==id)}:s); toast$(t("تم الحذف","Deleted")); };
-  const addProc    = async (spId,f) => { const id=gid(),item={...f,id,specialtyId:spId}; await mut("addProcedure",{specialtyId:spId,...f},d=>{const s=d.specialties.find(x=>x.id===spId);if(s)s.procedures.push(item);}); setAS(s=>s?.id===spId?{...s,procedures:[...s.procedures,item]}:s); toast$(t("تم إضافة الإجراء","Procedure added")); };
-  const updProc    = async (spId,id,f) => { await mut("updateProcedure",{id,...f},d=>{const s=d.specialties.find(x=>x.id===spId);if(s){const i=s.procedures.findIndex(p=>p.id===id);if(i>=0)Object.assign(s.procedures[i],f);}}); setAS(s=>s?.id===spId?{...s,procedures:s.procedures.map(p=>p.id===id?{...p,...f}:p)}:s); toast$(t("تم التحديث","Updated")); };
-  const delProc    = async (spId,id) => { await mut("deleteProcedure",{id},d=>{const s=d.specialties.find(x=>x.id===spId);if(s)s.procedures=s.procedures.filter(p=>p.id!==id);}); setAS(s=>s?.id===spId?{...s,procedures:s.procedures.filter(p=>p.id!==id)}:s); toast$(t("تم الحذف","Deleted")); };
-  const addIPC     = async f => { const id=gid(),item={...f,id,steps:[]}; await mut("addIPCModule",f,d=>d.ipcModules.push(item)); toast$(t("تم الإضافة","Added")); };
-  const updIPC     = async (id,f) => { await mut("updateIPCModule",{id,...f},d=>{const i=d.ipcModules.findIndex(m=>m.id===id);if(i>=0)Object.assign(d.ipcModules[i],f);}); if(activeIPC?.id===id)setAI(m=>({...m,...f})); toast$(t("تم التحديث","Updated")); };
-  const delIPC     = async id => { if(!confirm(t("حذف الوحدة؟","Delete module?")))return; await mut("deleteIPCModule",{id},d=>{d.ipcModules=d.ipcModules.filter(m=>m.id!==id);}); if(activeIPC?.id===id){setAI(null);setPage("dashboard");} toast$(t("تم الحذف","Deleted")); };
-  const addStep    = async (modId,f) => { const id=gid(),item={...f,id,moduleId:modId}; await mut("addIPCStep",{moduleId:modId,...f},d=>{const m=d.ipcModules.find(x=>x.id===modId);if(m)m.steps.push(item);}); setAI(m=>m?.id===modId?{...m,steps:[...m.steps,item]}:m); toast$(t("تم الإضافة","Added")); };
-  const updStep    = async (modId,id,f) => { await mut("updateIPCStep",{id,...f},d=>{const m=d.ipcModules.find(x=>x.id===modId);if(m){const i=m.steps.findIndex(s=>s.id===id);if(i>=0)Object.assign(m.steps[i],f);}}); setAI(m=>m?.id===modId?{...m,steps:m.steps.map(s=>s.id===id?{...s,...f}:s)}:m); toast$(t("تم التحديث","Updated")); };
-  const delStep    = async (modId,id) => { await mut("deleteIPCStep",{id},d=>{const m=d.ipcModules.find(x=>x.id===modId);if(m)m.steps=m.steps.filter(s=>s.id!==id);}); setAI(m=>m?.id===modId?{...m,steps:m.steps.filter(s=>s.id!==id)}:m); toast$(t("تم الحذف","Deleted")); };
-  const addQ       = async (gId,f) => { const id=gid(),item={...f,id,groupId:gId}; await mut("addQuiz",{groupId:gId,...f},d=>{if(!d.quizzes[gId])d.quizzes[gId]=[];d.quizzes[gId].push(item);}); toast$(t("تم إضافة السؤال","Question added")); };
-  const updQ       = async (gId,id,f) => { await mut("updateQuiz",{id,...f},d=>{if(d.quizzes[gId]){const i=d.quizzes[gId].findIndex(x=>x.id===id);if(i>=0)Object.assign(d.quizzes[gId][i],f);}}); toast$(t("تم التحديث","Updated")); };
-  const delQ       = async (gId,id) => { await mut("deleteQuiz",{id},d=>{if(d.quizzes[gId])d.quizzes[gId]=d.quizzes[gId].filter(x=>x.id!==id);}); toast$(t("تم الحذف","Deleted")); };
-  const addUser    = async f => { const id=gid(),item={...f,id}; await mut("addUser",f,d=>d.users.push(item)); toast$(t("تم إضافة المستخدم","User added")); };
-  const delUser    = async id => { if(id===user?.id){toast$(t("لا يمكن حذف حسابك","Cannot delete own account"),"err");return;} await mut("deleteUser",{id},d=>{d.users=d.users.filter(u=>u.id!==id);}); toast$(t("تم الحذف","Deleted")); };
+  const addSpec    = async f => { const id=gid(),item={...f,id,tools:[],procedures:[]}; await mut("addSpecialty",f,d=>d.specialties.push(item)); toastFn(t("تم إضافة القسم","Specialty added")); };
+  const updSpec    = async (id,f) => { await mut("updateSpecialty",{id,...f},d=>{const i=d.specialties.findIndex(s=>s.id===id);if(i>=0)Object.assign(d.specialties[i],f);}); if(activeSpec?.id===id)setAS(s=>({...s,...f})); toastFn(t("تم التحديث","Updated")); };
+  const delSpec    = async id => { if(!confirm(t("حذف القسم وكل محتوياته؟","Delete specialty and all its content?")))return; await mut("deleteSpecialty",{id},d=>{d.specialties=d.specialties.filter(s=>s.id!==id);delete d.quizzes[id];}); if(activeSpec?.id===id){setAS(null);setPage("dashboard");} toastFn(t("تم الحذف","Deleted")); };
+  const addTool    = async (spId,f) => { const id=gid(),item={...f,id,specialtyId:spId}; await mut("addTool",{specialtyId:spId,...f},d=>{const s=d.specialties.find(x=>x.id===spId);if(s)s.tools.push(item);}); setAS(s=>s?.id===spId?{...s,tools:[...s.tools,item]}:s); toastFn(t("تم إضافة الأداة","Tool added")); };
+  const updTool    = async (spId,id,f) => { await mut("updateTool",{id,...f},d=>{const s=d.specialties.find(x=>x.id===spId);if(s){const i=s.tools.findIndex(t=>t.id===id);if(i>=0)Object.assign(s.tools[i],f);}}); setAS(s=>s?.id===spId?{...s,tools:s.tools.map(t=>t.id===id?{...t,...f}:t)}:s); toastFn(t("تم التحديث","Updated")); };
+  const delTool    = async (spId,id) => { await mut("deleteTool",{id},d=>{const s=d.specialties.find(x=>x.id===spId);if(s)s.tools=s.tools.filter(t=>t.id!==id);}); setAS(s=>s?.id===spId?{...s,tools:s.tools.filter(t=>t.id!==id)}:s); toastFn(t("تم الحذف","Deleted")); };
+  const addProc    = async (spId,f) => { const id=gid(),item={...f,id,specialtyId:spId}; await mut("addProcedure",{specialtyId:spId,...f},d=>{const s=d.specialties.find(x=>x.id===spId);if(s)s.procedures.push(item);}); setAS(s=>s?.id===spId?{...s,procedures:[...s.procedures,item]}:s); toastFn(t("تم إضافة الإجراء","Procedure added")); };
+  const updProc    = async (spId,id,f) => { await mut("updateProcedure",{id,...f},d=>{const s=d.specialties.find(x=>x.id===spId);if(s){const i=s.procedures.findIndex(p=>p.id===id);if(i>=0)Object.assign(s.procedures[i],f);}}); setAS(s=>s?.id===spId?{...s,procedures:s.procedures.map(p=>p.id===id?{...p,...f}:p)}:s); toastFn(t("تم التحديث","Updated")); };
+  const delProc    = async (spId,id) => { await mut("deleteProcedure",{id},d=>{const s=d.specialties.find(x=>x.id===spId);if(s)s.procedures=s.procedures.filter(p=>p.id!==id);}); setAS(s=>s?.id===spId?{...s,procedures:s.procedures.filter(p=>p.id!==id)}:s); toastFn(t("تم الحذف","Deleted")); };
+  const addIPC     = async f => { const id=gid(),item={...f,id,steps:[]}; await mut("addIPCModule",f,d=>d.ipcModules.push(item)); toastFn(t("تم الإضافة","Added")); };
+  const updIPC     = async (id,f) => { await mut("updateIPCModule",{id,...f},d=>{const i=d.ipcModules.findIndex(m=>m.id===id);if(i>=0)Object.assign(d.ipcModules[i],f);}); if(activeIPC?.id===id)setAI(m=>({...m,...f})); toastFn(t("تم التحديث","Updated")); };
+  const delIPC     = async id => { if(!confirm(t("حذف الوحدة؟","Delete module?")))return; await mut("deleteIPCModule",{id},d=>{d.ipcModules=d.ipcModules.filter(m=>m.id!==id);}); if(activeIPC?.id===id){setAI(null);setPage("dashboard");} toastFn(t("تم الحذف","Deleted")); };
+  const addStep    = async (modId,f) => { const id=gid(),item={...f,id,moduleId:modId}; await mut("addIPCStep",{moduleId:modId,...f},d=>{const m=d.ipcModules.find(x=>x.id===modId);if(m)m.steps.push(item);}); setAI(m=>m?.id===modId?{...m,steps:[...m.steps,item]}:m); toastFn(t("تم الإضافة","Added")); };
+  const updStep    = async (modId,id,f) => { await mut("updateIPCStep",{id,...f},d=>{const m=d.ipcModules.find(x=>x.id===modId);if(m){const i=m.steps.findIndex(s=>s.id===id);if(i>=0)Object.assign(m.steps[i],f);}}); setAI(m=>m?.id===modId?{...m,steps:m.steps.map(s=>s.id===id?{...s,...f}:s)}:m); toastFn(t("تم التحديث","Updated")); };
+  const delStep    = async (modId,id) => { await mut("deleteIPCStep",{id},d=>{const m=d.ipcModules.find(x=>x.id===modId);if(m)m.steps=m.steps.filter(s=>s.id!==id);}); setAI(m=>m?.id===modId?{...m,steps:m.steps.filter(s=>s.id!==id)}:m); toastFn(t("تم الحذف","Deleted")); };
+  const addQ       = async (gId,f) => { const id=gid(),item={...f,id,groupId:gId}; await mut("addQuiz",{groupId:gId,...f},d=>{if(!d.quizzes[gId])d.quizzes[gId]=[];d.quizzes[gId].push(item);}); toastFn(t("تم إضافة السؤال","Question added")); };
+  const updQ       = async (gId,id,f) => { await mut("updateQuiz",{id,...f},d=>{if(d.quizzes[gId]){const i=d.quizzes[gId].findIndex(x=>x.id===id);if(i>=0)Object.assign(d.quizzes[gId][i],f);}}); toastFn(t("تم التحديث","Updated")); };
+  const delQ       = async (gId,id) => { await mut("deleteQuiz",{id},d=>{if(d.quizzes[gId])d.quizzes[gId]=d.quizzes[gId].filter(x=>x.id!==id);}); toastFn(t("تم الحذف","Deleted")); };
+  const addUser    = async f => { const id=gid(),item={...f,id}; await mut("addUser",f,d=>d.users.push(item)); toastFn(t("تم إضافة المستخدم","User added")); };
+  const delUser    = async id => { if(id===user?.id){toastFn(t("لا يمكن حذف حسابك","Cannot delete own account"),"err");return;} await mut("deleteUser",{id},d=>{d.users=d.users.filter(u=>u.id!==id);}); toastFn(t("تم الحذف","Deleted")); };
 
   // ── STYLES (Admin: high-density, more professional, darker)
   const S = {
@@ -953,7 +954,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
         if (selected[i]) addQ(gId, q);
       });
       setAiModal(null);
-      toast$(t(`تم إضافة ${Object.values(selected).filter(Boolean).length} أسئلة ✓`,
+      toastFn(t(`تم إضافة ${Object.values(selected).filter(Boolean).length} أسئلة ✓`,
                `Added ${Object.values(selected).filter(Boolean).length} questions ✓`));
     };
 
