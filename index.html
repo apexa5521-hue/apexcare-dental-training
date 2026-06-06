@@ -328,17 +328,17 @@ function App() {
   };
 
   if (!user) return (
-    <LoginScreen lang={lang} setLang={setLang} t={t} sync={sync} onLogin={doLogin} toast={toast} />
+    <LoginScreen lang={lang} setLang={setLang} sync={sync} onLogin={doLogin} toast={toast} />
   );
 
   if (user.role === "admin") return (
-    <AdminPortal lang={lang} setLang={setLang} t={t} db={db} user={user} token={token}
+    <AdminPortal lang={lang} setLang={setLang} db={db} user={user} token={token}
       sync={sync} syncAll={syncAll} toast={toast} toast$={toast$}
       mut={mut} onLogout={doLogout} />
   );
 
   return (
-    <NursePortal lang={lang} setLang={setLang} t={t} db={db} user={user}
+    <NursePortal lang={lang} setLang={setLang} db={db} user={user}
       sync={sync} syncAll={syncAll} token={token} toast={toast} toast$={toast$}
       onLogout={doLogout} />
   );
@@ -355,7 +355,8 @@ const V = {
 // ══════════════════════════════════════════════════════
 //  LOGIN SCREEN
 // ══════════════════════════════════════════════════════
-function LoginScreen({ lang, setLang, t, sync, onLogin, toast }) {
+function LoginScreen({ lang, setLang, sync, onLogin, toast }) {
+  const t = (ar, en) => lang === "ar" ? ar : en;
   const [u, setU] = useState("");
   const [p, setP] = useState("");
   const [err, setErr] = useState("");
@@ -426,7 +427,8 @@ function LoginScreen({ lang, setLang, t, sync, onLogin, toast }) {
 // ══════════════════════════════════════════════════════
 //  NURSE PORTAL — تجربة تعلم نظيفة وبدون تعديل
 // ══════════════════════════════════════════════════════
-function NursePortal({ lang, setLang, t, db, user, sync, syncAll, token, toast, toast$, onLogout }) {
+function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toast$, onLogout }) {
+  const t = (ar, en) => lang === "ar" ? ar : en;
   const [page, setPage]     = useState("home"); // home|spec|ipc|ipc_detail|quiz
   const [activeSpec, setAS] = useState(null);
   const [activeIPC,  setAI] = useState(null);
@@ -773,12 +775,14 @@ function NursePortal({ lang, setLang, t, db, user, sync, syncAll, token, toast, 
 // ══════════════════════════════════════════════════════
 //  ADMIN PORTAL — لوحة تحكم كاملة
 // ══════════════════════════════════════════════════════
-function AdminPortal({ lang, setLang, t, db, user, token, sync, syncAll, toast, toast$, mut, onLogout }) {
+function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toast$, mut, onLogout }) {
+  const t = (ar, en) => lang === "ar" ? ar : en;
   const [page, setPage]     = useState("dashboard"); // dashboard|spec_detail|ipc_detail
   const [activeSpec, setAS] = useState(null);
   const [activeIPC,  setAI] = useState(null);
   const [tab,  setTab]      = useState("specialties");
   const [modal, setModal]   = useState(null); // {type, item?, extra?}
+  const [aiModal, setAiModal] = useState(null); // {gId, context}
   const dir = lang==="ar" ? "rtl" : "ltr";
 
   // ── CRUD helpers
@@ -830,6 +834,186 @@ function AdminPortal({ lang, setLang, t, db, user, token, sync, syncAll, toast, 
     kpi:  (c) => ({ background:`rgba(255,255,255,0.025)`, border:`1px solid ${c}22`, borderRadius:11, padding:"14px 16px", textAlign:"center" }),
     step: (c) => ({ background:`${c}09`, border:`1px solid ${c}1c`, borderRadius:8, padding:"8px 12px", marginBottom:7, display:"flex", gap:8, alignItems:"flex-start" }),
     spR:  { background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:10, padding:"11px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:10 },
+  };
+
+
+  // ── AI QUIZ GENERATOR MODAL
+  const AIQuizModal = () => {
+    if (!aiModal) return null;
+    const { gId, context } = aiModal;
+    const [topic, setTopic] = useState(context || "");
+    const [loading, setLoading] = useState(false);
+    const [generated, setGenerated] = useState([]); // array of quiz objects
+    const [selected, setSelected] = useState({}); // {idx: true/false}
+    const [err, setErr] = useState("");
+
+    const generate = async () => {
+      if (!topic.trim()) return;
+      setLoading(true); setErr(""); setGenerated([]); setSelected({});
+      try {
+        const prompt = `أنت متخصص في طب الأسنان وتعليم الممرضات. المطلوب: توليد 5 أسئلة اختيار من متعدد (4 خيارات لكل سؤال) عن الموضوع التالي:
+
+"${topic}"
+
+القواعد:
+- كل سؤال له 4 خيارات متعددة
+- خيار واحد فقط صحيح
+- الأسئلة والخيارات باللغتين العربية والإنجليزية
+- الأسئلة تقيس الفهم وليس الحفظ فقط
+- مناسبة لممرضات الأسنان
+
+أرجع JSON فقط بهذا الشكل بالضبط، بدون أي نص إضافي:
+[
+  {
+    "questionAr": "نص السؤال بالعربي",
+    "questionEn": "Question text in English",
+    "optionsAr": ["خيار 1", "خيار 2", "خيار 3", "خيار 4"],
+    "optionsEn": ["Option 1", "Option 2", "Option 3", "Option 4"],
+    "answer": 0
+  }
+]
+الـ answer هو رقم الخيار الصحيح (0-3).`;
+
+        const res = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 1000,
+            messages: [{ role: "user", content: prompt }]
+          })
+        });
+        const data = await res.json();
+        const raw = data.content?.[0]?.text || "";
+        const jsonMatch = raw.match(/\[.*\]/s);
+        if (!jsonMatch) throw new Error("no_json");
+        const parsed = JSON.parse(jsonMatch[0]);
+        setGenerated(parsed);
+        const sel = {};
+        parsed.forEach((_, i) => { sel[i] = true; });
+        setSelected(sel);
+      } catch(e) {
+        setErr(t("فشل التوليد — تحقق من الاتصال", "Generation failed — check connection"));
+      }
+      setLoading(false);
+    };
+
+    const addSelected = () => {
+      generated.forEach((q, i) => {
+        if (selected[i]) addQ(gId, q);
+      });
+      setAiModal(null);
+      toast$(t(`تم إضافة ${Object.values(selected).filter(Boolean).length} أسئلة ✓`,
+               `Added ${Object.values(selected).filter(Boolean).length} questions ✓`));
+    };
+
+    const aiColors = { bg:"#0a0f1e", border:"rgba(168,85,247,0.3)", acc:"#a855f7" };
+
+    return (
+      <div style={S.mdlBg} onClick={e=>e.target===e.currentTarget&&setAiModal(null)}>
+        <div style={{...S.mdl, maxWidth:560, background:aiColors.bg, borderColor:aiColors.border}}>
+          {/* Header */}
+          <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16}}>
+            <div style={{display:"flex", alignItems:"center", gap:8}}>
+              <span style={{fontSize:22}}>✨</span>
+              <div>
+                <div style={{fontWeight:900, fontSize:15, color:"#e9d5ff"}}>{t("توليد أسئلة بالذكاء الاصطناعي","AI Quiz Generator")}</div>
+                <div style={{fontSize:11, color:"#7c3aed"}}>{t("مشغّل بـ Claude","Powered by Claude")}</div>
+              </div>
+            </div>
+            <button onClick={()=>setAiModal(null)} style={S.del}>✕</button>
+          </div>
+
+          {/* Topic input */}
+          <div style={{marginBottom:12}}>
+            <label style={{...S.lbl, color:"#c4b5fd"}}>{t("الموضوع أو الأداة أو الإجراء","Topic / Tool / Procedure")}</label>
+            <div style={{display:"flex", gap:8}}>
+              <input style={{...S.inp, flex:1, borderColor:"rgba(168,85,247,0.3)", background:"rgba(168,85,247,0.08)"}}
+                value={topic} onChange={e=>setTopic(e.target.value)}
+                placeholder={t("مثال: مرآة الفحص واستخداماتها","e.g. Dental mirror and its uses")}
+                onKeyDown={e=>e.key==="Enter"&&generate()}/>
+              <button onClick={generate} disabled={loading||!topic.trim()}
+                style={{padding:"8px 16px", borderRadius:8, border:"none", cursor:loading?"wait":"pointer",
+                  fontWeight:800, fontSize:13, fontFamily:"inherit", whiteSpace:"nowrap",
+                  background:loading?"rgba(168,85,247,0.3)":"linear-gradient(135deg,#7c3aed,#a855f7)",
+                  color:"#fff", opacity:(!topic.trim()&&!loading)?0.5:1}}>
+                {loading ? "⏳..." : t("✨ ولّد","✨ Generate")}
+              </button>
+            </div>
+          </div>
+
+          {err && <div style={{color:"#fca5a5", fontSize:12, marginBottom:10, padding:"8px 12px", borderRadius:8, background:"rgba(239,68,68,0.1)"}}>{err}</div>}
+
+          {/* Loading state */}
+          {loading && (
+            <div style={{textAlign:"center", padding:28, color:"#c4b5fd"}}>
+              <div style={{fontSize:32, marginBottom:8, animation:"spin 1s linear infinite"}}>✨</div>
+              <div style={{fontSize:13}}>{t("جارٍ توليد الأسئلة...","Generating questions...")}</div>
+              <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+            </div>
+          )}
+
+          {/* Generated questions */}
+          {generated.length > 0 && (
+            <div>
+              <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10}}>
+                <div style={{fontSize:12, color:"#c4b5fd", fontWeight:700}}>
+                  {t("اختر الأسئلة التي تريد إضافتها:","Select questions to add:")}
+                  <span style={{color:"#a855f7", marginInlineStart:6}}>
+                    {Object.values(selected).filter(Boolean).length}/{generated.length}
+                  </span>
+                </div>
+                <button onClick={()=>setSelected(s=>{const n={};Object.keys(s).forEach(k=>n[k]=!Object.values(s).every(Boolean));return n;})}
+                  style={{...S.sec("#a855f7"), fontSize:10}}>
+                  {Object.values(selected).every(Boolean) ? t("إلغاء الكل","Deselect All") : t("تحديد الكل","Select All")}
+                </button>
+              </div>
+              <div style={{maxHeight:320, overflowY:"auto", display:"flex", flexDirection:"column", gap:8}}>
+                {generated.map((q, i) => (
+                  <div key={i} onClick={()=>setSelected(s=>({...s,[i]:!s[i]}))}
+                    style={{padding:"10px 12px", borderRadius:9, cursor:"pointer", border:`1px solid`,
+                      borderColor:selected[i]?"rgba(168,85,247,0.5)":"rgba(255,255,255,0.07)",
+                      background:selected[i]?"rgba(168,85,247,0.1)":"rgba(255,255,255,0.02)",
+                      transition:"all 0.15s"}}>
+                    <div style={{display:"flex", gap:8, alignItems:"flex-start"}}>
+                      <div style={{width:18, height:18, borderRadius:4, border:`2px solid ${selected[i]?"#a855f7":"#475569"}`,
+                        background:selected[i]?"#a855f7":"transparent", flexShrink:0, marginTop:1,
+                        display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, color:"#fff"}}>
+                        {selected[i]?"✓":""}
+                      </div>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:12, fontWeight:700, color:"#e2e8f0", marginBottom:4, lineHeight:1.5}}>
+                          {lang==="ar" ? q.questionAr : q.questionEn}
+                        </div>
+                        <div style={{display:"flex", flexDirection:"column", gap:2}}>
+                          {(lang==="ar" ? q.optionsAr : q.optionsEn).map((opt, oi) => (
+                            <div key={oi} style={{fontSize:11, color: oi===q.answer?"#6ee7b7":"#64748b",
+                              display:"flex", gap:5, alignItems:"center"}}>
+                              <span style={{fontWeight:700}}>{String.fromCharCode(65+oi)}.</span>
+                              <span>{opt}</span>
+                              {oi===q.answer && <span style={{color:"#6ee7b7", fontSize:10}}>✓</span>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add button */}
+              <button onClick={addSelected}
+                disabled={!Object.values(selected).some(Boolean)}
+                style={{...S.pri, width:"100%", marginTop:12, background:"linear-gradient(135deg,#7c3aed,#a855f7)",
+                  opacity:Object.values(selected).some(Boolean)?1:0.4}}>
+                ➕ {t(`إضافة ${Object.values(selected).filter(Boolean).length} أسئلة`,
+                      `Add ${Object.values(selected).filter(Boolean).length} Questions`)}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   // ── MODAL
@@ -937,6 +1121,7 @@ function AdminPortal({ lang, setLang, t, db, user, token, sync, syncAll, toast, 
       <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
         <Header/>{toast&&<div style={S.tst(toast.type)}>{toast.msg}</div>}
         <EditModal/>
+        <AIQuizModal/>
         <div style={S.pg}>
           <div style={S.back} onClick={()=>setPage("dashboard")}>‹ {t("لوحة التحكم","Dashboard")}</div>
           <div style={{...S.card, background:`linear-gradient(135deg,${sp.color}0e,${sp.color}03)`, border:`1px solid ${sp.color}22`, marginBottom:14}}>
@@ -998,7 +1183,13 @@ function AdminPortal({ lang, setLang, t, db, user, token, sync, syncAll, toast, 
           <div style={S.card}>
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:11}}>
               <div style={S.h2}>🧪 {t("أسئلة الاختبار","Quiz Questions")} <span style={S.tag(V.yel)}>{spQ.length}</span></div>
-              <button onClick={()=>setModal({type:"quiz",item:null,extra:{gId:sp.id}})} style={S.sec(V.yel)}>➕ {t("إضافة سؤال","Add Q")}</button>
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={()=>setAiModal({gId:sp.id, context:sp.nameAr})}
+                  style={{padding:"5px 12px",borderRadius:7,border:"1px solid rgba(168,85,247,0.35)",cursor:"pointer",fontWeight:800,fontSize:11,background:"rgba(168,85,247,0.12)",color:"#c084fc",fontFamily:"inherit"}}>
+                  ✨ {t("AI","AI")}
+                </button>
+                <button onClick={()=>setModal({type:"quiz",item:null,extra:{gId:sp.id}})} style={S.sec(V.yel)}>➕ {t("إضافة سؤال","Add Q")}</button>
+              </div>
             </div>
             {spQ.map((q,i)=>(
               <div key={q.id} style={S.row}>
@@ -1028,6 +1219,7 @@ function AdminPortal({ lang, setLang, t, db, user, token, sync, syncAll, toast, 
       <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
         <Header/>{toast&&<div style={S.tst(toast.type)}>{toast.msg}</div>}
         <EditModal/>
+        <AIQuizModal/>
         <div style={S.pg}>
           <div style={S.back} onClick={()=>setPage("dashboard")}>‹ {t("لوحة التحكم","Dashboard")}</div>
           <div style={{...S.card, background:`linear-gradient(135deg,${mod.color}0e,${mod.color}03)`, border:`1px solid ${mod.color}22`}}>
@@ -1061,7 +1253,13 @@ function AdminPortal({ lang, setLang, t, db, user, token, sync, syncAll, toast, 
           <div style={S.card}>
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:11}}>
               <div style={S.h2}>🧪 {t("أسئلة الاختبار","Quiz Questions")} <span style={S.tag(V.yel)}>{mQ.length}</span></div>
-              <button onClick={()=>setModal({type:"quiz",item:null,extra:{gId:qKey}})} style={S.sec(V.yel)}>➕</button>
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={()=>setAiModal({gId:qKey, context:mod.nameAr})}
+                  style={{padding:"5px 12px",borderRadius:7,border:"1px solid rgba(168,85,247,0.35)",cursor:"pointer",fontWeight:800,fontSize:11,background:"rgba(168,85,247,0.12)",color:"#c084fc",fontFamily:"inherit"}}>
+                  ✨ AI
+                </button>
+                <button onClick={()=>setModal({type:"quiz",item:null,extra:{gId:qKey}})} style={S.sec(V.yel)}>➕</button>
+              </div>
             </div>
             {mQ.map((q,i)=>(
               <div key={q.id} style={S.row}>
