@@ -588,6 +588,106 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
 // ══════════════════════════════════════════════════════
 //  ADMIN PORTAL — لوحة تحكم كاملة
 // ══════════════════════════════════════════
+function EditModalComponent({ modal, setModal, S, t, lang, addSpec, updSpec, addTool, updTool, addProc, updProc, addIPC, updIPC, addStep, updStep, addQ, updQ, addUser }) {
+  const {type, item, extra} = modal;
+
+  const init = () => {
+    if (type==="spec")    return {nameAr:item?.nameAr||"",nameEn:item?.nameEn||"",icon:item?.icon||"🦷",color:item?.color||"#38bdf8"};
+    if (type==="tool")    return {nameAr:item?.nameAr||"",nameEn:item?.nameEn||"",useAr:item?.useAr||"",useEn:item?.useEn||""};
+    if (type==="proc")    return {nameAr:item?.nameAr||"",nameEn:item?.nameEn||""};
+    if (type==="ipcmod")  return {nameAr:item?.nameAr||"",nameEn:item?.nameEn||"",icon:item?.icon||"🛡",color:item?.color||"#60a5fa"};
+    if (type==="ipcstep") return {textAr:item?.textAr||"",textEn:item?.textEn||""};
+    if (type==="quiz")    return {questionAr:item?.questionAr||"",questionEn:item?.questionEn||"",optionsAr:(item?.optionsAr||["","","",""]).join("\n"),optionsEn:(item?.optionsEn||["","","",""]).join("\n"),answer:item?.answer||0};
+    if (type==="user")    return {name:"",username:"",password:"",role:"nurse"};
+    return {};
+  };
+
+  const { useState: useLocalState } = React;
+  const [form, setForm] = useLocalState(init);
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  const F = ({label, k, multi=false, inputType="text"}) => (
+    <div style={{marginBottom:10}}>
+      <label style={S.lbl}>{label}</label>
+      {multi
+        ? <textarea style={S.ta} value={form[k]||""} onChange={e=>set(k,e.target.value)}/>
+        : <input style={S.inp} type={inputType} value={form[k]||""} onChange={e=>set(k,e.target.value)}/>}
+    </div>
+  );
+
+  const save = () => {
+    if (type==="spec")    { item ? updSpec(item.id,form) : addSpec(form); }
+    if (type==="tool")    { item ? updTool(extra.spId,item.id,form) : addTool(extra.spId,form); }
+    if (type==="proc")    { item ? updProc(extra.spId,item.id,form) : addProc(extra.spId,form); }
+    if (type==="ipcmod")  { item ? updIPC(item.id,form) : addIPC(form); }
+    if (type==="ipcstep") { item ? updStep(extra.modId,item.id,form) : addStep(extra.modId,form); }
+    if (type==="quiz") {
+      const ar = form.optionsAr.split("\n").map(s=>s.trim()).filter(Boolean);
+      const en = form.optionsEn.split("\n").map(s=>s.trim()).filter(Boolean);
+      const q  = {...form, optionsAr:ar, optionsEn:en, answer:parseInt(form.answer)||0};
+      item ? updQ(extra.gId,item.id,q) : addQ(extra.gId,q);
+    }
+    if (type==="user") { addUser(form); }
+    setModal(null);
+  };
+
+  const t2 = (ar,en) => lang==="ar" ? ar : en;
+  const titles = {spec:t2("القسم","Specialty"),tool:t2("أداة","Tool"),proc:t2("إجراء","Procedure"),ipcmod:t2("وحدة IPC","IPC Module"),ipcstep:t2("خطوة","Step"),quiz:t2("سؤال اختبار","Quiz Question"),user:t2("مستخدم","User")};
+
+  return (
+    <div style={S.mdlBg} onClick={e=>e.target===e.currentTarget&&setModal(null)}>
+      <div style={S.mdl}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div style={{fontWeight:900,fontSize:15}}>{item?t2("تعديل","Edit"):t2("إضافة","Add")} — {titles[type]}</div>
+          <button onClick={()=>setModal(null)} style={S.del}>✕</button>
+        </div>
+
+        {(type==="spec"||type==="tool"||type==="proc"||type==="ipcmod")&&<>
+          <F label={t2("الاسم بالعربي","Name (Arabic)")} k="nameAr"/>
+          <F label={t2("الاسم بالإنجليزي","Name (English)")} k="nameEn"/>
+        </>}
+        {(type==="spec"||type==="ipcmod")&&<>
+          <F label={t2("الأيقونة (emoji)","Icon (emoji)")} k="icon"/>
+          <F label={t2("اللون hex مثل #38bdf8","Color hex e.g. #38bdf8")} k="color"/>
+        </>}
+        {type==="tool"&&<>
+          <F label={t2("الاستخدام بالعربي","Use / Function (Arabic)")} k="useAr" multi/>
+          <F label={t2("الاستخدام بالإنجليزي","Use / Function (English)")} k="useEn" multi/>
+        </>}
+        {type==="ipcstep"&&<>
+          <F label={t2("النص بالعربي","Step text (Arabic)")} k="textAr" multi/>
+          <F label={t2("النص بالإنجليزي","Step text (English)")} k="textEn" multi/>
+        </>}
+        {type==="quiz"&&<>
+          <F label={t2("السؤال بالعربي","Question (Arabic)")} k="questionAr" multi/>
+          <F label={t2("السؤال بالإنجليزي","Question (English)")} k="questionEn" multi/>
+          <F label={t2("الخيارات عربي — سطر لكل خيار","Options AR — one per line")} k="optionsAr" multi/>
+          <F label={t2("الخيارات إنجليزي — سطر لكل خيار","Options EN — one per line")} k="optionsEn" multi/>
+          <div style={{marginBottom:10}}>
+            <label style={S.lbl}>{t2("رقم الإجابة الصحيحة (0 = الأول)","Correct answer index (0 = first)")}</label>
+            <input style={S.inp} type="number" min="0" max="3" value={form.answer||0} onChange={e=>set("answer",e.target.value)}/>
+          </div>
+        </>}
+        {type==="user"&&<>
+          <F label={t2("الاسم الكامل","Full name")} k="name"/>
+          <F label={t2("اسم المستخدم","Username")} k="username"/>
+          <F label={t2("كلمة المرور","Password")} k="password" inputType="password"/>
+          <div style={{marginBottom:10}}>
+            <label style={S.lbl}>{t2("الدور","Role")}</label>
+            <select style={S.inp} value={form.role||"nurse"} onChange={e=>set("role",e.target.value)}>
+              <option value="nurse">{t2("ممرضة","Nurse")}</option>
+              <option value="admin">{t2("مدير","Admin")}</option>
+            </select>
+          </div>
+        </>}
+
+        <button onClick={save} style={{...S.pri,width:"100%",marginTop:8}}>{t2("حفظ","Save")}</button>
+      </div>
+    </div>
+  );
+}
+
+
 function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toastFn, mut, onLogout }) {
   const t = (ar, en) => lang === "ar" ? ar : en;
   const [page, setPage]     = useState("dashboard"); // dashboard|spec_detail|ipc_detail
@@ -1166,82 +1266,12 @@ answer هو رقم الخيار الصحيح (0-3).`;
   };
 
   // ── MODAL
-  const EditModal = () => {
-    if (!modal) return null;
-    const {type, item, extra} = modal;
-    const init = () => {
-      if (type==="spec")    return {nameAr:item?.nameAr||"",nameEn:item?.nameEn||"",icon:item?.icon||"🦷",color:item?.color||"#38bdf8"};
-      if (type==="tool")    return {nameAr:item?.nameAr||"",nameEn:item?.nameEn||"",useAr:item?.useAr||"",useEn:item?.useEn||""};
-      if (type==="proc")    return {nameAr:item?.nameAr||"",nameEn:item?.nameEn||""};
-      if (type==="ipcmod")  return {nameAr:item?.nameAr||"",nameEn:item?.nameEn||"",icon:item?.icon||"🛡",color:item?.color||"#60a5fa"};
-      if (type==="ipcstep") return {textAr:item?.textAr||"",textEn:item?.textEn||""};
-      if (type==="quiz")    return {questionAr:item?.questionAr||"",questionEn:item?.questionEn||"",optionsAr:(item?.optionsAr||["","","",""]).join("\n"),optionsEn:(item?.optionsEn||["","","",""]).join("\n"),answer:item?.answer||0};
-      if (type==="user")    return {name:"",username:"",password:"",role:"nurse"};
-      return {};
-    };
-    const [form, setForm] = useState(init);
-    const set = (k,v) => setForm(f=>({...f,[k]:v}));
-    const F = ({label,k,multi=false,inputType="text"}) => (
-      <div style={{marginBottom:10}}>
-        <label style={S.lbl}>{label}</label>
-        {multi?<textarea style={S.ta} value={form[k]||""} onChange={e=>set(k,e.target.value)}/>
-              :<input style={S.inp} type={inputType} value={form[k]||""} onChange={e=>set(k,e.target.value)}/>}
-      </div>
-    );
-    const save = () => {
-      if (type==="spec")    { item?updSpec(item.id,form):addSpec(form); }
-      if (type==="tool")    { item?updTool(extra.spId,item.id,form):addTool(extra.spId,form); }
-      if (type==="proc")    { item?updProc(extra.spId,item.id,form):addProc(extra.spId,form); }
-      if (type==="ipcmod")  { item?updIPC(item.id,form):addIPC(form); }
-      if (type==="ipcstep") { item?updStep(extra.modId,item.id,form):addStep(extra.modId,form); }
-      if (type==="quiz") {
-        const ar = form.optionsAr.split("\n").map(s=>s.trim()).filter(Boolean);
-        const en = form.optionsEn.split("\n").map(s=>s.trim()).filter(Boolean);
-        const q  = {...form, optionsAr:ar, optionsEn:en, answer:parseInt(form.answer)||0};
-        item ? updQ(extra.gId,item.id,q) : addQ(extra.gId,q);
-      }
-      if (type==="user") { addUser(form); }
-      setModal(null);
-    };
-    const titles = {spec:t("القسم","Specialty"),tool:t("أداة","Tool"),proc:t("إجراء","Procedure"),ipcmod:t("وحدة IPC","IPC Module"),ipcstep:t("خطوة","Step"),quiz:t("سؤال اختبار","Quiz Question"),user:t("مستخدم","User")};
-    return (
-      <div style={S.mdlBg} onClick={e=>e.target===e.currentTarget&&setModal(null)}>
-        <div style={S.mdl}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <div style={{fontWeight:900,fontSize:14}}>{item?t("تعديل","Edit"):t("إضافة","Add")} — {titles[type]}</div>
-            <button onClick={()=>setModal(null)} style={S.del}>✕</button>
-          </div>
-          {(type==="spec"||type==="tool"||type==="proc"||type==="ipcmod")&&<><F label={t("الاسم بالعربي","Name (Arabic)")} k="nameAr"/><F label={t("الاسم بالإنجليزي","Name (English)")} k="nameEn"/></>}
-          {(type==="spec"||type==="ipcmod")&&<><F label={t("الأيقونة","Icon (emoji)")} k="icon"/><F label={t("اللون","Color (hex)")} k="color"/></>}
-          {type==="tool"&&<><F label={t("الاستخدام بالعربي","Use (Arabic)")} k="useAr" multi/><F label={t("الاستخدام بالإنجليزي","Use (English)")} k="useEn" multi/></>}
-          {type==="ipcstep"&&<><F label={t("النص بالعربي","Step text (Arabic)")} k="textAr" multi/><F label={t("النص بالإنجليزي","Step text (English)")} k="textEn" multi/></>}
-          {type==="quiz"&&<>
-            <F label={t("السؤال عربي","Question (Arabic)")} k="questionAr" multi/>
-            <F label={t("السؤال إنجليزي","Question (English)")} k="questionEn" multi/>
-            <F label={t("الخيارات عربي — سطر/خيار","Options Arabic — one per line")} k="optionsAr" multi/>
-            <F label={t("الخيارات إنجليزي — سطر/خيار","Options English — one per line")} k="optionsEn" multi/>
-            <div style={{marginBottom:10}}>
-              <label style={S.lbl}>{t("رقم الإجابة الصحيحة (يبدأ من 0)","Correct answer index (0-based)")}</label>
-              <input style={S.inp} type="number" min="0" max="3" value={form.answer||0} onChange={e=>set("answer",e.target.value)}/>
-            </div>
-          </>}
-          {type==="user"&&<>
-            <F label={t("الاسم الكامل","Full name")} k="name"/>
-            <F label={t("اسم المستخدم","Username")} k="username"/>
-            <F label={t("كلمة المرور","Password")} k="password" inputType="password"/>
-            <div style={{marginBottom:10}}>
-              <label style={S.lbl}>{t("الدور","Role")}</label>
-              <select style={S.inp} value={form.role||"nurse"} onChange={e=>set("role",e.target.value)}>
-                <option value="nurse">{t("ممرضة","Nurse")}</option>
-                <option value="admin">{t("مدير","Admin")}</option>
-              </select>
-            </div>
-          </>}
-          <button onClick={save} style={{...S.pri,width:"100%",marginTop:6}}>{t("حفظ","Save")}</button>
-        </div>
-      </div>
-    );
-  };
+  // EditModal rendered via portal pattern - stable reference
+  const EditModal = () => modal ? <EditModalComponent modal={modal} setModal={setModal} S={S} t={t} lang={lang}
+    addSpec={addSpec} updSpec={updSpec} addTool={addTool} updTool={updTool}
+    addProc={addProc} updProc={updProc} addIPC={addIPC} updIPC={updIPC}
+    addStep={addStep} updStep={updStep} addQ={addQ} updQ={updQ} addUser={addUser}
+  /> : null;
 
   const AHeader = () => (
     <div style={S.hdr}>
