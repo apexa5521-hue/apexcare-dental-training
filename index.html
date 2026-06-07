@@ -105,7 +105,13 @@ function App() {
           answer: parseInt(x.answer)||0,
         }));
       });
-      setDb(d => ({...d, specialties:r.data.specialties, ipcModules:r.data.ipcModules, quizzes:q}));
+      // ── Only replace if GAS has real data — otherwise keep SEED
+      setDb(d => {
+        const specs = (r.data.specialties||[]).length > 0 ? r.data.specialties : d.specialties;
+        const ipcs  = (r.data.ipcModules||[]).length  > 0 ? r.data.ipcModules  : d.ipcModules;
+        const quizzes = Object.keys(q).length > 0 ? q : d.quizzes;
+        return {...d, specialties:specs, ipcModules:ipcs, quizzes};
+      });
       setSync("ok");
     } catch { setSync("error"); }
   };
