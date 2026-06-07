@@ -9,7 +9,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦷</text></svg>"/>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #eef2ff; }
+    body { background: #f0f4ff; }
     #root { min-height: 100vh; }
     #loading {
       position: fixed; inset: 0;
@@ -160,8 +160,9 @@ function App() {
 //  SHARED: DESIGN TOKENS
 // ══════════════════════════════════════════════════════
 const V = {
-  hi:"#38bdf8", pur:"#818cf8", grn:"#34d399", red:"#f87171",
-  org:"#fb923c", yel:"#fbbf24", pink:"#f9a8d4", muted:"#64748b",
+  hi:"#3b82f6", pur:"#6366f1", grn:"#10b981", red:"#ef4444",
+  org:"#f97316", yel:"#f59e0b", pink:"#ec4899", muted:"#64748b",
+  txt:"#1e293b",
 };
 
 // ══════════════════════════════════════════════════════
@@ -178,8 +179,8 @@ function LoginScreen({ lang, setLang, sync, onLogin, toast }) {
   const S = {
     wrap:  { direction:dir, fontFamily:lang==="ar"?"'Tajawal',sans-serif":"'Inter',sans-serif", minHeight:"100vh", background:"linear-gradient(150deg,#020812 0%,#060e22 60%,#040b1a 100%)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 },
     box:   { width:"100%", maxWidth:400 },
-    card:  { background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:16, padding:28 },
-    inp:   { background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.11)", borderRadius:9, padding:"10px 14px", color:"#e2e8f0", fontSize:14, width:"100%", boxSizing:"border-box", outline:"none", fontFamily:"inherit" },
+    card:  { background:"#ffffff", border:"1px solid rgba(0,0,0,0.08)", borderRadius:16, padding:28 },
+    inp:   { background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:9, padding:"10px 14px", color:"#1e293b", fontSize:14, width:"100%", boxSizing:"border-box", outline:"none", fontFamily:"inherit" },
     lbl:   { fontSize:12, color:V.muted, marginBottom:4, display:"block", fontWeight:700 },
     pri:   { padding:"11px 20px", borderRadius:10, border:"none", cursor:"pointer", fontWeight:800, fontSize:14, background:"linear-gradient(135deg,#38bdf8,#6366f1)", color:"#fff", width:"100%", fontFamily:"inherit" },
     toast: (tp) => ({ position:"fixed", top:18, [dir==="rtl"?"right":"left"]:18, padding:"10px 16px", borderRadius:10, zIndex:999, fontWeight:700, fontSize:13, fontFamily:"inherit", background:tp==="ok"?"rgba(16,185,129,0.94)":"rgba(239,68,68,0.94)", color:"#fff" }),
@@ -223,7 +224,7 @@ function LoginScreen({ lang, setLang, sync, onLogin, toast }) {
 
         <div style={{display:"flex", gap:8, justifyContent:"center", marginTop:14}}>
           {["ar","en"].map(l => (
-            <button key={l} onClick={()=>setLang(l)} style={{padding:"6px 16px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:700, fontSize:12, fontFamily:"inherit", background:lang===l?"linear-gradient(135deg,#38bdf8,#6366f1)":"rgba(255,255,255,0.05)", color:lang===l?"#fff":"#64748b"}}>
+            <button key={l} onClick={()=>setLang(l)} style={{padding:"6px 16px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:700, fontSize:12, fontFamily:"inherit", background:lang===l?"linear-gradient(135deg,#38bdf8,#6366f1)":"#f1f5f9", color:lang===l?"#fff":"#64748b"}}>
               {l==="ar"?"العربية":"English"}
             </button>
           ))}
@@ -274,18 +275,18 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
 
   // ── STYLES (Nurse: warm, clean, focused on learning)
   const S = {
-    app:  { direction:dir, fontFamily:lang==="ar"?"'Tajawal',sans-serif":"'Inter',sans-serif", background:"linear-gradient(150deg,#03070f 0%,#070e20 55%,#05091a 100%)", minHeight:"100vh", color:"#e2e8f0" },
+    app:  { direction:dir, fontFamily:lang==="ar"?"'Tajawal',sans-serif":"'Inter',sans-serif", background:"linear-gradient(150deg,#03070f 0%,#070e20 55%,#05091a 100%)", minHeight:"100vh", color:"#1e293b" },
     hdr:  { position:"sticky", top:0, zIndex:100, background:"rgba(3,7,15,0.9)", backdropFilter:"blur(20px)", borderBottom:"1px solid rgba(56,189,248,0.1)", padding:"10px 18px", display:"flex", alignItems:"center", justifyContent:"space-between" },
     pg:   { padding:"18px 16px", maxWidth:860, margin:"0 auto" },
-    card: { background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:13, padding:16, marginBottom:12 },
-    inp:  { background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:9, padding:"10px 14px", color:"#e2e8f0", fontSize:13, width:"100%", boxSizing:"border-box", outline:"none", fontFamily:"inherit" },
+    card: { background:"#ffffff", border:"1px solid #e8edf5", borderRadius:13, padding:16, marginBottom:12 },
+    inp:  { background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:9, padding:"10px 14px", color:"#1e293b", fontSize:13, width:"100%", boxSizing:"border-box", outline:"none", fontFamily:"inherit" },
     pri:  { padding:"9px 18px", borderRadius:9, border:"none", cursor:"pointer", fontWeight:800, fontSize:13, background:"linear-gradient(135deg,#38bdf8,#6366f1)", color:"#fff", fontFamily:"inherit" },
     sec:  (c="#38bdf8") => ({ padding:"6px 14px", borderRadius:8, border:`1px solid ${c}30`, cursor:"pointer", fontWeight:700, fontSize:12, background:`${c}0f`, color:c, fontFamily:"inherit" }),
-    row:  { display:"flex", gap:10, alignItems:"flex-start", padding:"10px 0", borderBottom:"1px solid rgba(255,255,255,0.05)" },
+    row:  { display:"flex", gap:10, alignItems:"flex-start", padding:"10px 0", borderBottom:"1px solid #f1f5f9" },
     tag:  (c="#38bdf8") => ({ background:`${c}1c`, color:c, padding:"2px 8px", borderRadius:20, fontSize:11, fontWeight:700, flexShrink:0 }),
     spC:  (c) => ({ background:`linear-gradient(135deg,${c}0e,${c}03)`, border:`1px solid ${c}22`, borderRadius:13, padding:15, cursor:"pointer", transition:"transform 0.15s,box-shadow 0.15s" }),
     step: (c) => ({ background:`${c}0b`, border:`1px solid ${c}1e`, borderRadius:9, padding:"10px 13px", marginBottom:8, lineHeight:1.75, fontSize:13 }),
-    tab2: (a,c="#38bdf8") => ({ padding:"8px 18px", borderRadius:9, cursor:"pointer", fontWeight:700, fontSize:12, border:"none", fontFamily:"inherit", background:a?`linear-gradient(135deg,${c},${c}bb)`:"rgba(255,255,255,0.04)", color:a?"#fff":"#64748b" }),
+    tab2: (a,c="#38bdf8") => ({ padding:"8px 18px", borderRadius:9, cursor:"pointer", fontWeight:700, fontSize:12, border:"none", fontFamily:"inherit", background:a?`linear-gradient(135deg,${c},${c}bb)`:"#f1f5f9", color:a?"#fff":"#64748b" }),
     back: { display:"flex", alignItems:"center", gap:5, cursor:"pointer", color:V.hi, fontWeight:700, fontSize:13, marginBottom:12 },
     h2:   { fontSize:15, fontWeight:900, marginBottom:12, display:"flex", alignItems:"center", gap:8 },
     logo: { fontWeight:900, fontSize:15, background:"linear-gradient(135deg,#34d399,#60a5fa)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" },
@@ -303,7 +304,7 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
         <span style={S.sync(sync)}>{sync==="ok"?t("✓ متزامن","✓ Synced"):sync==="syncing"?t("...","..."):sync==="error"?t("خطأ","Err"):t("محلي","Local")}</span>
         {GAS_OK()&&sync!=="syncing"&&<button onClick={()=>syncAll(token)} style={S.sec()}>🔄</button>}
         <button onClick={()=>setLang(l=>l==="ar"?"en":"ar")} style={S.sec()}>{lang==="ar"?"EN":"ع"}</button>
-        <div style={{display:"flex", alignItems:"center", gap:6, padding:"4px 10px", borderRadius:8, background:"rgba(255,255,255,0.04)", fontSize:12}}>
+        <div style={{display:"flex", alignItems:"center", gap:6, padding:"4px 10px", borderRadius:8, background:"#f1f5f9", fontSize:12}}>
           <span style={{color:V.grn}}>●</span>
           <span style={{fontWeight:700}}>{user.name}</span>
         </div>
@@ -330,7 +331,7 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
               <div style={{display:"flex", justifyContent:"center", gap:6, marginBottom:22}}>
                 {quiz.questions.map((_,i) => {
                   const answered = i < quiz.idx;
-                  return <div key={i} style={{width:10,height:10,borderRadius:"50%",background:answered?(i<quiz.score?V.grn:V.red):"rgba(255,255,255,0.15)"}}/>;
+                  return <div key={i} style={{width:10,height:10,borderRadius:"50%",background:answered?(i<quiz.score?V.grn:V.red):"#cbd5e1"}}/>;
                 })}
               </div>
               <div style={{display:"flex", gap:10, justifyContent:"center"}}>
@@ -354,15 +355,15 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
               <span style={{color:V.muted, fontSize:12, fontWeight:700}}>{t("السؤال","Question")} {quiz.idx+1} / {quiz.questions.length}</span>
               <span style={S.tag()}>{quiz.score} {t("نقطة","pts")}</span>
             </div>
-            <div style={{height:5, background:"rgba(255,255,255,0.06)", borderRadius:10, marginBottom:18}}>
+            <div style={{height:5, background:"#f8fafc", borderRadius:10, marginBottom:18}}>
               <div style={{width:`${(quiz.idx/quiz.questions.length)*100}%`, height:"100%", background:"linear-gradient(90deg,#38bdf8,#818cf8)", borderRadius:10, transition:"width 0.4s"}}/>
             </div>
             <div style={{fontSize:16, fontWeight:800, marginBottom:18, lineHeight:1.65}}>{t(q.questionAr, q.questionEn)}</div>
             {opts.map((opt,i) => (
               <div key={i} onClick={()=>answerQ(i)}
-                style={{background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:9, padding:"11px 15px", cursor:"pointer", marginBottom:7, fontSize:13, transition:"all 0.12s"}}
+                style={{background:"#ffffff", border:"1px solid #e8edf5", borderRadius:9, padding:"11px 15px", cursor:"pointer", marginBottom:7, fontSize:13, transition:"all 0.12s"}}
                 onMouseEnter={e=>{e.currentTarget.style.background="rgba(56,189,248,0.1)";e.currentTarget.style.borderColor="rgba(56,189,248,0.3)";}}
-                onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.04)";e.currentTarget.style.borderColor="rgba(255,255,255,0.08)";}}>
+                onMouseLeave={e=>{e.currentTarget.style.background="#f8fafc";e.currentTarget.style.borderColor="#e2e8f0";}}>
                 <span style={{color:V.muted, marginInlineEnd:9, fontWeight:700}}>{String.fromCharCode(65+i)}.</span>{opt}
               </div>
             ))}
@@ -551,7 +552,7 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
           {filtered.map(sp => (
             <div key={sp.id} style={S.spC(sp.color)}
               onClick={()=>{setAS(sp);setTab("tools");setPage("spec");}}
-              onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 24px ${sp.color}18`;}}
+              onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 24px ${sp.color}30`;}}
               onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}>
               <div style={{fontSize:24, marginBottom:5}}>{sp.icon}</div>
               <div style={{fontWeight:800, fontSize:13}}>{t(sp.nameAr, sp.nameEn)}</div>
@@ -616,25 +617,25 @@ function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toa
   const addQ       = async (gId,f) => { const id=gid(),item={...f,id,groupId:gId}; await mut("addQuiz",{groupId:gId,...f},d=>{if(!d.quizzes[gId])d.quizzes[gId]=[];d.quizzes[gId].push(item);}); toastFn(t("تم إضافة السؤال","Question added")); };
   const updQ       = async (gId,id,f) => { await mut("updateQuiz",{id,...f},d=>{if(d.quizzes[gId]){const i=d.quizzes[gId].findIndex(x=>x.id===id);if(i>=0)Object.assign(d.quizzes[gId][i],f);}}); toastFn(t("تم التحديث","Updated")); };
   const delQ       = async (gId,id) => { await mut("deleteQuiz",{id},d=>{if(d.quizzes[gId])d.quizzes[gId]=d.quizzes[gId].filter(x=>x.id!==id);}); toastFn(t("تم الحذف","Deleted")); };
-  const addUser    = async f => { const id=gid(),item={...f,id}; await mut("addUser",f,d=>d.users.push(item)); toastFn(t("تم إضافة المستخدم","User added")); };
+  const addUser    = async f => { const id=gid(),item={...f,id}; await mut("addUser",f,d=>d.users.push(item)); toastFn(t(`تم إضافة المستخدم @${f.username} — كلمة المرور: ${f.password}`,`User @${f.username} added — password: ${f.password}`)); };
   const delUser    = async id => { if(id===user?.id){toastFn(t("لا يمكن حذف حسابك","Cannot delete own account"),"err");return;} await mut("deleteUser",{id},d=>{d.users=d.users.filter(u=>u.id!==id);}); toastFn(t("تم الحذف","Deleted")); };
 
   // ── STYLES (Admin: high-density, more professional, darker)
   const S = {
-    app:  { direction:dir, fontFamily:lang==="ar"?"'Tajawal',sans-serif":"'Inter',sans-serif", background:"linear-gradient(150deg,#020508 0%,#050c18 55%,#040a14 100%)", minHeight:"100vh", color:"#e2e8f0" },
+    app:  { direction:dir, fontFamily:lang==="ar"?"'Tajawal',sans-serif":"'Inter',sans-serif", background:"linear-gradient(150deg,#020508 0%,#050c18 55%,#040a14 100%)", minHeight:"100vh", color:"#1e293b" },
     hdr:  { position:"sticky", top:0, zIndex:100, background:"rgba(2,5,8,0.94)", backdropFilter:"blur(24px)", borderBottom:"1px solid rgba(139,92,246,0.18)", padding:"10px 18px", display:"flex", alignItems:"center", justifyContent:"space-between" },
     pg:   { padding:"18px 16px", maxWidth:960, margin:"0 auto" },
-    card: { background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:12, padding:15, marginBottom:11 },
-    inp:  { background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:8, padding:"8px 12px", color:"#e2e8f0", fontSize:13, width:"100%", boxSizing:"border-box", outline:"none", fontFamily:"inherit" },
-    ta:   { background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:8, padding:"8px 12px", color:"#e2e8f0", fontSize:13, width:"100%", boxSizing:"border-box", minHeight:60, resize:"vertical", fontFamily:"inherit" },
+    card: { background:"#ffffff", border:"1px solid #e8edf5", borderRadius:12, padding:15, marginBottom:11 },
+    inp:  { background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:8, padding:"8px 12px", color:"#1e293b", fontSize:13, width:"100%", boxSizing:"border-box", outline:"none", fontFamily:"inherit" },
+    ta:   { background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:8, padding:"8px 12px", color:"#1e293b", fontSize:13, width:"100%", boxSizing:"border-box", minHeight:60, resize:"vertical", fontFamily:"inherit" },
     lbl:  { fontSize:11, color:V.muted, marginBottom:3, display:"block", fontWeight:700 },
     pri:  { padding:"8px 16px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:800, fontSize:12, background:"linear-gradient(135deg,#8b5cf6,#6366f1)", color:"#fff", fontFamily:"inherit" },
     sec:  (c="#8b5cf6") => ({ padding:"5px 12px", borderRadius:7, border:`1px solid ${c}30`, cursor:"pointer", fontWeight:700, fontSize:11, background:`${c}10`, color:c, fontFamily:"inherit" }),
     del:  { padding:"4px 10px", borderRadius:6, border:"1px solid rgba(248,113,113,0.25)", cursor:"pointer", fontWeight:700, fontSize:11, background:"rgba(248,113,113,0.08)", color:V.red, fontFamily:"inherit" },
     edt:  { padding:"4px 10px", borderRadius:6, border:"1px solid rgba(251,191,36,0.25)", cursor:"pointer", fontWeight:700, fontSize:11, background:"rgba(251,191,36,0.08)", color:V.yel, fontFamily:"inherit" },
-    row:  { display:"flex", gap:8, alignItems:"flex-start", padding:"8px 0", borderBottom:"1px solid rgba(255,255,255,0.04)" },
+    row:  { display:"flex", gap:8, alignItems:"flex-start", padding:"8px 0", borderBottom:"1px solid #f1f5f9" },
     tag:  (c="#8b5cf6") => ({ background:`${c}18`, color:c, padding:"2px 7px", borderRadius:20, fontSize:10, fontWeight:700, flexShrink:0 }),
-    tab:  (a) => ({ padding:"7px 14px", borderRadius:8, cursor:"pointer", fontWeight:700, fontSize:12, border:"none", fontFamily:"inherit", background:a?"linear-gradient(135deg,#8b5cf6,#6366f1)":"rgba(255,255,255,0.04)", color:a?"#fff":"#64748b" }),
+    tab:  (a) => ({ padding:"7px 14px", borderRadius:8, cursor:"pointer", fontWeight:700, fontSize:12, border:"none", fontFamily:"inherit", background:a?"linear-gradient(135deg,#8b5cf6,#6366f1)":"#f1f5f9", color:a?"#fff":"#64748b" }),
     back: { display:"flex", alignItems:"center", gap:5, cursor:"pointer", color:"#a78bfa", fontWeight:700, fontSize:13, marginBottom:12 },
     h2:   { fontSize:15, fontWeight:900, marginBottom:12, display:"flex", alignItems:"center", gap:7 },
     logo: { fontWeight:900, fontSize:15, background:"linear-gradient(135deg,#8b5cf6,#a78bfa)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" },
@@ -643,9 +644,9 @@ function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toa
     mdl:  { background:"#050c18", border:"1px solid rgba(139,92,246,0.25)", borderRadius:14, padding:22, width:"100%", maxWidth:460, maxHeight:"90vh", overflowY:"auto" },
     tst:  (tp) => ({ position:"fixed", top:16, [dir==="rtl"?"right":"left"]:16, padding:"10px 16px", borderRadius:10, zIndex:999, fontWeight:700, fontSize:13, fontFamily:"inherit", background:tp==="ok"?"rgba(16,185,129,0.94)":tp==="err"?"rgba(239,68,68,0.94)":"rgba(59,130,246,0.94)", color:"#fff" }),
     grid2:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:9 },
-    kpi:  (c) => ({ background:`rgba(255,255,255,0.025)`, border:`1px solid ${c}22`, borderRadius:11, padding:"14px 16px", textAlign:"center" }),
+    kpi:  (c) => ({ background:"#ffffff", border:`1px solid ${c}25`, borderRadius:11, padding:"14px 16px", textAlign:"center" }),
     step: (c) => ({ background:`${c}09`, border:`1px solid ${c}1c`, borderRadius:8, padding:"8px 12px", marginBottom:7, display:"flex", gap:8, alignItems:"flex-start" }),
-    spR:  { background:"rgba(255,255,255,0.025)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:10, padding:"11px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:10 },
+    spR:  { background:"#ffffff", border:"1px solid #e8edf5", borderRadius:10, padding:"11px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:10 },
   };
 
 
@@ -1120,8 +1121,8 @@ answer هو رقم الخيار الصحيح (0-3).`;
                 {generated.map((q, i) => (
                   <div key={i} onClick={()=>setSelected(s=>({...s,[i]:!s[i]}))}
                     style={{padding:"10px 12px", borderRadius:9, cursor:"pointer", border:`1px solid`,
-                      borderColor:selected[i]?"rgba(168,85,247,0.5)":"rgba(255,255,255,0.07)",
-                      background:selected[i]?"rgba(168,85,247,0.1)":"rgba(255,255,255,0.02)",
+                      borderColor:selected[i]?"rgba(139,92,246,0.5)":"#e2e8f0",
+                      background:selected[i]?"rgba(139,92,246,0.08)":"#f8fafc",
                       transition:"all 0.15s"}}>
                     <div style={{display:"flex", gap:8, alignItems:"flex-start"}}>
                       <div style={{width:18, height:18, borderRadius:4, border:`2px solid ${selected[i]?"#a855f7":"#475569"}`,
@@ -1130,7 +1131,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
                         {selected[i]?"✓":""}
                       </div>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:12, fontWeight:700, color:"#e2e8f0", marginBottom:4, lineHeight:1.5}}>
+                        <div style={{fontSize:12, fontWeight:700, color:"#1e293b", marginBottom:4, lineHeight:1.5}}>
                           {lang==="ar" ? q.questionAr : q.questionEn}
                         </div>
                         <div style={{display:"flex", flexDirection:"column", gap:2}}>
