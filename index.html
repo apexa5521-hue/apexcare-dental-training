@@ -105,11 +105,17 @@ function App() {
           answer: parseInt(x.answer)||0,
         }));
       });
-      // ── Only replace if GAS has real data — otherwise keep SEED
+      // ── Only replace if GAS has COMPLETE data (with tools) — otherwise keep SEED
       setDb(d => {
-        const specs = (r.data.specialties||[]).length > 0 ? r.data.specialties : d.specialties;
-        const ipcs  = (r.data.ipcModules||[]).length  > 0 ? r.data.ipcModules  : d.ipcModules;
+        // Check if GAS specs have tools loaded
+        const gasSpecs = r.data.specialties || [];
+        const gasHasTools = gasSpecs.some(s => (s.tools||[]).length > 0);
+        const gasHasSteps = (r.data.ipcModules||[]).some(m => (m.steps||[]).length > 0);
+
+        const specs   = (gasSpecs.length > 0 && gasHasTools) ? gasSpecs : d.specialties;
+        const ipcs    = ((r.data.ipcModules||[]).length > 0 && gasHasSteps) ? r.data.ipcModules : d.ipcModules;
         const quizzes = Object.keys(q).length > 0 ? q : d.quizzes;
+
         return {...d, specialties:specs, ipcModules:ipcs, quizzes};
       });
       setSync("ok");
