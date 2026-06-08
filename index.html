@@ -56,6 +56,185 @@ const GAS_OK  = () => !GAS_URL.includes("YOUR_DEPLOYMENT_ID");
 // ══════════════════════════════════════════════════════
 // SEED loaded from window.__SEED
 const SEED = window.__SEED;
+// ══════════════════════════════════════════════════════
+//  TRANSLATIONS — Urdu (ur) & Bahasa Indonesia (id)
+// ══════════════════════════════════════════════════════
+const TR = {
+  ur: {
+    // Auth
+    "اسم المستخدم": "یوزر نیم",
+    "كلمة المرور": "پاس ورڈ",
+    "دخول": "لاگ ان",
+    "جارٍ الدخول...": "لاگ ان ہو رہا ہے...",
+    "اسم المستخدم أو كلمة المرور غير صحيحة": "یوزر نیم یا پاس ورڈ غلط ہے",
+    "وضع تجريبي": "ڈیمو موڈ",
+    // Nav
+    "خروج": "لاگ آؤٹ",
+    "الرئيسية": "ہوم",
+    "العودة": "واپس",
+    "العودة للرئيسية": "ہوم پر واپس",
+    // Home
+    "اختر تخصصًا أو وحدة للتعلم والمراجعة": "سیکھنے کے لیے ایک شعبہ یا ماڈیول منتخب کریں",
+    "التخصصات الطبية": "طبی شعبے",
+    "مكافحة العدوى والتعقيم": "انفیکشن کنٹرول اور نس بندی",
+    "وحدة": "ماڈیول",
+    "أداة": "آلہ",
+    "إجراء": "طریقہ کار",
+    "سؤال": "سوال",
+    "لا توجد نتائج": "کوئی نتیجہ نہیں",
+    // Specialty
+    "الأدوات": "آلات",
+    "الإجراءات": "طریقہ کار",
+    "ابدأ الاختبار": "امتحان شروع کریں",
+    "هل أنت مستعد للاختبار؟": "کیا آپ امتحان کے لیے تیار ہیں؟",
+    "أسئلة": "سوالات",
+    "لا توجد أدوات": "کوئی آلہ نہیں",
+    "لا توجد إجراءات": "کوئی طریقہ کار نہیں",
+    // IPC
+    "خطوة": "قدم",
+    "الخطوات": "اقدامات",
+    // Quiz
+    "السؤال": "سوال",
+    "نقطة": "پوائنٹ",
+    "ممتاز! اجتزت الاختبار": "شاندار! آپ نے امتحان پاس کیا",
+    "راجع المحتوى وحاول مجددًا": "مواد دوبارہ پڑھیں اور کوشش کریں",
+    "إجابة صحيحة": "درست جواب",
+    "الرئيسية": "ہوم",
+    "إعادة الاختبار": "دوبارہ امتحان",
+    // Admin
+    "لوحة إدارة المنصة": "پلیٹ فارم ایڈمن پینل",
+    "بوابة التمريض": "نرسنگ پورٹل",
+    "القسم": "شعبہ",
+    "إضافة": "شامل کریں",
+    "تعديل": "ترمیم",
+    "حذف": "حذف",
+    "حفظ": "محفوظ",
+    "تفاصيل": "تفصیلات",
+    "مستخدم": "صارف",
+    "ممرضة": "نرس",
+    "مدير": "منتظم",
+    "الدور": "کردار",
+    "الاسم الكامل": "پورا نام",
+    "متزامن ✓": "مطابقت ✓",
+    "جارٍ...": "...",
+    "خطأ": "خرابی",
+    "محلي": "مقامی",
+    // IPC names
+    "ارتداء معدات الوقاية (Donning)": "حفاظتی سامان پہننا (Donning)",
+    "خلع معدات الوقاية (Doffing)": "حفاظتی سامان اتارنا (Doffing)",
+    "اللحظات الخمس لنظافة اليدين (WHO)": "ہاتھ کی صفائی کے پانچ لمحات (WHO)",
+    "التعقيم ومكافحة العدوى": "جراثیم کشی اور انفیکشن کنٹرول",
+    "غسل اليدين الصحيح — خطوات WHO": "ہاتھ دھونے کا صحیح طریقہ — WHO",
+    // Specialty names
+    "طب الأسنان العام": "عمومی دندان سازی",
+    "علاج جذور الأسنان": "روٹ کینال علاج",
+    "تقويم الأسنان": "دانت سیدھے کرنا",
+    "طب أسنان الأطفال": "بچوں کی دندان سازی",
+    "التركيبات السنية": "دانتوں کی تیاری",
+    "جراحة الفم والأسنان": "منہ اور دانت کی سرجری",
+    "اللثة وأمراضها": "مسوڑھوں کی بیماریاں",
+    "الحشوات والترميم": "فلنگ اور بحالی",
+    // Tools tab
+    "🔧 الأدوات": "🔧 آلات",
+    "📋 الإجراءات": "📋 طریقہ کار",
+    "tools": "آلات",
+    "procs": "طریقے",
+  },
+  id: {
+    // Auth
+    "اسم المستخدم": "Nama Pengguna",
+    "كلمة المرور": "Kata Sandi",
+    "دخول": "Masuk",
+    "جارٍ الدخول...": "Sedang masuk...",
+    "اسم المستخدم أو كلمة المرور غير صحيحة": "Nama pengguna atau kata sandi salah",
+    "وضع تجريبي": "Mode Demo",
+    // Nav
+    "خروج": "Keluar",
+    "الرئيسية": "Beranda",
+    "العودة": "Kembali",
+    "العودة للرئيسية": "Kembali ke Beranda",
+    // Home
+    "اختر تخصصًا أو وحدة للتعلم والمراجعة": "Pilih spesialisasi atau modul untuk dipelajari",
+    "التخصصات الطبية": "Spesialisasi Medis",
+    "مكافحة العدوى والتعقيم": "Pengendalian Infeksi & Sterilisasi",
+    "وحدة": "modul",
+    "أداة": "alat",
+    "إجراء": "prosedur",
+    "سؤال": "pertanyaan",
+    "لا توجد نتائج": "Tidak ada hasil",
+    // Specialty
+    "الأدوات": "Alat",
+    "الإجراءات": "Prosedur",
+    "ابدأ الاختبار": "Mulai Kuis",
+    "هل أنت مستعد للاختبار؟": "Siap untuk kuis?",
+    "أسئلة": "pertanyaan",
+    "لا توجد أدوات": "Belum ada alat",
+    "لا توجد إجراءات": "Belum ada prosedur",
+    // IPC
+    "خطوة": "langkah",
+    "الخطوات": "Langkah-langkah",
+    // Quiz
+    "السؤال": "Pertanyaan",
+    "نقطة": "poin",
+    "ممتاز! اجتزت الاختبار": "Luar biasa! Anda lulus kuis",
+    "راجع المحتوى وحاول مجددًا": "Pelajari ulang materi dan coba lagi",
+    "إجابة صحيحة": "jawaban benar",
+    "الرئيسية": "Beranda",
+    "إعادة الاختبار": "Ulangi Kuis",
+    // Admin
+    "لوحة إدارة المنصة": "Panel Admin Platform",
+    "بوابة التمريض": "Portal Perawat",
+    "القسم": "Spesialisasi",
+    "إضافة": "Tambah",
+    "تعديل": "Edit",
+    "حذف": "Hapus",
+    "حفظ": "Simpan",
+    "تفاصيل": "Detail",
+    "مستخدم": "Pengguna",
+    "ممرضة": "Perawat",
+    "مدير": "Admin",
+    "الدور": "Peran",
+    "الاسم الكامل": "Nama Lengkap",
+    "متزامن ✓": "Tersinkron ✓",
+    "جارٍ...": "...",
+    "خطأ": "Error",
+    "محلي": "Lokal",
+    // IPC names
+    "ارتداء معدات الوقاية (Donning)": "Memakai APD (Donning)",
+    "خلع معدات الوقاية (Doffing)": "Melepas APD (Doffing)",
+    "اللحظات الخمس لنظافة اليدين (WHO)": "5 Momen Kebersihan Tangan WHO",
+    "التعقيم ومكافحة العدوى": "Sterilisasi & Pengendalian Infeksi",
+    "غسل اليدين الصحيح — خطوات WHO": "Cuci Tangan yang Benar — Langkah WHO",
+    // Specialty names
+    "طب الأسنان العام": "Kedokteran Gigi Umum",
+    "علاج جذور الأسنان": "Perawatan Saluran Akar",
+    "تقويم الأسنان": "Ortodonti",
+    "طب أسنان الأطفال": "Kedokteran Gigi Anak",
+    "التركيبات السنية": "Prostodonti",
+    "جراحة الفم والأسنان": "Bedah Mulut & Gigi",
+    "اللثة وأمراضها": "Penyakit Periodontal",
+    "الحشوات والترميم": "Tumpatan & Restorasi",
+    // Tools tab
+    "🔧 الأدوات": "🔧 Alat",
+    "📋 الإجراءات": "📋 Prosedur",
+    "tools": "alat",
+    "procs": "prosedur",
+  }
+};
+
+// Smart translate: AR→EN→UR/ID
+function translate(ar, en, lang) {
+  if (lang === "ar") return ar;
+  if (lang === "en") return en;
+  if (lang === "ur" || lang === "id") {
+    // Try AR key first
+    if (TR[lang] && TR[lang][ar]) return TR[lang][ar];
+    // Fall back to English
+    return en;
+  }
+  return en;
+}
+
 const gid  = () => Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-3);
 const deep = x  => JSON.parse(JSON.stringify(x));
 
@@ -80,7 +259,7 @@ function App() {
   const [sync,  setSync]  = useState("offline");
   const [toast, setToast] = useState(null);
 
-  const t = (ar, en) => lang === "ar" ? ar : en;
+  const t = (ar, en) => translate(ar, en, lang);
 
   // إخفاء شاشة التحميل بعد أول render
   useEffect(() => {
@@ -189,15 +368,15 @@ const V = {
 //  LOGIN SCREEN
 // ══════════════════════════════════════════════════════
 function LoginScreen({ lang, setLang, sync, onLogin, toast }) {
-  const t = (ar, en) => lang === "ar" ? ar : en;
+  const t = (ar, en) => translate(ar, en, lang);
   const [u, setU] = useState("");
   const [p, setP] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
-  const dir = lang==="ar"?"rtl":"ltr";
+  const dir = (lang==="ar"||lang==="ur")?"rtl":"ltr";
 
   const S = {
-    wrap:  { direction:dir, fontFamily:lang==="ar"?"'Tajawal',sans-serif":"'Inter',sans-serif", minHeight:"100vh", background:"linear-gradient(150deg,#020812 0%,#060e22 60%,#040b1a 100%)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 },
+    wrap:  { direction:dir, fontFamily:(lang==="ar"||lang==="ur")?"'Tajawal',sans-serif":"'Inter',sans-serif", minHeight:"100vh", background:"linear-gradient(150deg,#020812 0%,#060e22 60%,#040b1a 100%)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 },
     box:   { width:"100%", maxWidth:400 },
     card:  { background:"#ffffff", border:"1px solid rgba(0,0,0,0.08)", borderRadius:16, padding:28 },
     inp:   { background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:9, padding:"10px 14px", color:"#1e293b", fontSize:14, width:"100%", boxSizing:"border-box", outline:"none", fontFamily:"inherit" },
@@ -242,10 +421,10 @@ function LoginScreen({ lang, setLang, sync, onLogin, toast }) {
           <button onClick={submit} style={S.pri} disabled={loading}>{loading ? t("جارٍ الدخول...","Logging in...") : t("دخول","Login")}</button>
         </div>
 
-        <div style={{display:"flex", gap:8, justifyContent:"center", marginTop:14}}>
-          {["ar","en"].map(l => (
-            <button key={l} onClick={()=>setLang(l)} style={{padding:"6px 16px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:700, fontSize:12, fontFamily:"inherit", background:lang===l?"linear-gradient(135deg,#38bdf8,#6366f1)":"#f1f5f9", color:lang===l?"#fff":"#64748b"}}>
-              {l==="ar"?"العربية":"English"}
+        <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:14,flexWrap:"wrap"}}>
+          {[["ar","العربية"],["en","English"],["ur","اردو"],["id","Indonesia"]].map(([l,label]) => (
+            <button key={l} onClick={()=>setLang(l)} style={{padding:"6px 14px",borderRadius:8,border:"none",cursor:"pointer",fontWeight:700,fontSize:12,fontFamily:"inherit",background:lang===l?"linear-gradient(135deg,#3b82f6,#6366f1)":"#f1f5f9",color:lang===l?"#fff":"#475569"}}>
+              {label}
             </button>
           ))}
         </div>
@@ -261,7 +440,7 @@ function LoginScreen({ lang, setLang, sync, onLogin, toast }) {
 //  NURSE PORTAL — تجربة تعلم نظيفة وبدون تعديل
 // ══════════════════════════════════════════════════════
 function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toastFn, onLogout }) {
-  const t = (ar, en) => lang === "ar" ? ar : en;
+  const t = (ar, en) => translate(ar, en, lang);
   const [page, setPage]     = useState("home"); // home|spec|ipc|ipc_detail|quiz
   const [activeSpec, setAS] = useState(null);
   const [activeIPC,  setAI] = useState(null);
@@ -295,7 +474,7 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
 
   // ── STYLES (Nurse: warm, clean, focused on learning)
   const S = {
-    app:  { direction:dir, fontFamily:lang==="ar"?"'Tajawal',sans-serif":"'Inter',sans-serif", background:"linear-gradient(150deg,#03070f 0%,#070e20 55%,#05091a 100%)", minHeight:"100vh", color:"#1e293b" },
+    app:  { direction:dir, fontFamily:(lang==="ar"||lang==="ur")?"'Tajawal',sans-serif":"'Inter',sans-serif", background:"linear-gradient(150deg,#03070f 0%,#070e20 55%,#05091a 100%)", minHeight:"100vh", color:"#1e293b" },
     hdr:  { position:"sticky", top:0, zIndex:100, background:"rgba(3,7,15,0.9)", backdropFilter:"blur(20px)", borderBottom:"1px solid rgba(56,189,248,0.1)", padding:"10px 18px", display:"flex", alignItems:"center", justifyContent:"space-between" },
     pg:   { padding:"18px 16px", maxWidth:860, margin:"0 auto" },
     card: { background:"#ffffff", border:"1px solid #e8edf5", borderRadius:13, padding:16, marginBottom:12 },
@@ -323,7 +502,9 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
       <div style={{display:"flex", gap:6, alignItems:"center"}}>
         <span style={S.sync(sync)}>{sync==="ok"?t("✓ متزامن","✓ Synced"):sync==="syncing"?t("...","..."):sync==="error"?t("خطأ","Err"):t("محلي","Local")}</span>
         {GAS_OK()&&sync!=="syncing"&&<button onClick={()=>syncAll(token)} style={S.sec()}>🔄</button>}
-        <button onClick={()=>setLang(l=>l==="ar"?"en":"ar")} style={S.sec()}>{lang==="ar"?"EN":"ع"}</button>
+        <button onClick={()=>setLang(l=>({ar:"en",en:"ur",ur:"id",id:"ar"})[l]||"en")} style={S.sec()} title="Change language">
+          <span style={{fontSize:10,opacity:0.7}}>🌐</span> {lang==="ar"?"ع":lang==="en"?"EN":lang==="ur"?"اردو":"ID"}
+        </button>
         <div style={{display:"flex", alignItems:"center", gap:6, padding:"4px 10px", borderRadius:8, background:"#f1f5f9", fontSize:12}}>
           <span style={{color:V.grn}}>●</span>
           <span style={{fontWeight:700}}>{user.name}</span>
@@ -364,7 +545,7 @@ function NursePortal({ lang, setLang, db, user, sync, syncAll, token, toast, toa
       );
     }
     const q = quiz.questions[quiz.idx];
-    const opts = lang==="ar" ? (q.optionsAr||[]) : (q.optionsEn||[]);
+    const opts = (lang==="ar"||lang==="ur") ? (q.optionsAr||[]) : (q.optionsEn||[]);
     return (
       <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
         {NHeader()}
@@ -651,7 +832,7 @@ function EditModalComponent({ modal, setModal, S, t, lang, addSpec, updSpec, add
     setModal(null);
   };
 
-  const t2 = (ar,en) => lang==="ar" ? ar : en;
+  const t2 = (ar,en) => translate(ar, en, lang);
   const titles = {spec:t2("القسم","Specialty"),tool:t2("أداة","Tool"),proc:t2("إجراء","Procedure"),ipcmod:t2("وحدة IPC","IPC Module"),ipcstep:t2("خطوة","Step"),quiz:t2("سؤال اختبار","Quiz Question"),user:t2("مستخدم","User")};
 
   return (
@@ -709,7 +890,7 @@ function EditModalComponent({ modal, setModal, S, t, lang, addSpec, updSpec, add
 
 
 function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toastFn, mut, onLogout }) {
-  const t = (ar, en) => lang === "ar" ? ar : en;
+  const t = (ar, en) => translate(ar, en, lang);
   const [page, setPage]     = useState("dashboard"); // dashboard|spec_detail|ipc_detail
   const [activeSpec, setAS] = useState(null);
   const [activeIPC,  setAI] = useState(null);
@@ -742,7 +923,7 @@ function AdminPortal({ lang, setLang, db, user, token, sync, syncAll, toast, toa
 
   // ── STYLES (Admin: high-density, more professional, darker)
   const S = {
-    app:  { direction:dir, fontFamily:lang==="ar"?"'Tajawal',sans-serif":"'Inter',sans-serif", background:"linear-gradient(150deg,#020508 0%,#050c18 55%,#040a14 100%)", minHeight:"100vh", color:"#1e293b" },
+    app:  { direction:dir, fontFamily:(lang==="ar"||lang==="ur")?"'Tajawal',sans-serif":"'Inter',sans-serif", background:"linear-gradient(150deg,#020508 0%,#050c18 55%,#040a14 100%)", minHeight:"100vh", color:"#1e293b" },
     hdr:  { position:"sticky", top:0, zIndex:100, background:"rgba(2,5,8,0.94)", backdropFilter:"blur(24px)", borderBottom:"1px solid rgba(139,92,246,0.18)", padding:"10px 18px", display:"flex", alignItems:"center", justifyContent:"space-between" },
     pg:   { padding:"18px 16px", maxWidth:960, margin:"0 auto" },
     card: { background:"#ffffff", border:"1px solid #e8edf5", borderRadius:12, padding:15, marginBottom:11 },
@@ -1302,7 +1483,9 @@ answer هو رقم الخيار الصحيح (0-3).`;
       <div style={{display:"flex", gap:6, alignItems:"center", flexWrap:"wrap"}}>
         <span style={S.sync(sync)}>{sync==="ok"?t("✓ متزامن","✓ Synced"):sync==="syncing"?t("...","..."):sync==="error"?t("خطأ","Err"):t("محلي","Local")}</span>
         {GAS_OK()&&sync!=="syncing"&&<button onClick={()=>syncAll(token)} style={S.sec()}>🔄</button>}
-        <button onClick={()=>setLang(l=>l==="ar"?"en":"ar")} style={S.sec()}>{lang==="ar"?"EN":"ع"}</button>
+        <button onClick={()=>setLang(l=>({ar:"en",en:"ur",ur:"id",id:"ar"})[l]||"en")} style={S.sec()} title="Change language">
+          <span style={{fontSize:10,opacity:0.7}}>🌐</span> {lang==="ar"?"ع":lang==="en"?"EN":lang==="ur"?"اردو":"ID"}
+        </button>
         <div style={{display:"flex", alignItems:"center", gap:6, padding:"4px 10px", borderRadius:8, background:"rgba(139,92,246,0.1)", border:"1px solid rgba(139,92,246,0.2)", fontSize:12}}>
           <span style={{color:"#a78bfa"}}>⚙️</span>
           <span style={{fontWeight:700, color:"#a78bfa"}}>{user.name}</span>
