@@ -507,8 +507,7 @@ function getToolImage(tool) {
 
 // ── ToolCard — inline image + info card
 function ToolCard({ tool, idx, sp, t, tField, lang, V }) {
-  const { useState: useLS } = React;
-  const [imgErr, setImgErr] = useLS(false);
+  const [imgErr, setImgErr] = useState(false);
   const imgSrc = getToolImage(tool);
   const hasImg = imgSrc && !imgErr;
 
@@ -1039,8 +1038,7 @@ function EditModalComponent({ modal, setModal, S, t, lang, addSpec, updSpec, add
     return {};
   };
 
-  const { useState: useLocalState } = React;
-  const [form, setForm] = useLocalState(init);
+  const [form, setForm] = useState(init);
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
 
   const F = ({label, k, multi=false, inputType="text"}) => (
