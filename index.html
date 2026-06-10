@@ -35,22 +35,9 @@
 </head>
 <body>
   <div id="loading">
-    <div>🦷</div>
-    <p id="loading-msg">جارٍ التحميل...</p>
+    <div style="font-size:52px;animation:pulse 1.2s ease-in-out infinite">🦷</div>
   </div>
-  <script>
-    // Show error if Babel takes too long
-    var _lt = 0;
-    var _li = setInterval(function() {
-      _lt++;
-      var el = document.getElementById('loading-msg');
-      if (!el) { clearInterval(_li); return; }
-      if (_lt === 5)  el.textContent = 'جارٍ تهيئة التطبيق...';
-      if (_lt === 10) el.textContent = 'يُرجى الانتظار...';
-      if (_lt === 20) el.textContent = 'جارٍ تحميل المحتوى الطبي...';
-      if (_lt === 30) { el.textContent = 'اكتمل التحميل — انقر هنا'; el.style.cursor='pointer'; el.style.color='#3b82f6'; el.onclick=function(){document.getElementById('loading').style.display='none';}; clearInterval(_li); }
-    }, 1000);
-  </script>
+
   <div id="root"></div>
 
   <!-- React + Babel -->
@@ -4276,6 +4263,8 @@ answer هو رقم الخيار الصحيح (0-3).`;
 }
 
 // Mount — loading screen is hidden from inside App via useEffect
+// Hide loading immediately when JS executes
+(function(){var el=document.getElementById('loading');if(el)el.style.display='none';})();
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(React.createElement(App));
 
