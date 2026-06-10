@@ -549,6 +549,17 @@ window.__findInKB = (topic) => {
 };
 </script>
 <script>
+
+function _FormField({label, k, multi, inputType, _form, _set, _S}) {
+  multi = multi || false;
+  inputType = inputType || "text";
+  return React.createElement("div", {style: {marginBottom: 10}},
+    React.createElement("label", {style: _S.lbl}, label),
+    multi
+      ? React.createElement("textarea", {style: _S.ta, value: _form[k]||"", onChange: function(e){_set(k,e.target.value)}})
+      : React.createElement("input", {style: _S.inp, type: inputType, value: _form[k]||"", onChange: function(e){_set(k,e.target.value)}})
+  );
+}
 const {
   useState,
   useEffect,
@@ -2221,12 +2232,7 @@ function EditModalComponent({
     ...f,
     [k]: v
   }));
-  const F = ({
-    label,
-    k,
-    multi = false,
-    inputType = "text"
-  }) => /*#__PURE__*/React.createElement("div", {
+ => /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 10
     }
@@ -2304,30 +2310,30 @@ function EditModalComponent({
   }, item ? t2("تعديل", "Edit") : t2("إضافة", "Add"), " \u2014 ", titles[type]), /*#__PURE__*/React.createElement("button", {
     onClick: () => setModal(null),
     style: S.del
-  }, "\u2715")), (type === "spec" || type === "tool" || type === "proc" || type === "ipcmod") && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(F, {
+  }, "\u2715")), (type === "spec" || type === "tool" || type === "proc" || type === "ipcmod") && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(_FormField, {
     label: t2("الاسم بالعربي", "Name (Arabic)"),
     k: "nameAr"
-  }), /*#__PURE__*/React.createElement(F, {
+  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement(_FormField, {
     label: t2("الاسم بالإنجليزي", "Name (English)"),
     k: "nameEn"
-  })), (type === "spec" || type === "ipcmod") && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(F, {
+  , _form: form, _set: set, _S: S})), (type === "spec" || type === "ipcmod") && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(_FormField, {
     label: t2("الأيقونة (emoji)", "Icon (emoji)"),
     k: "icon"
-  }), /*#__PURE__*/React.createElement(F, {
+  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement(_FormField, {
     label: t2("اللون hex مثل #38bdf8", "Color hex e.g. #38bdf8"),
     k: "color"
-  })), type === "tool" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(F, {
+  , _form: form, _set: set, _S: S})), type === "tool" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(_FormField, {
     label: t2("الاستخدام بالعربي", "Use / Function (Arabic)"),
     k: "useAr",
     multi: true
-  }), /*#__PURE__*/React.createElement(F, {
+  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement(_FormField, {
     label: t2("الاستخدام بالإنجليزي", "Use / Function (English)"),
     k: "useEn",
     multi: true
-  }), /*#__PURE__*/React.createElement(F, {
+  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement(_FormField, {
     label: t2("رابط صورة الأداة (اختياري)", "Tool Image URL (optional)"),
     k: "imageUrl"
-  }), /*#__PURE__*/React.createElement("div", {
+  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
       color: "#64748b",
@@ -2337,31 +2343,31 @@ function EditModalComponent({
       background: "#f8fafc",
       borderRadius: 6
     }
-  }, t2("رابط Drive: https://drive.google.com/uc?export=view&id=FILE_ID", "Drive URL: https://drive.google.com/uc?export=view&id=FILE_ID"))), type === "ipcstep" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(F, {
+  }, t2("رابط Drive: https://drive.google.com/uc?export=view&id=FILE_ID", "Drive URL: https://drive.google.com/uc?export=view&id=FILE_ID"))), type === "ipcstep" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(_FormField, {
     label: t2("النص بالعربي", "Step text (Arabic)"),
     k: "textAr",
     multi: true
-  }), /*#__PURE__*/React.createElement(F, {
+  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement(_FormField, {
     label: t2("النص بالإنجليزي", "Step text (English)"),
     k: "textEn",
     multi: true
-  })), type === "quiz" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(F, {
+  , _form: form, _set: set, _S: S})), type === "quiz" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(_FormField, {
     label: t2("السؤال بالعربي", "Question (Arabic)"),
     k: "questionAr",
     multi: true
-  }), /*#__PURE__*/React.createElement(F, {
+  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement(_FormField, {
     label: t2("السؤال بالإنجليزي", "Question (English)"),
     k: "questionEn",
     multi: true
-  }), /*#__PURE__*/React.createElement(F, {
+  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement(_FormField, {
     label: t2("الخيارات عربي — سطر لكل خيار", "Options AR — one per line"),
     k: "optionsAr",
     multi: true
-  }), /*#__PURE__*/React.createElement(F, {
+  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement(_FormField, {
     label: t2("الخيارات إنجليزي — سطر لكل خيار", "Options EN — one per line"),
     k: "optionsEn",
     multi: true
-  }), /*#__PURE__*/React.createElement("div", {
+  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 10
     }
@@ -2374,17 +2380,17 @@ function EditModalComponent({
     max: "3",
     value: form.answer || 0,
     onChange: e => set("answer", e.target.value)
-  }))), type === "user" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(F, {
+  }))), type === "user" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(_FormField, {
     label: t2("الاسم الكامل", "Full name"),
     k: "name"
-  }), /*#__PURE__*/React.createElement(F, {
+  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement(_FormField, {
     label: t2("اسم المستخدم", "Username"),
     k: "username"
-  }), /*#__PURE__*/React.createElement(F, {
+  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement(_FormField, {
     label: t2("كلمة المرور", "Password"),
     k: "password",
     inputType: "password"
-  }), /*#__PURE__*/React.createElement("div", {
+  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 10
     }
