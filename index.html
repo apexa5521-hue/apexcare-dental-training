@@ -536,17 +536,8 @@ window.__findInKB = (topic) => {
 };
 </script>
 <script>
-
-function _FormField({label, k, multi, inputType, _form, _set, _S}) {
-  multi = multi || false;
-  inputType = inputType || "text";
-  return React.createElement("div", {style: {marginBottom: 10}},
-    React.createElement("label", {style: _S.lbl}, label),
-    multi
-      ? React.createElement("textarea", {style: _S.ta, value: _form[k]||"", onChange: function(e){_set(k,e.target.value)}})
-      : React.createElement("input", {style: _S.inp, type: inputType, value: _form[k]||"", onChange: function(e){_set(k,e.target.value)}})
-  );
-}
+// Hide loading screen immediately
+(function(){var e=document.getElementById("loading");if(e)e.style.display="none";})();
 const {
   useState,
   useEffect,
@@ -2220,6 +2211,27 @@ function EditModalComponent({
     ...f,
     [k]: v
   }));
+  const F = ({
+    label,
+    k,
+    multi = false,
+    inputType = "text"
+  }) => /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 10
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: S.lbl
+  }, label), multi ? /*#__PURE__*/React.createElement("textarea", {
+    style: S.ta,
+    value: form[k] || "",
+    onChange: e => set(k, e.target.value)
+  }) : /*#__PURE__*/React.createElement("input", {
+    style: S.inp,
+    type: inputType,
+    value: form[k] || "",
+    onChange: e => set(k, e.target.value)
+  }));
   const save = () => {
     if (type === "spec") {
       item ? updSpec(item.id, form) : addSpec(form);
@@ -2282,116 +2294,162 @@ function EditModalComponent({
   }, item ? t2("تعديل", "Edit") : t2("إضافة", "Add"), " \u2014 ", titles[type]), /*#__PURE__*/React.createElement("button", {
     onClick: () => setModal(null),
     style: S.del
-  }, "\u2715")), (type === "spec" || type === "tool" || type === "proc" || type === "ipcmod") && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(_FormField, {
+  }, "\u2715")), (type === "spec" || type === "tool" || type === "proc" || type === "ipcmod") && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(F, {
     label: t2("الاسم بالعربي", "Name (Arabic)"),
     k: "nameAr"
-  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement(_FormField, {
+  }), /*#__PURE__*/React.createElement(F, {
     label: t2("الاسم بالإنجليزي", "Name (English)"),
     k: "nameEn"
-  , _form: form, _set: set, _S: S})), (type === "spec" || type === "ipcmod") && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(_FormField, {
+  })), (type === "spec" || type === "ipcmod") && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(F, {
     label: t2("الأيقونة (emoji)", "Icon (emoji)"),
     k: "icon"
-  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement(_FormField, {
+  }), /*#__PURE__*/React.createElement(F, {
     label: t2("اللون hex مثل #38bdf8", "Color hex e.g. #38bdf8"),
     k: "color"
-  , _form: form, _set: set, _S: S})), type === "tool" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(_FormField, {
+  })), type === "tool" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(F, {
     label: t2("الاستخدام بالعربي", "Use / Function (Arabic)"),
     k: "useAr",
     multi: true
-  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement(_FormField, {
+  }), /*#__PURE__*/React.createElement(F, {
     label: t2("الاستخدام بالإنجليزي", "Use / Function (English)"),
     k: "useEn",
     multi: true
-  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement("div", {style: {marginBottom: 12}},
-    /*#__PURE__*/React.createElement("label", {style: _S ? _S.lbl : S.lbl}, t2("صورة الأداة", "Tool Image")),
-    /*#__PURE__*/React.createElement("div", {style: {display:"flex", gap:8, alignItems:"center"}},
-      form.imageUrl && form.imageUrl.trim()
-        ? /*#__PURE__*/React.createElement("img", {
-            src: form.imageUrl, alt: "tool",
-            style: {width:64, height:64, borderRadius:8, objectFit:"cover", border:"1px solid #e2e8f0"},
-            onError: function(e){e.target.style.display="none"}
-          })
-        : /*#__PURE__*/React.createElement("div", {
-            style: {width:64, height:64, borderRadius:8, background:"#f1f5f9", border:"2px dashed #e2e8f0",
-                    display:"flex", alignItems:"center", justifyContent:"center", fontSize:22}
-          }, "🔧"),
-      /*#__PURE__*/React.createElement("div", {style: {flex:1, display:"flex", flexDirection:"column", gap:6}},
-        /*#__PURE__*/React.createElement("label", {
-          style: {padding:"8px 14px", borderRadius:8, background:"linear-gradient(135deg,#3b82f6,#6366f1)",
-                  color:"#fff", cursor:"pointer", fontSize:12, fontWeight:700, textAlign:"center",
-                  display:"block"}
-        },
-          uploadingImg
-            ? t2("جارٍ الرفع...","Uploading...")
-            : t2("📎 اختر صورة","📎 Choose Image"),
-          /*#__PURE__*/React.createElement("input", {
-            type:"file", accept:"image/*",
-            style: {display:"none"},
-            onChange: function(e) {
-              var file = e.target.files[0];
-              if (!file) return;
-              setUploadingImg(true);
-              var reader = new FileReader();
-              reader.onload = function(ev) {
-                var base64 = ev.target.result;
-                var fileName = (form.nameEn||"tool").replace(/[^a-z0-9]/gi,"-").toLowerCase() + "-" + Date.now() + "." + file.name.split(".").pop();
-                if (typeof GAS_URL !== "undefined" && GAS_URL && !GAS_URL.includes("YOUR_DEPLOYMENT_ID")) {
-                  fetch(GAS_URL, {
-                    method:"POST",
-                    body: JSON.stringify({action:"uploadImage", base64:base64, mimeType:file.type, fileName:fileName}),
-                    headers:{"Content-Type":"text/plain"}
-                  })
-                  .then(function(r){return r.json()})
-                  .then(function(d){
-                    if(d.ok){ set("imageUrl", d.url); }
-                    else { alert(t2("فشل الرفع: ","Upload failed: ") + (d.error||"")); }
-                    setUploadingImg(false);
-                  })
-                  .catch(function(){ alert(t2("خطأ في الاتصال","Connection error")); setUploadingImg(false); });
-                } else {
-                  // Demo mode: use base64 directly
-                  set("imageUrl", base64);
-                  setUploadingImg(false);
-                }
-              };
-              reader.readAsDataURL(file);
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: S.lbl
+  }, t2("صورة الأداة", "Tool Image")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      alignItems: "center"
+    }
+  }, form.imageUrl && form.imageUrl.trim() ? /*#__PURE__*/React.createElement("img", {
+    src: form.imageUrl,
+    alt: "tool",
+    style: {
+      width: 64,
+      height: 64,
+      borderRadius: 8,
+      objectFit: "cover",
+      border: "1px solid #e2e8f0"
+    },
+    onError: e => e.target.style.display = "none"
+  }) : /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 64,
+      height: 64,
+      borderRadius: 8,
+      background: "#f1f5f9",
+      border: "2px dashed #e2e8f0",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 22
+    }
+  }, "\uD83D\uDD27"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      display: "flex",
+      flexDirection: "column",
+      gap: 6
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      padding: "8px 14px",
+      borderRadius: 8,
+      background: "linear-gradient(135deg,#3b82f6,#6366f1)",
+      color: "#fff",
+      cursor: "pointer",
+      fontSize: 12,
+      fontWeight: 700,
+      textAlign: "center",
+      display: "block"
+    }
+  }, uploadingImg ? t2("جارٍ الرفع...", "Uploading...") : t2("📎 اختر صورة", "📎 Choose Image"), /*#__PURE__*/React.createElement("input", {
+    type: "file",
+    accept: "image/*",
+    style: {
+      display: "none"
+    },
+    onChange: e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      setUploadingImg(true);
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const base64 = ev.target.result;
+        const fileName = (form.nameEn || "tool").replace(/[^a-z0-9]/gi, "-").toLowerCase() + "-" + Date.now() + "." + file.name.split(".").pop();
+        if (GAS_OK()) {
+          fetch(GAS_URL, {
+            method: "POST",
+            body: JSON.stringify({
+              action: "uploadImage",
+              base64,
+              mimeType: file.type,
+              fileName
+            }),
+            headers: {
+              "Content-Type": "text/plain"
             }
-          })
-        ),
-        form.imageUrl && form.imageUrl.startsWith("http") &&
-          /*#__PURE__*/React.createElement("button", {
-            type:"button",
-            onClick: function(){ set("imageUrl",""); },
-            style:{padding:"4px 10px", borderRadius:6, border:"1px solid #fee2e2",
-                   background:"#fff5f5", color:"#ef4444", fontSize:11, cursor:"pointer", fontWeight:700}
-          }, t2("🗑 حذف الصورة","🗑 Remove"))
-      )
-    )
-  ), type === "ipcstep" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(_FormField, {
+          }).then(r => r.json()).then(d => {
+            if (d.ok) {
+              set("imageUrl", d.url);
+            } else {
+              alert(t2("فشل الرفع", "Upload failed") + ": " + (d.error || ""));
+            }
+            setUploadingImg(false);
+          }).catch(() => {
+            alert(t2("خطأ في الاتصال", "Connection error"));
+            setUploadingImg(false);
+          });
+        } else {
+          set("imageUrl", base64);
+          setUploadingImg(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  })), form.imageUrl && form.imageUrl.startsWith("http") && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => set("imageUrl", ""),
+    style: {
+      padding: "4px 10px",
+      borderRadius: 6,
+      border: "1px solid #fee2e2",
+      background: "#fff5f5",
+      color: "#ef4444",
+      fontSize: 11,
+      cursor: "pointer",
+      fontWeight: 700
+    }
+  }, t2("🗑 حذف الصورة", "🗑 Remove")))))), type === "ipcstep" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(F, {
     label: t2("النص بالعربي", "Step text (Arabic)"),
     k: "textAr",
     multi: true
-  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement(_FormField, {
+  }), /*#__PURE__*/React.createElement(F, {
     label: t2("النص بالإنجليزي", "Step text (English)"),
     k: "textEn",
     multi: true
-  , _form: form, _set: set, _S: S})), type === "quiz" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(_FormField, {
+  })), type === "quiz" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(F, {
     label: t2("السؤال بالعربي", "Question (Arabic)"),
     k: "questionAr",
     multi: true
-  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement(_FormField, {
+  }), /*#__PURE__*/React.createElement(F, {
     label: t2("السؤال بالإنجليزي", "Question (English)"),
     k: "questionEn",
     multi: true
-  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement(_FormField, {
+  }), /*#__PURE__*/React.createElement(F, {
     label: t2("الخيارات عربي — سطر لكل خيار", "Options AR — one per line"),
     k: "optionsAr",
     multi: true
-  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement(_FormField, {
+  }), /*#__PURE__*/React.createElement(F, {
     label: t2("الخيارات إنجليزي — سطر لكل خيار", "Options EN — one per line"),
     k: "optionsEn",
     multi: true
-  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 10
     }
@@ -2404,17 +2462,17 @@ function EditModalComponent({
     max: "3",
     value: form.answer || 0,
     onChange: e => set("answer", e.target.value)
-  }))), type === "user" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(_FormField, {
+  }))), type === "user" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(F, {
     label: t2("الاسم الكامل", "Full name"),
     k: "name"
-  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement(_FormField, {
+  }), /*#__PURE__*/React.createElement(F, {
     label: t2("اسم المستخدم", "Username"),
     k: "username"
-  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement(_FormField, {
+  }), /*#__PURE__*/React.createElement(F, {
     label: t2("كلمة المرور", "Password"),
     k: "password",
     inputType: "password"
-  , _form: form, _set: set, _S: S}), /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 10
     }
@@ -2984,7 +3042,7 @@ function AdminPortal({
       gap: 10
     }
   };
-  const renderAIModal = () => {
+  const AIQuizModal = () => {
     if (!aiModal) return null;
     const {
       gId,
@@ -3408,8 +3466,8 @@ answer هو رقم الخيار الصحيح (0-3).`;
     }, "\u2795 ", t(`إضافة ${Object.values(selected).filter(Boolean).length} أسئلة`, `Add ${Object.values(selected).filter(Boolean).length} Questions`)))));
   };
 
-  // EditModal as function call (not component) — preserves focus
-  const renderEditModal = () => modal ? /*#__PURE__*/React.createElement(EditModalComponent, {
+  // EditModal rendered via portal pattern - stable reference
+  const EditModal = () => modal ? /*#__PURE__*/React.createElement(EditModalComponent, {
     modal: modal,
     setModal: setModal,
     S: S,
@@ -3506,7 +3564,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
       rel: "stylesheet"
     }), AHeader(), toast && /*#__PURE__*/React.createElement("div", {
       style: S.tst(toast.type)
-    }, toast.msg), /*#__PURE__*/renderEditModal(), /*#__PURE__*/renderAIModal(), /*#__PURE__*/React.createElement("div", {
+    }, toast.msg), /*#__PURE__*/React.createElement(EditModal, null), /*#__PURE__*/React.createElement(AIQuizModal, null), /*#__PURE__*/React.createElement("div", {
       style: S.pg
     }, /*#__PURE__*/React.createElement("div", {
       style: S.back,
@@ -3777,7 +3835,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
       rel: "stylesheet"
     }), AHeader(), toast && /*#__PURE__*/React.createElement("div", {
       style: S.tst(toast.type)
-    }, toast.msg), /*#__PURE__*/renderEditModal(), /*#__PURE__*/renderAIModal(), /*#__PURE__*/React.createElement("div", {
+    }, toast.msg), /*#__PURE__*/React.createElement(EditModal, null), /*#__PURE__*/React.createElement(AIQuizModal, null), /*#__PURE__*/React.createElement("div", {
       style: S.pg
     }, /*#__PURE__*/React.createElement("div", {
       style: S.back,
@@ -3960,7 +4018,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
     rel: "stylesheet"
   }), AHeader(), toast && /*#__PURE__*/React.createElement("div", {
     style: S.tst(toast.type)
-  }, toast.msg), /*#__PURE__*/renderEditModal(), /*#__PURE__*/React.createElement("div", {
+  }, toast.msg), /*#__PURE__*/React.createElement(EditModal, null), /*#__PURE__*/React.createElement("div", {
     style: S.pg
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -4263,8 +4321,6 @@ answer هو رقم الخيار الصحيح (0-3).`;
 }
 
 // Mount — loading screen is hidden from inside App via useEffect
-// Hide loading immediately when JS executes
-(function(){var el=document.getElementById('loading');if(el)el.style.display='none';})();
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(React.createElement(App));
 
