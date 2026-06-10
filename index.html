@@ -2232,22 +2232,6 @@ function EditModalComponent({
     ...f,
     [k]: v
   }));
- => /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginBottom: 10
-    }
-  }, /*#__PURE__*/React.createElement("label", {
-    style: S.lbl
-  }, label), multi ? /*#__PURE__*/React.createElement("textarea", {
-    style: S.ta,
-    value: form[k] || "",
-    onChange: e => set(k, e.target.value)
-  }) : /*#__PURE__*/React.createElement("input", {
-    style: S.inp,
-    type: inputType,
-    value: form[k] || "",
-    onChange: e => set(k, e.target.value)
-  }));
   const save = () => {
     if (type === "spec") {
       item ? updSpec(item.id, form) : addSpec(form);
