@@ -707,6 +707,115 @@ body {
 }
 .qr-dl-btn:hover { border-color: var(--ink2); }
 
+
+/* ── Admin styles ─────────────────────────────────────── */
+.adm-card {
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.adm-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 16px;
+  border-bottom: 1.5px solid var(--border);
+  background: var(--bg);
+}
+.adm-card-head span {
+  font-size: .7rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--ink2);
+}
+.adm-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: .82rem;
+  cursor: pointer;
+  transition: background .1s;
+}
+.adm-list-item:last-child { border-bottom: none; }
+.adm-list-item:hover { background: var(--bg); }
+.adm-list-item.selected { background: var(--accent-t); color: var(--accent); }
+.adm-actions { display: flex; gap: 4px; }
+.adm-btn {
+  padding: 3px 8px;
+  font-size: .68rem;
+  font-family: var(--font-mono);
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg2);
+  cursor: pointer;
+  transition: border-color .1s;
+  color: var(--ink2);
+}
+.adm-btn:hover { border-color: var(--ink2); color: var(--ink); }
+.adm-btn.danger { border-color: #fecaca; color: #dc2626; }
+.adm-btn.danger:hover { background: #fff5f5; }
+.adm-btn.primary { border-color: var(--accent); color: var(--accent); background: var(--accent-t); }
+.adm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+.adm-field label {
+  font-size: .7rem;
+  font-family: var(--font-mono);
+  color: var(--ink3);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.adm-field input, .adm-field textarea, .adm-field select {
+  padding: 8px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--font-ui);
+  font-size: .83rem;
+  background: var(--bg);
+  color: var(--ink);
+  width: 100%;
+  transition: border-color .15s;
+}
+.adm-field input:focus, .adm-field textarea:focus, .adm-field select:focus {
+  outline: none; border-color: var(--accent);
+}
+.adm-field textarea { min-height: 70px; resize: vertical; }
+.adm-save-btn {
+  padding: 9px 18px;
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: .83rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-ui);
+}
+.adm-save-btn:hover { background: #2d3748; }
+.adm-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: .82rem;
+  font-family: var(--font-mono);
+  z-index: 999;
+  opacity: 0;
+  transition: opacity .2s;
+  pointer-events: none;
+}
+
 /* ── Print styles ─────────────────────────────────────── */
 @media print {
   .topbar, .sidebar, .pref-bar, .reset-btn,
@@ -754,10 +863,11 @@ body {
   <nav class="tab-nav" role="tablist" aria-label="Main sections">
     <button class="tab-btn active" role="tab" aria-selected="true"  aria-controls="tab-clinical" id="btn-clinical" onclick="switchTab('clinical')">Clinical Reference</button>
     <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="tab-qr"       id="btn-qr"       onclick="switchTab('qr')">QR Generator</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="tab-admin"    id="btn-admin"    onclick="adminLogin()">⚙ Admin</button>
   </nav>
 
   <div class="topbar-right">
-    <span class="badge">Dental Nursing</span>
+    <span id="sync-status" style="font-family:var(--font-mono);font-size:.72rem;color:var(--ink3);padding:3px 8px;border:1.5px solid var(--border);border-radius:4px;letter-spacing:.02em;">● Connecting...</span>
   </div>
 </header>
 
@@ -861,12 +971,197 @@ body {
     </div>
   </section>
 
+
+  <!-- ═══ TAB 3: Admin Panel ═════════════════════════ -->
+  <section class="tab-panel" id="tab-admin" role="tabpanel" aria-labelledby="btn-admin">
+    <div id="admin-login-wall" style="margin:60px auto;max-width:360px;padding:0 20px;">
+      <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+        <div style="padding:14px 20px;border-bottom:1.5px solid var(--border);background:var(--bg);">
+          <h2 style="font-size:.78rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.07em;color:var(--ink2);">Admin Access</h2>
+        </div>
+        <div style="padding:24px 20px;display:flex;flex-direction:column;gap:14px;">
+          <div style="font-size:.82rem;color:var(--ink2);">Enter admin password to manage content.</div>
+          <input id="admin-un-input" type="text" placeholder="Username (e.g. admin)"
+            value="admin"
+            style="padding:9px 12px;border:1.5px solid var(--border);border-radius:6px;font-family:var(--font-ui);font-size:.85rem;background:var(--bg);color:var(--ink);margin-bottom:8px;width:100%;"/>
+          <input id="admin-pw-input" type="password" placeholder="Password"
+            style="padding:9px 12px;border:1.5px solid var(--border);border-radius:6px;font-family:var(--font-ui);font-size:.85rem;background:var(--bg);color:var(--ink);"
+            onkeydown="if(event.key==='Enter')checkAdminPw()"/>
+          <button onclick="checkAdminPw()"
+            style="padding:10px;background:var(--ink);color:#fff;border:none;border-radius:6px;font-weight:600;font-size:.85rem;cursor:pointer;">
+            Unlock Admin Panel
+          </button>
+          <div id="admin-pw-err" style="display:none;font-size:.75rem;color:#dc2626;font-family:var(--font-mono);">Incorrect password.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="admin-content" style="display:none;padding:24px 28px;max-width:960px;margin:0 auto;">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+        <div>
+          <div style="font-size:.7rem;font-family:var(--font-mono);color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;">Admin Panel</div>
+          <h1 style="font-size:1.3rem;font-weight:700;letter-spacing:-.02em;">Content Manager</h1>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="exportData()" style="padding:8px 14px;border:1.5px solid var(--border);border-radius:6px;background:var(--bg2);font-size:.78rem;font-family:var(--font-mono);cursor:pointer;">↓ Export JSON</button>
+          <button onclick="importData()" style="padding:8px 14px;border:1.5px solid var(--border);border-radius:6px;background:var(--bg2);font-size:.78rem;font-family:var(--font-mono);cursor:pointer;">↑ Import JSON</button>
+          <button onclick="resetToDefault()" style="padding:8px 14px;border:1.5px solid #fee2e2;border-radius:6px;background:#fff5f5;color:#dc2626;font-size:.78rem;font-family:var(--font-mono);cursor:pointer;">↺ Reset</button>
+        </div>
+      </div>
+
+      <!-- Two-column: dept selector + editor -->
+      <div style="display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:start;">
+
+        <!-- Left: Department list -->
+        <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+          <div style="padding:11px 14px;border-bottom:1.5px solid var(--border);background:var(--bg);display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:.7rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.07em;color:var(--ink2);">Departments</span>
+            <button onclick="addDept()" style="font-size:.68rem;font-family:var(--font-mono);padding:3px 8px;border:1.5px solid var(--border);border-radius:4px;background:var(--bg2);cursor:pointer;">+ Add</button>
+          </div>
+          <div id="admin-dept-list" style="padding:4px 0;"></div>
+        </div>
+
+        <!-- Right: Editor -->
+        <div id="admin-editor" style="display:flex;flex-direction:column;gap:16px;"></div>
+      </div>
+
+      <!-- Hidden file input for import -->
+      <input type="file" id="import-file" accept=".json" style="display:none;" onchange="handleImport(event)"/>
+    </div>
+  </section>
+
 </main>
 
 <script>
 // ═══════════════════════════════════════════════════════
 //  DATA
 // ═══════════════════════════════════════════════════════
+
+
+// ═══════════════════════════════════════════════════════
+//  GAS SYNC — Same backend as Training Platform
+// ═══════════════════════════════════════════════════════
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzTpfT_7nUaePQ5-T09i8FEevVOzoEiXfqOMWjXOdrLgk-vLM4W58hLBi-K9V3JxO-mBw/exec";
+let gasToken = localStorage.getItem('refToken') || null;
+
+async function gasCall(action, params={}) {
+  const body = { action, ...params, ...(gasToken ? {token: gasToken} : {}) };
+  const r = await fetch(GAS_URL, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: {'Content-Type': 'text/plain'}
+  });
+  return r.json();
+}
+
+// ── Sync: load specialties from Sheets into DATA
+async function syncFromGAS() {
+  showSyncStatus('syncing');
+  try {
+    const r = await gasCall('getAll');
+    if (!r.ok || !r.data) { showSyncStatus('error'); return; }
+    const specs = r.data.specialties || [];
+    if (specs.length === 0) { showSyncStatus('local'); return; }
+
+    // Convert GAS specialties format → DATA format
+    specs.forEach(sp => {
+      const key = sp.id;
+      if (!key) return;
+      DATA[key] = {
+        name: sp.nameEn || sp.nameAr || key,
+        procedures: (sp.procedures || []).map(p => ({
+          name: p.nameEn || p.nameAr || '—',
+          meta: ['Class: Clinical'],
+          tray: (sp.tools || []).slice(0, 8).map(t => ({
+            img: IMG.composite, label: (t.nameEn || t.nameAr || '').split(' ').slice(0,2).join(' ')
+          })),
+          instruments: (sp.tools || []).map(t => ({
+            name: t.nameEn || t.nameAr || '—',
+            tip: t.useEn || t.useAr || '',
+            imageUrl: t.imageUrl || null,
+            _imgKey: guessImgKey(t.nameEn || '')
+          })),
+          consumables: [],
+          doctors: { default: { add_instruments:[], add_consumables:[], note:'Standard protocol' } }
+        }))
+      };
+    });
+
+    showSyncStatus('ok');
+    refreshSidebarDropdown();
+    currentDept = Object.keys(DATA)[0];
+    currentProcIdx = 0;
+    renderProcList();
+    renderContent();
+  } catch(e) {
+    showSyncStatus('error');
+    console.warn('GAS sync failed:', e);
+  }
+}
+
+// Guess which SVG key to use based on English name
+function guessImgKey(name) {
+  const n = name.toLowerCase();
+  if (n.includes('mirror'))    return 'mirror';
+  if (n.includes('explorer'))  return 'explorer';
+  if (n.includes('probe'))     return 'probe';
+  if (n.includes('plier') || n.includes('cotton')) return 'pliers';
+  if (n.includes('file') || n.includes('rotary'))  return 'kfiles';
+  if (n.includes('apex'))      return 'apex';
+  if (n.includes('rubber') || n.includes('dam'))   return 'rubdam';
+  if (n.includes('gutta') || n.includes('gp'))     return 'gp';
+  if (n.includes('paper'))     return 'paper';
+  if (n.includes('elevator'))  return 'elevator';
+  if (n.includes('forcep'))    return 'forceps';
+  if (n.includes('scalpel'))   return 'scalpel';
+  if (n.includes('needle') || n.includes('holder')) return 'needle';
+  if (n.includes('scissor'))   return 'scissors';
+  if (n.includes('high speed') || n.includes('handpiece')) return 'highspeed';
+  if (n.includes('low speed')) return 'lowspeed';
+  if (n.includes('cure') || n.includes('light'))   return 'curelight';
+  if (n.includes('curette') || n.includes('gracey')) return 'curette';
+  if (n.includes('scaler') || n.includes('ultrasonic')) return 'scaler';
+  if (n.includes('retractor')) return 'retractor';
+  if (n.includes('syringe') || n.includes('anesthesia')) return 'syringe';
+  if (n.includes('gauze'))     return 'gauze';
+  if (n.includes('excavator')) return 'excavator';
+  if (n.includes('mta') || n.includes('cement'))   return 'mta';
+  if (n.includes('birdbeak') || n.includes('bracket')) return 'birdbeak';
+  return null;
+}
+
+function showSyncStatus(status) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  const map = {
+    syncing: ['●', '#f59e0b', 'Syncing with Sheets...'],
+    ok:      ['●', '#16a34a', 'Synced with Sheets ✓'],
+    error:   ['●', '#dc2626', 'Sheets unavailable — using local data'],
+    local:   ['●', '#9ca3af', 'Local data (Sheets empty)'],
+  };
+  const [dot, color, txt] = map[status] || map.local;
+  el.innerHTML = `<span style="color:${color};font-size:.65rem;">{dot}</span> ${txt}`;
+}
+
+// ── GAS Login for Admin
+async function gasAdminLogin(username, password) {
+  const r = await gasCall('login', { username, password });
+  if (r.ok && r.token && r.user?.role === 'admin') {
+    gasToken = r.token;
+    localStorage.setItem('refToken', gasToken);
+    return true;
+  }
+  return false;
+}
+
+// ── Write tool to GAS (from Admin)
+async function gasAddTool(spId, toolData) {
+  return gasCall('addTool', { specialtyId: spId, ...toolData });
+}
+async function gasAddProc(spId, procData) {
+  return gasCall('addProc', { specialtyId: spId, ...procData });
+}
 
 // ── Instrument images — inline SVG data URIs (no external requests)
 const IMG = {
@@ -1460,18 +1755,416 @@ function resetChecklist() {
 //  QR GENERATOR
 // ═══════════════════════════════════════════════════════
 function generateQR() {
-  const dept    = document.getElementById('qr-dept').value;
-  const baseUrl = document.getElementById('qr-url').value.trim() || 'https://apex-care.com';
+  const deptRaw = document.getElementById('qr-dept').value;
+  const baseUrl = document.getElementById('qr-url').value.trim().replace(/\/$/, '') || 'https://apex-care.com';
   const size    = document.getElementById('qr-size').value;
-  const fullUrl = baseUrl;
+
+  // Build dept slug from the English name before "—"
+  const deptSlug = deptRaw.split('—')[0].trim().toLowerCase()
+    .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+  // Use hash fragment — works on GitHub Pages without server config
+  const fullUrl = baseUrl + '#dept=' + deptSlug;
 
   const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(fullUrl)}&size=${size}x${size}&ecc=M&margin=10&color=1A1F2E&bgcolor=FFFFFF`;
 
-  document.getElementById('qr-card-dept-label').textContent = dept;
+  document.getElementById('qr-card-dept-label').textContent = deptRaw.split('—')[0].trim();
   document.getElementById('qr-url-display').textContent = fullUrl;
   document.getElementById('qr-img').src = qrApiUrl;
   document.getElementById('qr-dl-link').href = qrApiUrl;
   document.getElementById('qr-output').classList.add('visible');
+}
+
+
+// ═══════════════════════════════════════════════════════
+//  ADMIN PANEL
+// ═══════════════════════════════════════════════════════
+const ADMIN_PW = 'apex2024';
+let adminUnlocked = false;
+let adminDeptKey  = null; // currently selected dept key in admin
+let adminProcIdx  = null; // currently selected proc idx in admin
+
+// ── Storage ─────────────────────────────────────────────
+function saveData() {
+  try { localStorage.setItem('apexRefData', JSON.stringify(DATA)); } catch(e){}
+}
+function loadSavedData() {
+  try {
+    const saved = localStorage.getItem('apexRefData');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Merge into DATA
+      Object.keys(parsed).forEach(k => { DATA[k] = parsed[k]; });
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+// ── Auth ────────────────────────────────────────────────
+function adminLogin() {
+  switchTab('admin');
+}
+async function checkAdminPw() {
+  const pw = document.getElementById('admin-pw-input').value;
+  const un = document.getElementById('admin-un-input') ? document.getElementById('admin-un-input').value : 'admin';
+
+  // Try GAS login first
+  let gasOk = false;
+  if (un && pw) {
+    try { gasOk = await gasAdminLogin(un, pw); } catch(e) {}
+  }
+
+  // Fall back to local password
+  if (gasOk || pw === ADMIN_PW) {
+    adminUnlocked = true;
+    document.getElementById('admin-login-wall').style.display = 'none';
+    document.getElementById('admin-content').style.display = 'block';
+    renderAdminDeptList();
+    if (gasOk) showToast('Signed in via Sheets ✓');
+  } else {
+    document.getElementById('admin-pw-err').style.display = 'block';
+  }
+}
+
+// ── Toast ────────────────────────────────────────────────
+function showToast(msg) {
+  let t = document.querySelector('.adm-toast');
+  if (!t) { t = document.createElement('div'); t.className = 'adm-toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  setTimeout(() => t.style.opacity = '0', 2000);
+}
+
+// ── Dept list ────────────────────────────────────────────
+function renderAdminDeptList() {
+  const el = document.getElementById('admin-dept-list');
+  el.innerHTML = Object.entries(DATA).map(([key, dept]) => `
+    <div class="adm-list-item${adminDeptKey===key?' selected':''}" onclick="selectAdminDept('${key}')">
+      <span>${dept.name}</span>
+      <div class="adm-actions">
+        <button class="adm-btn danger" onclick="event.stopPropagation();deleteDept('${key}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function selectAdminDept(key) {
+  adminDeptKey = key;
+  adminProcIdx = null;
+  renderAdminDeptList();
+  renderAdminEditor();
+}
+
+// ── Main editor ──────────────────────────────────────────
+function renderAdminEditor() {
+  const editor = document.getElementById('admin-editor');
+  if (!adminDeptKey) {
+    editor.innerHTML = '<div style="padding:24px;color:var(--ink3);font-family:var(--font-mono);font-size:.82rem;">← Select a department to edit</div>';
+    return;
+  }
+  const dept = DATA[adminDeptKey];
+
+  editor.innerHTML = `
+    <!-- Dept info card -->
+    <div class="adm-card">
+      <div class="adm-card-head"><span>Department Info</span>
+        <button class="adm-btn primary" onclick="saveDeptInfo()">Save</button>
+      </div>
+      <div style="padding:16px;">
+        <div class="adm-field">
+          <label>Department Name</label>
+          <input id="ade-name" value="${dept.name}"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Procedures card -->
+    <div class="adm-card">
+      <div class="adm-card-head">
+        <span>Procedures (${dept.procedures.length})</span>
+        <button class="adm-btn primary" onclick="addProc()">+ Add Procedure</button>
+      </div>
+      <div>
+        ${dept.procedures.map((p,i) => `
+          <div class="adm-list-item${adminProcIdx===i?' selected':''}" onclick="selectAdminProc(${i})">
+            <span>${p.name}</span>
+            <div class="adm-actions">
+              <button class="adm-btn danger" onclick="event.stopPropagation();deleteProc(${i})">✕</button>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    ${adminProcIdx !== null ? renderProcEditor() : '<div style="padding:12px;font-size:.78rem;font-family:var(--font-mono);color:var(--ink3);">Click a procedure to edit its instruments & checklist.</div>'}
+  `;
+}
+
+function renderProcEditor() {
+  const proc = DATA[adminDeptKey].procedures[adminProcIdx];
+  const instList = proc.instruments.map((it, i) => `
+    <div class="adm-list-item">
+      <div style="flex:1;">
+        <div style="font-family:var(--font-mono);font-size:.8rem;">${it.name}</div>
+        <div style="font-size:.7rem;color:var(--ink3);">${it.tip}</div>
+      </div>
+      <div class="adm-actions">
+        <button class="adm-btn" onclick="editInstrument(${i})">Edit</button>
+        <button class="adm-btn danger" onclick="deleteInstrument(${i})">✕</button>
+      </div>
+    </div>`).join('');
+
+  const consList = proc.consumables.map((it, i) => `
+    <div class="adm-list-item">
+      <div style="flex:1;">
+        <div style="font-family:var(--font-mono);font-size:.8rem;">${it.name}</div>
+        <div style="font-size:.7rem;color:var(--ink3);">${it.tip}</div>
+      </div>
+      <div class="adm-actions">
+        <button class="adm-btn" onclick="editConsumable(${i})">Edit</button>
+        <button class="adm-btn danger" onclick="deleteConsumable(${i})">✕</button>
+      </div>
+    </div>`).join('');
+
+  return `
+    <!-- Proc info -->
+    <div class="adm-card">
+      <div class="adm-card-head"><span>Procedure: ${proc.name}</span>
+        <button class="adm-btn primary" onclick="saveProcInfo()">Save</button>
+      </div>
+      <div style="padding:16px;">
+        <div class="adm-field"><label>Procedure Name</label>
+          <input id="adp-name" value="${proc.name}"/></div>
+        <div class="adm-field"><label>Meta (comma-separated)</label>
+          <input id="adp-meta" value="${proc.meta.join(', ')}"/></div>
+      </div>
+    </div>
+
+    <!-- Instruments -->
+    <div class="adm-card">
+      <div class="adm-card-head"><span>Basic Instruments (${proc.instruments.length})</span>
+        <button class="adm-btn primary" onclick="showAddItemModal('instrument')">+ Add</button>
+      </div>
+      <div>${instList || '<div style="padding:10px 14px;font-size:.78rem;color:var(--ink3);font-family:var(--font-mono);">No instruments yet.</div>'}</div>
+    </div>
+
+    <!-- Consumables -->
+    <div class="adm-card">
+      <div class="adm-card-head"><span>Consumables (${proc.consumables.length})</span>
+        <button class="adm-btn primary" onclick="showAddItemModal('consumable')">+ Add</button>
+      </div>
+      <div>${consList || '<div style="padding:10px 14px;font-size:.78rem;color:var(--ink3);font-family:var(--font-mono);">No consumables yet.</div>'}</div>
+    </div>
+  `;
+}
+
+// ── CRUD: Departments ────────────────────────────────────
+function addDept() {
+  const name = prompt('Department name (English):');
+  if (!name) return;
+  const key = name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+  if (DATA[key]) { alert('Key already exists: ' + key); return; }
+  DATA[key] = { name, procedures: [] };
+  saveData();
+  renderAdminDeptList();
+  // Update sidebar dropdown
+  refreshSidebarDropdown();
+  showToast('Department "' + name + '" added ✓');
+}
+
+function deleteDept(key) {
+  if (!confirm('Delete department "' + DATA[key].name + '"? This cannot be undone.')) return;
+  delete DATA[key];
+  if (adminDeptKey === key) { adminDeptKey = null; adminProcIdx = null; }
+  saveData();
+  renderAdminDeptList();
+  renderAdminEditor();
+  refreshSidebarDropdown();
+  showToast('Department deleted.');
+}
+
+function saveDeptInfo() {
+  DATA[adminDeptKey].name = document.getElementById('ade-name').value;
+  saveData();
+  renderAdminDeptList();
+  refreshSidebarDropdown();
+  showToast('Saved ✓');
+}
+
+// ── CRUD: Procedures ─────────────────────────────────────
+function selectAdminProc(i) {
+  adminProcIdx = i;
+  renderAdminEditor();
+}
+
+function addProc() {
+  const name = prompt('Procedure name (English):');
+  if (!name) return;
+  const nameAr = prompt('اسم الإجراء بالعربي (اختياري):') || name;
+  DATA[adminDeptKey].procedures.push({
+    name, nameAr,
+    meta: ['Duration: —', 'Anesthesia: —', 'Class: —'],
+    tray: [], instruments: [], consumables: [],
+    doctors: { default: { add_instruments:[], add_consumables:[], note:'Standard protocol' }}
+  });
+  adminProcIdx = DATA[adminDeptKey].procedures.length - 1;
+  saveData();
+  // Write to GAS if connected
+  if (gasToken) gasAddProc(adminDeptKey, { nameEn: name, nameAr }).catch(()=>{});
+  renderAdminEditor();
+  refreshSidebarDropdown();
+  showToast('Procedure added ✓');
+}
+
+function deleteProc(i) {
+  const proc = DATA[adminDeptKey].procedures[i];
+  if (!confirm('Delete "' + proc.name + '"?')) return;
+  DATA[adminDeptKey].procedures.splice(i, 1);
+  if (adminProcIdx >= DATA[adminDeptKey].procedures.length) adminProcIdx = null;
+  saveData();
+  renderAdminEditor();
+  refreshSidebarDropdown();
+  showToast('Deleted.');
+}
+
+function saveProcInfo() {
+  const proc = DATA[adminDeptKey].procedures[adminProcIdx];
+  proc.name = document.getElementById('adp-name').value;
+  proc.meta = document.getElementById('adp-meta').value.split(',').map(s=>s.trim());
+  saveData();
+  renderAdminEditor();
+  refreshSidebarDropdown();
+  showToast('Saved ✓');
+}
+
+// ── CRUD: Instruments & Consumables ──────────────────────
+function showAddItemModal(type) {
+  const nameVal = prompt((type==='instrument'?'Instrument':'Consumable') + ' name (English):');
+  if (!nameVal) return;
+  const nameAr = prompt('الاسم بالعربي (اختياري):') || nameVal;
+  const tipVal = prompt('Short description / tip:') || '';
+  const imgUrl = prompt('Image URL (optional — leave blank to use auto icon):') || '';
+  const proc = DATA[adminDeptKey].procedures[adminProcIdx];
+  const imgKey = guessImgKey(nameVal);
+  if (type === 'instrument') {
+    proc.instruments.push({ name: nameVal, nameAr, tip: tipVal, imageUrl: imgUrl, _imgKey: imgKey });
+    // Add to tray
+    const trayImg = imgKey ? IMG[imgKey] : IMG.composite;
+    proc.tray.push({ img: imgUrl||trayImg, label: nameVal.split(' ').slice(0,2).join(' '), checked: false });
+    // Write to GAS
+    if (gasToken) gasAddTool(adminDeptKey, { nameEn: nameVal, nameAr, useEn: tipVal, imageUrl: imgUrl }).catch(()=>{});
+  } else {
+    proc.consumables.push({ name: nameVal, nameAr, tip: tipVal, imageUrl: imgUrl });
+  }
+  saveData();
+  renderAdminEditor();
+  showToast(nameVal + ' added ✓');
+}
+
+function editInstrument(i) {
+  const proc = DATA[adminDeptKey].procedures[adminProcIdx];
+  const it = proc.instruments[i];
+  const newName = prompt('Name:', it.name);
+  if (newName === null) return;
+  const newTip  = prompt('Description:', it.tip);
+  if (newTip === null) return;
+  proc.instruments[i] = { name: newName, tip: newTip };
+  saveData();
+  renderAdminEditor();
+  showToast('Updated ✓');
+}
+
+function editConsumable(i) {
+  const proc = DATA[adminDeptKey].procedures[adminProcIdx];
+  const it = proc.consumables[i];
+  const newName = prompt('Name:', it.name);
+  if (newName === null) return;
+  const newTip  = prompt('Description:', it.tip);
+  if (newTip === null) return;
+  proc.consumables[i] = { name: newName, tip: newTip };
+  saveData();
+  renderAdminEditor();
+  showToast('Updated ✓');
+}
+
+function deleteInstrument(i) {
+  const proc = DATA[adminDeptKey].procedures[adminProcIdx];
+  if (!confirm('Delete "' + proc.instruments[i].name + '"?')) return;
+  proc.instruments.splice(i, 1);
+  saveData();
+  renderAdminEditor();
+  showToast('Deleted.');
+}
+
+function deleteConsumable(i) {
+  const proc = DATA[adminDeptKey].procedures[adminProcIdx];
+  if (!confirm('Delete "' + proc.consumables[i].name + '"?')) return;
+  proc.consumables.splice(i, 1);
+  saveData();
+  renderAdminEditor();
+  showToast('Deleted.');
+}
+
+// ── Refresh sidebar after data change ───────────────────
+function refreshSidebarDropdown() {
+  const sel = document.getElementById('dept-select');
+  if (!sel) return;
+  sel.innerHTML = Object.entries(DATA).map(([k,d]) =>
+    `<option value="${k}"${currentDept===k?' selected':''}>${d.name}</option>`
+  ).join('');
+  if (!DATA[currentDept]) { currentDept = Object.keys(DATA)[0]; currentProcIdx = 0; }
+  renderProcList();
+  renderContent();
+  // Update QR dept dropdown
+  const qrSel = document.getElementById('qr-dept');
+  if (qrSel) {
+    qrSel.innerHTML = Object.entries(DATA).map(([k,d]) =>
+      `<option value="${d.name} — ${k}">${d.name}</option>`
+    ).join('');
+  }
+}
+
+// ── Export / Import ──────────────────────────────────────
+function exportData() {
+  const blob = new Blob([JSON.stringify(DATA, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'apex-ref-data.json';
+  a.click();
+  showToast('Exported ✓');
+}
+
+function importData() {
+  document.getElementById('import-file').click();
+}
+
+function handleImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+      Object.keys(parsed).forEach(k => { DATA[k] = parsed[k]; });
+      saveData();
+      renderAdminDeptList();
+      refreshSidebarDropdown();
+      showToast('Imported ✓');
+    } catch(err) { alert('Invalid JSON file.'); }
+  };
+  reader.readAsText(file);
+}
+
+function resetToDefault() {
+  if (!confirm('Reset all data to defaults? All custom content will be lost.')) return;
+  localStorage.removeItem('apexRefData');
+  location.reload();
+}
+
+// ── Load saved data on start ─────────────────────────────
+loadSavedData();
+// Try to sync from GAS on load
+if (typeof syncFromGAS === 'function') {
+  syncFromGAS().catch(() => {});
 }
 
 // ═══════════════════════════════════════════════════════
