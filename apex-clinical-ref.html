@@ -1157,10 +1157,10 @@ async function gasAdminLogin(username, password) {
 
 // ── Write tool to GAS (from Admin)
 async function gasAddTool(spId, toolData) {
-  return gasCall('addTool', { specialtyId: spId, ...toolData });
+  return gasCall('addTool', { specialtyId: spId, nameAr: toolData.nameAr||toolData.nameEn, nameEn: toolData.nameEn, useAr: toolData.useAr||toolData.useEn||'', useEn: toolData.useEn||toolData.useAr||'', imageUrl: toolData.imageUrl||'', order: 99 });
 }
 async function gasAddProc(spId, procData) {
-  return gasCall('addProc', { specialtyId: spId, ...procData });
+  return gasCall('addProcedure', { specialtyId: spId, nameAr: procData.nameAr||procData.nameEn, nameEn: procData.nameEn||procData.nameAr, order: 99 });
 }
 
 // ── Instrument images — inline SVG data URIs (no external requests)
@@ -2009,7 +2009,7 @@ function addProc() {
   adminProcIdx = DATA[adminDeptKey].procedures.length - 1;
   saveData();
   // Write to GAS if connected
-  if (gasToken) gasAddProc(adminDeptKey, { nameEn: name, nameAr }).catch(()=>{});
+  if (gasToken) gasAddProc(adminDeptKey, { nameEn: name, nameAr: nameAr||name }).catch(()=>{});
   renderAdminEditor();
   refreshSidebarDropdown();
   showToast('Procedure added ✓');
@@ -2051,7 +2051,7 @@ function showAddItemModal(type) {
     const trayImg = imgKey ? IMG[imgKey] : IMG.composite;
     proc.tray.push({ img: imgUrl||trayImg, label: nameVal.split(' ').slice(0,2).join(' '), checked: false });
     // Write to GAS
-    if (gasToken) gasAddTool(adminDeptKey, { nameEn: nameVal, nameAr, useEn: tipVal, imageUrl: imgUrl }).catch(()=>{});
+    if (gasToken) gasAddTool(adminDeptKey, { nameEn: nameVal, nameAr: nameAr||nameVal, useEn: tipVal, useAr: nameAr||nameVal, imageUrl: imgUrl }).catch(()=>{});
   } else {
     proc.consumables.push({ name: nameVal, nameAr, tip: tipVal, imageUrl: imgUrl });
   }
