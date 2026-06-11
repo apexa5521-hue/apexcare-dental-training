@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Apex Care — Clinical Reference & QR Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ── Reset & tokens ─────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink:      #1A1F2E;
+  --ink2:     #4A5568;
+  --ink3:     #9AA3B2;
+  --bg:       #F7F8FA;
+  --bg2:      #FFFFFF;
+  --border:   #E2E6EC;
+  --border2:  #CDD3DC;
+  --accent:   #2563EB;
+  --accent-t: #EEF3FD;
+  --radius:   8px;
+  --shadow:   0 1px 4px rgba(26,31,46,0.08), 0 4px 16px rgba(26,31,46,0.04);
+  --font-ui:  'Inter', sans-serif;
+  --font-mono:'DM Mono', monospace;
+}
+html { font-size: 15px; }
+body {
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+/* ── Top bar ─────────────────────────────────────────── */
+.topbar {
+  background: var(--bg2);
+  border-bottom: 1.5px solid var(--border);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.topbar-brand .icon {
+  width: 30px; height: 30px;
+  background: var(--ink);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+}
+.topbar-brand .icon svg { display: block; }
+.topbar-brand .name {
+  font-weight: 700;
+  font-size: 0.93rem;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+.topbar-brand .sub {
+  font-size: 0.72rem;
+  color: var(--ink3);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+.tab-nav {
+  display: flex;
+  gap: 2px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+}
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 6px 16px;
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--ink2);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.tab-btn.active {
+  background: var(--bg2);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(26,31,46,0.1);
+}
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.badge {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  color: var(--ink2);
+  letter-spacing: 0.03em;
+}
+
+/* ── Main layout ─────────────────────────────────────── */
+.app-body { display: flex; min-height: calc(100vh - 56px); }
+.tab-panel { display: none; width: 100%; }
+.tab-panel.active { display: flex; }
+
+/* ── TAB 1: Clinical Reference ───────────────────────── */
+#tab-clinical { display: flex; }
+
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--bg2);
+  border-right: 1.5px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: calc(100vh - 56px);
+  position: sticky;
+  top: 56px;
+}
+.sidebar-header {
+  padding: 16px 18px 12px;
+  border-bottom: 1.5px solid var(--border);
+}
+.sidebar-header label {
+  display: block;
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink3);
+  margin-bottom: 8px;
+}
+.sidebar-select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  background: var(--bg);
+  color: var(--ink);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239AA3B2' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+}
+.sidebar-select:focus { outline: none; border-color: var(--accent); }
+
+.proc-list { flex: 1; padding: 8px 0; }
+.proc-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 18px;
+  cursor: pointer;
+  font-size: 0.84rem;
+  color: var(--ink2);
+  border-left: 2.5px solid transparent;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  line-height: 1.3;
+}
+.proc-item:hover { background: var(--bg); color: var(--ink); }
+.proc-item.active {
+  background: var(--accent-t);
+  color: var(--accent);
+  border-left-color: var(--accent);
+  font-weight: 500;
+}
+.proc-item .proc-num {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--ink3);
+  flex-shrink: 0;
+  width: 18px;
+}
+.proc-item.active .proc-num { color: var(--accent); opacity: 0.6; }
+
+/* ── Content area ─────────────────────────────────────── */
+.content {
+  flex: 1;
+  padding: 28px 32px;
+  overflow-y: auto;
+  max-height: calc(100vh - 56px);
+}
+
+/* Tray visual */
+.tray-visual {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg2);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.tray-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1.5px solid var(--border);
+}
+.tray-title { font-size: 0.75rem; font-family: var(--font-mono); color: var(--ink3); letter-spacing: 0.06em; text-transform: uppercase; }
+.tray-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  color: var(--ink3);
+}
+.tray-status .dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--border2);
+}
+.tray-status.done .dot { background: #22C55E; }
+
+.tray-grid {
+  padding: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 78px);
+  gap: 10px;
+  min-height: 130px;
+  position: relative;
+}
+.tray-grid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.4;
+  pointer-events: none;
+}
+.tray-slot {
+  position: relative;
+  width: 78px; height: 82px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  color: var(--ink3);
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+  cursor: default;
+  z-index: 1;
+  padding: 4px;
+  line-height: 1.25;
+}
+.tray-slot.checked {
+  border-color: var(--accent);
+  background: var(--accent-t);
+  color: var(--accent);
+}
+.tray-slot .slot-icon { font-size: 1.4rem; }
+.slot-img-wrap {
+  width: 46px; height: 46px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: #f0f0f0;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.slot-img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: grayscale(15%);
+  transition: filter 0.15s;
+}
+.tray-slot.checked .slot-img { filter: grayscale(0%); }
+.slot-fb { font-size: 1.2rem; }
+.slot-label {
+  font-size: 0.58rem;
+  font-family: var(--font-mono);
+  color: inherit;
+  text-align: center;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+.tray-slot.empty { border-style: dashed; opacity: 0.35; }
+
+/* Doctor preferences */
+.pref-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 12px 16px;
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+}
+.pref-bar label {
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  color: var(--ink3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.pref-bar select {
+  flex: 1;
+  max-width: 220px;
+  padding: 6px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--font-ui);
+  font-size: 0.83rem;
+  background: var(--bg);
+  color: var(--ink);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239AA3B2' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+}
+.pref-bar select:focus { outline: none; border-color: var(--accent); }
+.pref-note {
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  color: var(--ink3);
+  padding: 3px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+}
+.pref-note.active-note {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-t);
+}
+
+/* Checklists */
+.checklist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 700px) { .checklist-grid { grid-template-columns: 1fr; } }
+
+.checklist-card {
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.checklist-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 16px;
+  border-bottom: 1.5px solid var(--border);
+  background: var(--bg);
+}
+.checklist-card-head .head-label {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  color: var(--ink2);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 500;
+}
+.checklist-card-head .counter {
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  color: var(--ink3);
+}
+.checklist-body { padding: 6px 0; }
+
+.cl-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  transition: background 0.1s;
+}
+.cl-item:last-child { border-bottom: none; }
+.cl-item:hover { background: var(--bg); }
+.cl-item input[type="checkbox"] {
+  width: 15px; height: 15px;
+  margin-top: 1px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.cl-item-text {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--ink);
+  line-height: 1.35;
+}
+.cl-item-text .item-label { display: block; }
+.cl-item-text .item-sub {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--ink3);
+  margin-top: 1px;
+}
+.cl-item.checked .item-label {
+  text-decoration: line-through;
+  color: var(--ink3);
+}
+.cl-item.added .item-label::after {
+  content: ' +';
+  color: var(--accent);
+  font-size: 0.7rem;
+}
+
+/* Tooltip */
+.tooltip-wrap { position: relative; display: inline-block; }
+.tooltip-icon {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border2);
+  background: none;
+  font-size: 0.62rem;
+  color: var(--ink3);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  margin-left: 4px;
+  flex-shrink: 0;
+  line-height: 1;
+  font-family: var(--font-mono);
+}
+.tooltip-box {
+  display: none;
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 200;
+  background: var(--ink);
+  color: #E8EBF0;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  font-family: var(--font-ui);
+  line-height: 1.45;
+  width: 200px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  pointer-events: none;
+}
+.tooltip-box::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-right-color: var(--ink);
+}
+.tooltip-icon:hover + .tooltip-box,
+.tooltip-icon:focus + .tooltip-box { display: block; }
+
+/* Reset checklist btn */
+.reset-btn {
+  margin: 14px 16px;
+  padding: 7px 14px;
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  background: none;
+  color: var(--ink2);
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: border-color 0.12s, color 0.12s;
+}
+.reset-btn:hover { border-color: var(--ink); color: var(--ink); }
+
+/* Procedure header */
+.proc-header {
+  margin-bottom: 20px;
+}
+.proc-header .dept-eyebrow {
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  color: var(--ink3);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.proc-header h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--ink);
+}
+.proc-header .proc-meta {
+  margin-top: 8px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.meta-tag {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--ink2);
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  letter-spacing: 0.03em;
+}
+
+/* ── TAB 2: QR Generator ─────────────────────────────── */
+#tab-qr { justify-content: center; align-items: flex-start; padding: 40px 24px; }
+
+.qr-wrapper {
+  width: 100%;
+  max-width: 520px;
+}
+.qr-form-card {
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.qr-form-card-head {
+  padding: 14px 20px;
+  border-bottom: 1.5px solid var(--border);
+  background: var(--bg);
+}
+.qr-form-card-head h2 {
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink2);
+}
+.qr-form-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  color: var(--ink3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.form-group input,
+.form-group select {
+  padding: 9px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  background: var(--bg);
+  color: var(--ink);
+  appearance: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+.form-group select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239AA3B2' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+}
+.form-group input:focus,
+.form-group select:focus { outline: none; border-color: var(--accent); }
+
+.qr-submit-btn {
+  padding: 10px 18px;
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s;
+  width: 100%;
+  justify-content: center;
+}
+.qr-submit-btn:hover { background: #2D3748; }
+.qr-submit-btn svg { flex-shrink: 0; }
+
+/* QR Output Card */
+.qr-output-card {
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: none;
+}
+.qr-output-card.visible { display: block; }
+
+.qr-card-inner {
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+.qr-card-logo {
+  width: 44px; height: 44px;
+  background: var(--ink);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.qr-card-arabic {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink);
+  direction: rtl;
+}
+.qr-card-dept {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink2);
+  letter-spacing: 0.04em;
+  border: 1.5px solid var(--border);
+  padding: 4px 12px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.qr-img-wrap {
+  width: 200px; height: 200px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.qr-img-wrap img { width: 100%; height: 100%; display: block; }
+.qr-url-display {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--ink3);
+  word-break: break-all;
+  max-width: 240px;
+}
+.qr-output-actions {
+  padding: 12px 20px;
+  border-top: 1.5px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  gap: 10px;
+}
+.qr-print-btn {
+  padding: 8px 16px;
+  border: 1.5px solid var(--ink);
+  background: var(--ink);
+  color: #fff;
+  border-radius: 6px;
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  transition: background 0.15s;
+}
+.qr-print-btn:hover { background: #2D3748; }
+.qr-dl-btn {
+  padding: 8px 16px;
+  border: 1.5px solid var(--border);
+  background: var(--bg2);
+  color: var(--ink2);
+  border-radius: 6px;
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+.qr-dl-btn:hover { border-color: var(--ink2); }
+
+/* ── Print styles ─────────────────────────────────────── */
+@media print {
+  .topbar, .sidebar, .pref-bar, .reset-btn,
+  #tab-qr .qr-form-card, .qr-output-actions { display: none !important; }
+  body { background: #fff; }
+  .qr-output-card { border: none !important; box-shadow: none !important; }
+  .qr-card-inner { gap: 20px; }
+}
+
+/* ── Mobile ───────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .topbar { padding: 0 14px; gap: 12px; }
+  .topbar-brand .name { display: none; }
+  .tab-btn { padding: 6px 10px; font-size: 0.78rem; }
+  .sidebar { width: 100%; position: relative; top: 0; max-height: none; border-right: none; border-bottom: 1.5px solid var(--border); }
+  #tab-clinical { flex-direction: column; }
+  .content { padding: 18px 16px; max-height: none; }
+  .tray-grid { grid-template-columns: repeat(auto-fill, 60px); gap: 8px; }
+  .tray-slot { width: 60px; height: 60px; }
+}
+
+/* ── Utility ──────────────────────────────────────────── */
+.visually-hidden { clip: rect(0 0 0 0); clip-path: inset(50%); height: 1px; overflow: hidden; position: absolute; white-space: nowrap; width: 1px; }
+</style>
+</head>
+<body>
+
+<!-- ── Top bar ───────────────────────────────────────── -->
+<header class="topbar" role="banner">
+  <div class="topbar-brand">
+    <div class="icon">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M4 2C4 2 3 5 3 8C3 11 4 14 4 14" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M8 1C8 1 6 5 6 8C6 11 8 15 8 15" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M12 2C12 2 13 5 13 8C13 11 12 14 12 14" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M3 8H13" stroke="#fff" stroke-width="1" stroke-linecap="round" opacity=".4"/>
+      </svg>
+    </div>
+    <div>
+      <div class="name">Apex Care Medical Center</div>
+      <div class="sub">مجمع إبيكس كير الطبي</div>
+    </div>
+  </div>
+
+  <nav class="tab-nav" role="tablist" aria-label="Main sections">
+    <button class="tab-btn active" role="tab" aria-selected="true"  aria-controls="tab-clinical" id="btn-clinical" onclick="switchTab('clinical')">Clinical Reference</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="tab-qr"       id="btn-qr"       onclick="switchTab('qr')">QR Generator</button>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge">Dental Nursing</span>
+  </div>
+</header>
+
+<!-- ── App body ───────────────────────────────────────── -->
+<main class="app-body">
+
+  <!-- ═══ TAB 1: Clinical Reference ═══════════════════ -->
+  <section class="tab-panel active" id="tab-clinical" role="tabpanel" aria-labelledby="btn-clinical">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" aria-label="Department and procedure selector">
+      <div class="sidebar-header">
+        <label for="dept-select">Department</label>
+        <select id="dept-select" class="sidebar-select" onchange="onDeptChange()">
+          <option value="endo">Endodontics</option>
+          <option value="oral_surgery">Oral Surgery</option>
+          <option value="ortho">Orthodontics</option>
+          <option value="prostho">Prosthodontics</option>
+          <option value="perio">Periodontics</option>
+          <option value="gp">General Dentistry</option>
+          <option value="pedo">Pedodontics</option>
+        </select>
+      </div>
+      <div class="proc-list" id="proc-list" role="listbox" aria-label="Procedures"></div>
+    </aside>
+
+    <!-- Content -->
+    <div class="content" id="content-area" aria-live="polite"></div>
+  </section>
+
+  <!-- ═══ TAB 2: QR Generator ═════════════════════════ -->
+  <section class="tab-panel" id="tab-qr" role="tabpanel" aria-labelledby="btn-qr">
+    <div class="qr-wrapper">
+
+      <!-- Form card -->
+      <div class="qr-form-card">
+        <div class="qr-form-card-head"><h2>Generate Department QR Code</h2></div>
+        <div class="qr-form-body">
+          <div class="form-group">
+            <label for="qr-dept">Select Department</label>
+            <select id="qr-dept">
+              <option value="Endodontics — قسم علاج الجذور">Endodontics</option>
+              <option value="Oral Surgery — قسم الجراحة">Oral Surgery</option>
+              <option value="Orthodontics — قسم التقويم">Orthodontics</option>
+              <option value="Prosthodontics — قسم التركيبات">Prosthodontics</option>
+              <option value="Periodontics — قسم اللثة">Periodontics</option>
+              <option value="General Dentistry — طب الأسنان العام">General Dentistry</option>
+              <option value="Pedodontics — طب أسنان الأطفال">Pedodontics</option>
+              <option value="Reception — الاستقبال">Reception</option>
+              <option value="Radiology — قسم الأشعة">Radiology</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="qr-url">System Base URL</label>
+            <input type="url" id="qr-url" placeholder="https://apex-care.com/department" value="https://apexa5521-hue.github.io/apexcare-dental-training/"/>
+          </div>
+          <div class="form-group">
+            <label for="qr-size">QR Size (px)</label>
+            <select id="qr-size">
+              <option value="200">200 × 200</option>
+              <option value="300" selected>300 × 300</option>
+              <option value="400">400 × 400</option>
+            </select>
+          </div>
+          <button class="qr-submit-btn" onclick="generateQR()">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" stroke="white" stroke-width="1.5"/><rect x="8" y="1" width="5" height="5" rx="1" stroke="white" stroke-width="1.5"/><rect x="1" y="8" width="5" height="5" rx="1" stroke="white" stroke-width="1.5"/><rect x="9" y="9" width="2" height="2" fill="white"/><rect x="12" y="9" width="2" height="2" fill="white"/><rect x="9" y="12" width="2" height="2" fill="white"/><rect x="12" y="12" width="2" height="2" fill="white"/></svg>
+            Generate QR Code
+          </button>
+        </div>
+      </div>
+
+      <!-- Output card (printable) -->
+      <div class="qr-output-card" id="qr-output">
+        <div class="qr-card-inner" id="qr-printable">
+          <div class="qr-card-logo">
+            <svg width="22" height="22" viewBox="0 0 16 16" fill="none">
+              <path d="M4 2C4 2 3 5 3 8C3 11 4 14 4 14" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M8 1C8 1 6 5 6 8C6 11 8 15 8 15" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M12 2C12 2 13 5 13 8C13 11 12 14 12 14" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="qr-card-arabic">مجمع إبيكس كير الطبي</div>
+          <div class="qr-card-dept" id="qr-card-dept-label">—</div>
+          <div class="qr-img-wrap">
+            <img id="qr-img" src="" alt="QR Code"/>
+          </div>
+          <div class="qr-url-display" id="qr-url-display">—</div>
+        </div>
+        <div class="qr-output-actions">
+          <button class="qr-print-btn" onclick="window.print()">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 4V1h8v3" stroke="white" stroke-width="1.4" stroke-linecap="round"/><rect x="1" y="4" width="12" height="7" rx="1.5" stroke="white" stroke-width="1.4"/><path d="M3 9h8v4H3z" stroke="white" stroke-width="1.4" stroke-linejoin="round"/></svg>
+            Print Card
+          </button>
+          <a class="qr-dl-btn" id="qr-dl-link" href="#" download="apex-qr.png" target="_blank">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v7M4 6l2.5 2.5L9 6" stroke="#4A5568" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 10h11v1a1 1 0 01-1 1H2a1 1 0 01-1-1v-1z" fill="#4A5568" opacity=".3"/></svg>
+            Download
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════════════════
+
+// ── Instrument image map (Wikimedia Commons — display fine in browsers)
+const IMG = {
+  mirror:    "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Dental_mirror.jpg/120px-Dental_mirror.jpg",
+  explorer:  "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Dental_explorer_and_periodontal_probe.jpg/120px-Dental_explorer_and_periodontal_probe.jpg",
+  probe:     "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Dental_explorer_and_periodontal_probe.jpg/120px-Dental_explorer_and_periodontal_probe.jpg",
+  pliers:    "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Dental_cotton_plier.jpg/120px-Dental_cotton_plier.jpg",
+  kfiles:    "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Endodontic_files.jpg/120px-Endodontic_files.jpg",
+  apex:      "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Root-ZX-mini.jpg/120px-Root-ZX-mini.jpg",
+  rubdam:    "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Rubber_dam.jpg/120px-Rubber_dam.jpg",
+  gp:        "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Guttapercha.jpg/120px-Guttapercha.jpg",
+  paper:     "https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Paper_points.jpg/120px-Paper_points.jpg",
+  elevator:  "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Bein_hebel_1a.jpg/120px-Bein_hebel_1a.jpg",
+  forceps:   "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Dental_forceps.jpg/120px-Dental_forceps.jpg",
+  scalpel:   "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Scalpel_in_holder.jpg/120px-Scalpel_in_holder.jpg",
+  needle:    "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Mathieu_needle_holder.jpg/120px-Mathieu_needle_holder.jpg",
+  scissors:  "https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Iris_scissors.jpg/120px-Iris_scissors.jpg",
+  highspeed: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/NSK_Ti-Max_Z95L_1.jpg/120px-NSK_Ti-Max_Z95L_1.jpg",
+  lowspeed:  "https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/NSK_Ti-Max_Z95L_1.jpg/120px-NSK_Ti-Max_Z95L_1.jpg",
+  curelight: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Dental_curing_light.jpg/120px-Dental_curing_light.jpg",
+  curette:   "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Curetas-gracey.JPG/120px-Curetas-gracey.JPG",
+  scaler:    "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Aluminum_Anodized_scalers.jpg/120px-Aluminum_Anodized_scalers.jpg",
+  birdbeak:  "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Beak_pliers.jpg/120px-Beak_pliers.jpg",
+  retractor: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Cheek_retractor.jpg/120px-Cheek_retractor.jpg",
+  syringe:   "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Dental_syringe.jpg/120px-Dental_syringe.jpg",
+  gauze:     "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Medical_gauze.jpg/120px-Medical_gauze.jpg",
+  excavator: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Dental_spoon_excavator.jpg/120px-Dental_spoon_excavator.jpg",
+  composite: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/Dental_composites_and_tools.JPG/120px-Dental_composites_and_tools.JPG",
+  matrix:    "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/Dental_composites_and_tools.JPG/120px-Dental_composites_and_tools.JPG",
+  gates:     "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Endodontic_files.jpg/120px-Endodontic_files.jpg",
+  mta:       "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/Dental_composites_and_tools.JPG/120px-Dental_composites_and_tools.JPG",
+};
+
+const DATA = {
+  endo: {
+    name: "Endodontics",
+    procedures: [
+      {
+        id: "rct",
+        name: "Root Canal Treatment (RCT)",
+        meta: ["Duration: 60–90 min", "Anesthesia: Required", "Class: Critical"],
+        tray: [
+          {img:IMG.explorer,label:"Explorer",checked:false},
+          {img:IMG.mirror,label:"Mirror",checked:false},
+          {img:IMG.probe,label:"Probe",checked:false},
+          {img:IMG.pliers,label:"Cotton Pliers",checked:false},
+          {img:IMG.kfiles,label:"K-Files",checked:false},
+          {img:IMG.apex,label:"Apex Locator",checked:false},
+          {img:IMG.gauze,label:"NaOCl",checked:false},
+          {img:IMG.paper,label:"Paper Points",checked:false},
+          {img:IMG.gp,label:"Gutta Percha",checked:false},
+          {img:IMG.rubdam,label:"Rubber Dam",checked:false},
+        ],
+        instruments: [
+          { name: "Dental Mirror", tip: "Front-surface mirror; used for indirect vision and tissue retraction." },
+          { name: "Explorer (DG-16)", tip: "Sharp probe for caries detection and locating canal orifices." },
+          { name: "Cotton Pliers (Locking)", tip: "Used to transfer small items without contamination." },
+          { name: "Rubber Dam Kit", tip: "Clamp, frame, punch, and sheet; isolates tooth from saliva." },
+          { name: "Endodontic Spreader", tip: "For lateral condensation of gutta-percha in the canal." },
+          { name: "Apex Locator", tip: "Electronic device to determine working length of root canal." },
+          { name: "K-Files (sizes 10–40)", tip: "Stainless steel or NiTi files for shaping the canal." },
+          { name: "Rotary File System", tip: "Motor-driven NiTi files; faster and more flexible shaping." },
+        ],
+        consumables: [
+          { name: "NaOCl 5.25% (Irrigant)", tip: "Sodium hypochlorite dissolves organic tissue and disinfects." },
+          { name: "EDTA 17% (Chelator)", tip: "Removes smear layer; used as a lubricant during filing." },
+          { name: "Paper Points (ISO-matched)", tip: "Absorbent points to dry canal before obturation." },
+          { name: "Gutta-Percha Points", tip: "Primary obturation material; thermoplastic polymer." },
+          { name: "Bioceramic Sealer", tip: "Biocompatible sealer; bonds to dentine via calcium silicate." },
+          { name: "Anesthetic Cartridge", tip: "2% Lidocaine with 1:80,000 epinephrine — standard for endo." },
+        ],
+        doctors: {
+          default: { add_instruments: [], add_consumables: [], note: "Standard protocol" },
+          "Dr. Khalid": { add_instruments: ["Ultrasonic Tip (E5D)"], add_consumables: ["Chlorhexidine 2% (Final Rinse)"], note: "Prefers CHX final rinse" },
+          "Dr. Sara": { add_instruments: ["Micro-Opener (C-Pilot)"], add_consumables: [], note: "Always uses C-Pilot for calcified canals" },
+        }
+      },
+      {
+        id: "retreatment",
+        name: "Re-RCT (Retreatment)",
+        meta: ["Duration: 90–120 min", "Anesthesia: Required", "Class: Critical"],
+        tray: [
+          {img:IMG.explorer,label:"Explorer",checked:false},
+          {img:IMG.mirror,label:"Mirror",checked:false},
+          {img:IMG.kfiles,label:"R-Files",checked:false},
+          {img:IMG.apex,label:"Apex Locator",checked:false},
+          {img:IMG.paper,label:"Chloroform",checked:false},
+          {img:IMG.rubdam,label:"Rubber Dam",checked:false},
+          {img:IMG.gates,label:"Gates Glidden",checked:false},
+          {img:IMG.gp,label:"GP Points",checked:false},
+        ],
+        instruments: [
+          { name: "Retreatment File Set", tip: "Specifically designed to dissolve and remove old gutta-percha." },
+          { name: "Dental Mirror", tip: "Standard front-surface mirror for indirect vision." },
+          { name: "Ultrasonic Handpiece", tip: "Used to remove posts or separated instruments." },
+          { name: "Gates Glidden Drills (2–4)", tip: "Coronal flaring before retreatment files." },
+          { name: "Rubber Dam Kit", tip: "Mandatory isolation for all endodontic procedures." },
+        ],
+        consumables: [
+          { name: "Chloroform (GP Solvent)", tip: "Dissolves gutta-percha to aid removal. Use in ventilated area." },
+          { name: "NaOCl 5.25%", tip: "Continuous irrigation during canal cleaning." },
+          { name: "EDTA 17%", tip: "Removes smear layer following old material removal." },
+          { name: "New GP Points + Sealer", tip: "For re-obturation after thorough debridement." },
+        ],
+        doctors: {
+          default: { add_instruments: [], add_consumables: [], note: "Standard protocol" },
+          "Dr. Khalid": { add_instruments: ["Micro-Endodontic Kit"], add_consumables: ["MTA Cement"], note: "Uses MTA for perforations" },
+        }
+      },
+      {
+        id: "pulpotomy",
+        name: "Pulpotomy (Vital)",
+        meta: ["Duration: 30–45 min", "Anesthesia: Required", "Class: Critical"],
+        tray: [
+          {img:IMG.mirror,label:"Mirror",checked:false},
+          {img:IMG.explorer,label:"Explorer",checked:false},
+          {img:IMG.highspeed,label:"High Speed",checked:false},
+          {img:IMG.gauze,label:"Cotton Pellets",checked:false},
+          {img:IMG.mta,label:"MTA",checked:false},
+          {img:IMG.rubdam,label:"Rubber Dam",checked:false},
+        ],
+        instruments: [
+          { name: "High-Speed Handpiece + Bur (Endo access)", tip: "Used to open pulp chamber and remove coronal pulp." },
+          { name: "Spoon Excavator", tip: "Removes soft carious and pulp tissue." },
+          { name: "Cotton Pliers", tip: "For transfer of cotton pellets and MTA carriers." },
+          { name: "Rubber Dam Kit", tip: "Isolation is mandatory; prevents salivary contamination." },
+        ],
+        consumables: [
+          { name: "MTA (Mineral Trioxide Aggregate)", tip: "Biocompatible pulp capping material with high seal quality." },
+          { name: "Saline (Irrigation)", tip: "Gentle rinse to remove debris before capping." },
+          { name: "Sterile Cotton Pellets", tip: "Applied over MTA before temporary restoration." },
+          { name: "Cavit / IRM (Temporary Fill)", tip: "Seals access cavity between appointments." },
+        ],
+        doctors: {
+          default: { add_instruments: [], add_consumables: [], note: "Standard protocol" },
+          "Dr. Sara": { add_instruments: [], add_consumables: ["Biodentine (Alternative Capping)"], note: "Prefers Biodentine over MTA" },
+        }
+      },
+    ]
+  },
+  oral_surgery: {
+    name: "Oral Surgery",
+    procedures: [
+      {
+        id: "simple_ext",
+        name: "Simple Extraction",
+        meta: ["Duration: 15–30 min", "Anesthesia: Required", "Class: Sterile Field"],
+        tray: [
+          {img:IMG.mirror,label:"Mirror",checked:false},
+          {icon:"🔍",label:"Probe",checked:false},
+          {img:IMG.elevator,label:"Elevator",checked:false},
+          {img:IMG.forceps,label:"Forceps",checked:false},
+          {img:IMG.gauze,label:"Gauze",checked:false},
+          {img:IMG.syringe,label:"Syringe",checked:false},
+        ],
+        instruments: [
+          { name: "Periosteal Elevator (Molt #9)", tip: "Reflects mucoperiosteum before elevation." },
+          { name: "Straight Elevator (Cryer)", tip: "Luxates the tooth from the socket." },
+          { name: "Extraction Forceps (Upper/Lower Molar)", tip: "Grasps and extracts tooth after elevation." },
+          { name: "Curved Hemostat", tip: "Clamps bleeders and holds tissue." },
+          { name: "Dental Mirror", tip: "Indirect vision and tissue retraction." },
+        ],
+        consumables: [
+          { name: "Anesthetic (2% Lidocaine 1:80k)", tip: "Standard local anesthetic for extractions." },
+          { name: "Sterile Gauze 4×4", tip: "Haemostasis post-extraction. Bite for 30 min." },
+          { name: "Saline (Irrigation)", tip: "Socket irrigation after extraction." },
+          { name: "Gelfoam / Oxidized Cellulose", tip: "Placed in socket if excessive bleeding." },
+        ],
+        doctors: {
+          default: { add_instruments: [], add_consumables: [], note: "Standard protocol" },
+          "Dr. Ahmed": { add_instruments: ["Bone File"], add_consumables: ["PRF (Platelet Rich Fibrin)"], note: "Uses PRF for enhanced healing" },
+        }
+      },
+      {
+        id: "surgical_ext",
+        name: "Surgical Extraction (Impacted)",
+        meta: ["Duration: 45–90 min", "Anesthesia: Required", "Class: Sterile Field"],
+        tray: [
+          {img:IMG.mirror,label:"Mirror",checked:false},
+          {img:IMG.scalpel,label:"Scalpel",checked:false},
+          {img:IMG.elevator,label:"Elevator",checked:false},
+          {img:IMG.forceps,label:"Forceps",checked:false},
+          {img:IMG.scissors,label:"Sutures",checked:false},
+          {img:IMG.syringe,label:"Syringe",checked:false},
+          {img:IMG.highspeed,label:"Handpiece",checked:false},
+          {img:IMG.gauze,label:"Gauze",checked:false},
+        ],
+        instruments: [
+          { name: "Scalpel Handle #3 + Blade #15", tip: "Incises mucoperiosteum for flap elevation." },
+          { name: "Periosteal Elevator (Molt #9)", tip: "Raises full-thickness mucoperiosteal flap." },
+          { name: "Surgical Handpiece + Bur (702/703)", tip: "Sectioning impacted tooth and bone removal." },
+          { name: "Curved Elevator (Cryer Left/Right)", tip: "Elevates roots after sectioning." },
+          { name: "Bone Rongeur", tip: "Trims sharp bony edges post-extraction." },
+          { name: "Needle Holder", tip: "Holds suture needle for closure." },
+          { name: "Suture Scissors", tip: "Cuts suture material cleanly." },
+        ],
+        consumables: [
+          { name: "Anesthetic (2% Lidocaine 1:80k)", tip: "2 cartridges; block + infiltration." },
+          { name: "Vicryl 3-0 Suture", tip: "Resorbable suture for mucoperiosteal closure." },
+          { name: "Sterile Saline + Irrigation Syringe", tip: "Continuous bone and socket irrigation during bur use." },
+          { name: "Sterile Gauze 4×4", tip: "Haemostasis and field maintenance." },
+        ],
+        doctors: {
+          default: { add_instruments: [], add_consumables: [], note: "Standard protocol" },
+          "Dr. Ahmed": { add_instruments: ["Piezoelectric Tip (BS1)"], add_consumables: ["PRF Membrane", "Bone Graft Material"], note: "Socket preservation protocol" },
+          "Dr. Nora": { add_instruments: [], add_consumables: ["Tranexamic Acid Gauze"], note: "Applies TXA gauze for haemostasis" },
+        }
+      },
+    ]
+  },
+  ortho: {
+    name: "Orthodontics",
+    procedures: [
+      {
+        id: "bracket_bond",
+        name: "Bracket Bonding",
+        meta: ["Duration: 60–90 min", "Anesthesia: None", "Class: Clean Field"],
+        tray: [
+          {img:IMG.mirror,label:"Mirror",checked:false},
+          {img:IMG.explorer,label:"Explorer",checked:false},
+          {img:IMG.composite,label:"Etch Gel",checked:false},
+          {img:IMG.birdbeak,label:"Brackets",checked:false},
+          {img:IMG.pliers,label:"Ligature",checked:false},
+          {img:IMG.birdbeak,label:"Birdbeak",checked:false},
+          {img:IMG.curelight,label:"Cure Light",checked:false},
+        ],
+        instruments: [
+          { name: "Orthodontic Bracket Placement Tweezers", tip: "Precise placement of brackets on tooth surface." },
+          { name: "Birdbeak Plier (139)", tip: "Forms loops and holds archwire during activation." },
+          { name: "Weingart Utility Plier", tip: "Inserts and removes archwires from brackets." },
+          { name: "Ligature Director", tip: "Tucks ligature wire ends beneath archwire." },
+          { name: "LED Curing Light", tip: "Light-activates composite adhesive (10–20 sec per bracket)." },
+          { name: "Cheek Retractors", tip: "Keeps cheeks and lips clear during bonding." },
+        ],
+        consumables: [
+          { name: "Phosphoric Acid Etch 37%", tip: "Etches enamel surface for micro-mechanical retention." },
+          { name: "Primer (Transbond XT)", tip: "Applied after etching; enhances composite adhesion." },
+          { name: "Composite Adhesive Paste", tip: "Applied to bracket base before light curing." },
+          { name: "Ligature Wires", tip: "0.010 stainless steel; ties archwire to bracket slot." },
+          { name: "Initial NiTi Archwire (0.014)", tip: "Delivers light force for initial alignment." },
+        ],
+        doctors: {
+          default: { add_instruments: [], add_consumables: [], note: "Standard protocol" },
+          "Dr. Reem": { add_instruments: [], add_consumables: ["Self-Etch Primer (APC Flash-Free)"], note: "Prefers no separate etching step" },
+        }
+      },
+    ]
+  },
+  prostho: {
+    name: "Prosthodontics",
+    procedures: [
+      {
+        id: "crown_prep",
+        name: "Crown Preparation & Impression",
+        meta: ["Duration: 60–90 min", "Anesthesia: Required", "Class: Clean Field"],
+        tray: [
+          {img:IMG.mirror,label:"Mirror",checked:false},
+          {img:IMG.highspeed,label:"High Speed",checked:false},
+          {img:IMG.pliers,label:"Retraction",checked:false},
+          {img:IMG.pliers,label:"Cotton Pliers",checked:false},
+          {img:IMG.composite,label:"Shade Guide",checked:false},
+          {img:IMG.composite,label:"Impression",checked:false},
+          {img:IMG.composite,label:"Bite Reg.",checked:false},
+        ],
+        instruments: [
+          { name: "High-Speed Handpiece + Crown Prep Burs", tip: "Diamond burs (football, flat-end taper) for tooth reduction." },
+          { name: "Gingival Retraction Cord Packer", tip: "Packs cord into sulcus to expose finish line." },
+          { name: "Dental Mirror + Explorer", tip: "Assessment of preparation quality and finish line." },
+          { name: "VITA Shade Guide", tip: "Color matching under natural light; select before drying tooth." },
+          { name: "Impression Tray (stock/custom)", tip: "Loaded with PVS material and seated over arch." },
+        ],
+        consumables: [
+          { name: "Anesthetic (2% Lidocaine)", tip: "Infiltration or block depending on tooth position." },
+          { name: "Gingival Retraction Cord #00/0", tip: "Mechanical retraction; dry field before impression." },
+          { name: "PVS Heavy Body + Light Body", tip: "2-phase impression material; light body injected first." },
+          { name: "Bite Registration Material", tip: "Records occlusal relationship for lab mounting." },
+          { name: "Temporary Crown + Temp Cement", tip: "Protects prep; easy removal at next appointment." },
+        ],
+        doctors: {
+          default: { add_instruments: [], add_consumables: [], note: "Standard protocol" },
+          "Dr. Lama": { add_instruments: ["Intraoral Scanner Wand"], add_consumables: ["Scan Spray"], note: "Digital workflow — no impression" },
+        }
+      },
+    ]
+  },
+  perio: {
+    name: "Periodontics",
+    procedures: [
+      {
+        id: "scc",
+        name: "Scaling, Curettage & Root Planing",
+        meta: ["Duration: 45–60 min per quad", "Anesthesia: Optional", "Class: Clean Field"],
+        tray: [
+          {img:IMG.mirror,label:"Mirror",checked:false},
+          {img:IMG.probe,label:"Perio Probe",checked:false},
+          {img:IMG.scaler,label:"Sickle Scaler",checked:false},
+          {img:IMG.curette,label:"Gracey 1-2",checked:false},
+          {img:IMG.curette,label:"Gracey 13-14",checked:false},
+          {img:IMG.scaler,label:"Ultrasonic",checked:false},
+        ],
+        instruments: [
+          { name: "Periodontal Probe (UNC-15)", tip: "Millimeter-marked probe for pocket depth measurement." },
+          { name: "Sickle Scaler (H6/H7)", tip: "Removes supragingival calculus; fine tip for interproximal." },
+          { name: "Gracey Curette 1/2", tip: "Anterior teeth; adapts to facial and lingual surfaces." },
+          { name: "Gracey Curette 11/12", tip: "Posterior teeth mesial surfaces." },
+          { name: "Gracey Curette 13/14", tip: "Posterior teeth distal surfaces." },
+          { name: "Ultrasonic Scaler (Cavitron)", tip: "Efficient calculus disruption; reduces fatigue." },
+        ],
+        consumables: [
+          { name: "Chlorhexidine Rinse 0.2%", tip: "Pre-procedural rinse; reduces aerosol contamination." },
+          { name: "Sterile Water (Irrigant for Ultrasonic)", tip: "Cooling the ultrasonic tip; keep continuous flow." },
+          { name: "Local Anesthetic (if requested)", tip: "Topical and/or infiltration for sensitive patients." },
+          { name: "Post-op Periodontal Dressing (Coe-Pak)", tip: "Placed over surgical sites for 1 week protection." },
+        ],
+        doctors: {
+          default: { add_instruments: [], add_consumables: [], note: "Standard protocol" },
+          "Dr. Farid": { add_instruments: ["Surgical Microscope"], add_consumables: ["Arestin (Minocycline)"], note: "Local antibiotic post SRP" },
+        }
+      },
+    ]
+  },
+  gp: {
+    name: "General Dentistry",
+    procedures: [
+      {
+        id: "composite",
+        name: "Composite Restoration",
+        meta: ["Duration: 30–60 min", "Anesthesia: Required", "Class: Clean Field"],
+        tray: [
+          {img:IMG.mirror,label:"Mirror",checked:false},
+          {img:IMG.explorer,label:"Explorer",checked:false},
+          {img:IMG.highspeed,label:"High Speed",checked:false},
+          {img:IMG.lowspeed,label:"Low Speed",checked:false},
+          {img:IMG.curelight,label:"Cure Light",checked:false},
+          {img:IMG.composite,label:"Etch Gel",checked:false},
+          {icon:"🎨",label:"Composite",checked:false},
+        ],
+        instruments: [
+          { name: "High-Speed Handpiece + Burs (330, 245)", tip: "Caries removal and cavity preparation." },
+          { name: "Low-Speed Handpiece + Polishing Bur", tip: "Finishing and polishing of composite surface." },
+          { name: "Composite Placement Instrument (IPC)", tip: "Smooth-ended; condenses and shapes composite increments." },
+          { name: "Tofflemire Matrix Band System", tip: "Restores proximal wall in Class II restorations." },
+          { name: "LED Curing Light (≥1000 mW/cm²)", tip: "20 seconds per 2mm increment; check battery before use." },
+        ],
+        consumables: [
+          { name: "Phosphoric Acid Etch 37%", tip: "Etch enamel 30 sec, dentine 15 sec; rinse thoroughly." },
+          { name: "Bonding Agent (Single Bond)", tip: "Applies in 2 coats; air thin before curing." },
+          { name: "Composite Resin (A2/A3)", tip: "Nanofilled for anterior; packable for posterior." },
+          { name: "Articulating Paper (Buccal / Occlusal)", tip: "Mark high contacts; adjust before polishing." },
+          { name: "Anesthetic Cartridge + Needle", tip: "Standard infiltration or block anesthesia." },
+        ],
+        doctors: {
+          default: { add_instruments: [], add_consumables: [], note: "Standard protocol" },
+          "Dr. Maha": { add_instruments: ["Mylar Strip"], add_consumables: ["Flowable Composite (Base Layer)"], note: "Always uses flowable base" },
+        }
+      },
+    ]
+  },
+  pedo: {
+    name: "Pedodontics",
+    procedures: [
+      {
+        id: "ssc",
+        name: "Stainless Steel Crown (SSC)",
+        meta: ["Duration: 30–45 min", "Anesthesia: Required", "Class: Clean Field"],
+        tray: [
+          {img:IMG.mirror,label:"Mirror",checked:false},
+          {img:IMG.highspeed,label:"High Speed",checked:false},
+          {img:IMG.forceps,label:"SSC Crown",checked:false},
+          {img:IMG.birdbeak,label:"Contouring",checked:false},
+          {img:IMG.composite,label:"Cement",checked:false},
+          {img:IMG.syringe,label:"Syringe",checked:false},
+        ],
+        instruments: [
+          { name: "High-Speed Handpiece + Burs (Pedo Prep Kit)", tip: "Reduces cusps 1.5mm; mesial/distal proximal cuts." },
+          { name: "Contouring & Crimping Plier", tip: "Adapts crown margins to gingival contour." },
+          { name: "Crown & Bridge Scissors", tip: "Trim excess crown height if needed." },
+          { name: "Spoon Excavator", tip: "Removes carious dentine prior to crown." },
+          { name: "Dental Mirror + Explorer", tip: "Check fit and seating before cementation." },
+        ],
+        consumables: [
+          { name: "Pre-formed SSC (3M / Unitek)", tip: "Size trial: start 1 size larger; seat should snap past contacts." },
+          { name: "Glass Ionomer Cement (Ketac Cem)", tip: "Mix to creamy consistency; fill crown ½ and seat firmly." },
+          { name: "Anesthetic (Buffered Lidocaine)", tip: "Buffered reduces onset time and discomfort in children." },
+          { name: "Topical Anesthetic Gel (flavored)", tip: "Apply 2 min before injection; child-friendly flavors." },
+          { name: "Fluoride Varnish (5% NaF)", tip: "Applied at end of appointment to all surfaces." },
+        ],
+        doctors: {
+          default: { add_instruments: [], add_consumables: [], note: "Standard protocol" },
+          "Dr. Yasmin": { add_instruments: ["Hall Technique Crown Sitter"], add_consumables: ["Preformed Zirconia Crown (EZCrown)"], note: "Hall Technique preferred — no preparation" },
+        }
+      },
+    ]
+  },
+};
+
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+let currentDept = 'endo';
+let currentProcIdx = 0;
+let checkState = {}; // key: "dept_procId_type_name"
+let trayState  = {}; // key: "dept_procId_idx"
+
+// ═══════════════════════════════════════════════════════
+//  TAB SWITCHING
+// ═══════════════════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+  document.getElementById('tab-' + tab).classList.add('active');
+  const btn = document.getElementById('btn-' + tab);
+  btn.classList.add('active');
+  btn.setAttribute('aria-selected','true');
+}
+
+// ═══════════════════════════════════════════════════════
+//  CLINICAL REFERENCE
+// ═══════════════════════════════════════════════════════
+function onDeptChange() {
+  currentDept = document.getElementById('dept-select').value;
+  currentProcIdx = 0;
+  renderProcList();
+  renderContent();
+}
+
+function renderProcList() {
+  const dept = DATA[currentDept];
+  const list = document.getElementById('proc-list');
+  list.innerHTML = '';
+  dept.procedures.forEach((proc, i) => {
+    const el = document.createElement('div');
+    el.className = 'proc-item' + (i === currentProcIdx ? ' active' : '');
+    el.setAttribute('role','option');
+    el.setAttribute('aria-selected', i === currentProcIdx ? 'true' : 'false');
+    el.onclick = () => { currentProcIdx = i; renderProcList(); renderContent(); };
+    el.innerHTML = `<span class="proc-num">${String(i+1).padStart(2,'0')}</span> ${proc.name}`;
+    list.appendChild(el);
+  });
+}
+
+function getCheckKey(type, name) {
+  return `${currentDept}_${currentProcIdx}_${type}_${name}`;
+}
+function getTrayKey(idx) {
+  return `${currentDept}_${currentProcIdx}_t${idx}`;
+}
+
+function renderContent() {
+  const dept = DATA[currentDept];
+  const proc = dept.procedures[currentProcIdx];
+  const doctorSelect = document.getElementById('doctor-select');
+  const selectedDoctor = doctorSelect ? doctorSelect.value : 'default';
+  const docPref = proc.doctors[selectedDoctor] || proc.doctors['default'];
+
+  // Build instruments list with doctor additions
+  const instruments = [...proc.instruments];
+  const consumables = [...proc.consumables];
+  if (docPref) {
+    docPref.add_instruments.forEach(name => { if (!instruments.find(i=>i.name===name)) instruments.push({name, tip:"Added per doctor preference.", _added:true}); });
+    docPref.add_consumables.forEach(name => { if (!consumables.find(i=>i.name===name)) consumables.push({name, tip:"Added per doctor preference.", _added:true}); });
+  }
+
+  // Count checked
+  const totalItems = instruments.length + consumables.length;
+  let checkedCount = 0;
+  instruments.forEach(it => { if (checkState[getCheckKey('inst',it.name)]) checkedCount++; });
+  consumables.forEach(it => { if (checkState[getCheckKey('cons',it.name)]) checkedCount++; });
+
+  // Tray slots
+  const tray = proc.tray.map((slot, idx) => ({...slot, checked: !!trayState[getTrayKey(idx)]}));
+  const trayChecked = tray.filter(s=>s.checked).length;
+  const trayDone = trayChecked === tray.length;
+
+  const html = `
+    <div class="proc-header">
+      <div class="dept-eyebrow">${dept.name}</div>
+      <h1>${proc.name}</h1>
+      <div class="proc-meta">
+        ${proc.meta.map(m => `<span class="meta-tag">${m}</span>`).join('')}
+        <span class="meta-tag">${checkedCount}/${totalItems} items checked</span>
+      </div>
+    </div>
+
+    <!-- Tray visual -->
+    <div class="tray-visual">
+      <div class="tray-header">
+        <span class="tray-title">Instrument Tray — Top View</span>
+        <span class="tray-status${trayDone?' done':''}">
+          <span class="dot"></span>
+          ${trayDone ? 'Tray Ready' : `${trayChecked}/${tray.length} placed`}
+        </span>
+      </div>
+      <div class="tray-grid">
+        ${tray.map((slot,idx) => `
+          <div class="tray-slot${slot.checked?' checked':''}" tabindex="0"
+               role="button" aria-pressed="${slot.checked}"
+               title="${slot.label}"
+               onclick="toggleTray(${idx})"
+               onkeydown="if(event.key==='Enter'||event.key===' ')toggleTray(${idx})">
+            <div class="slot-img-wrap">
+              ${slot.img
+                ? `<img src="${slot.img}" alt="${slot.label}" class="slot-img" loading="lazy" onerror="this.parentNode.innerHTML='<span class=slot-fb>${slot.icon||'🔧'}</span>'">`
+                : `<span class="slot-fb">${slot.icon||'🔧'}</span>`
+              }
+            </div>
+            <span class="slot-label">${slot.label}</span>
+          </div>`).join('')}
+        <div class="tray-slot empty"><span class="slot-icon">＋</span></div>
+        <div class="tray-slot empty"><span class="slot-icon">＋</span></div>
+      </div>
+    </div>
+
+    <!-- Doctor preferences bar -->
+    <div class="pref-bar">
+      <label for="doctor-select">Doctor Preferences</label>
+      <select id="doctor-select" onchange="renderContent()">
+        ${Object.keys(proc.doctors).map(d => `<option value="${d}"${d===selectedDoctor?' selected':''}>${d === 'default' ? 'Standard / No Preference' : d}</option>`).join('')}
+      </select>
+      ${docPref && docPref.note ? `<span class="pref-note${selectedDoctor!=='default'?' active-note':''}">${docPref.note}</span>` : ''}
+    </div>
+
+    <!-- Checklists -->
+    <div class="checklist-grid">
+      ${renderChecklist('Basic Instruments', instruments, 'inst')}
+      ${renderChecklist('Consumables', consumables, 'cons')}
+    </div>
+
+    <button class="reset-btn" onclick="resetChecklist()">↺ Reset All Checkboxes</button>
+  `;
+
+  document.getElementById('content-area').innerHTML = html;
+}
+
+function renderChecklist(title, items, type) {
+  const count = items.filter(it => checkState[getCheckKey(type, it.name)]).length;
+  return `
+    <div class="checklist-card">
+      <div class="checklist-card-head">
+        <span class="head-label">${title}</span>
+        <span class="counter">${count} / ${items.length}</span>
+      </div>
+      <div class="checklist-body">
+        ${items.map(it => {
+          const key = getCheckKey(type, it.name);
+          const checked = !!checkState[key];
+          return `
+            <label class="cl-item${checked?' checked':''}${it._added?' added':''}" onclick="toggleCheck(event,'${type}','${it.name.replace(/'/g,"\\'")}')">
+              <input type="checkbox" ${checked?'checked':''} tabindex="-1"/>
+              <div class="cl-item-text">
+                <span class="item-label">
+                  ${it.name}
+                  <span class="tooltip-wrap">
+                    <button class="tooltip-icon" tabindex="0" aria-label="Info about ${it.name}" onclick="event.stopPropagation()">?</button>
+                    <span class="tooltip-box" role="tooltip">${it.tip}</span>
+                  </span>
+                </span>
+              </div>
+            </label>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+function toggleCheck(event, type, name) {
+  event.preventDefault();
+  const key = getCheckKey(type, name);
+  checkState[key] = !checkState[key];
+  renderContent();
+}
+
+function toggleTray(idx) {
+  const key = getTrayKey(idx);
+  trayState[key] = !trayState[key];
+  renderContent();
+}
+
+function resetChecklist() {
+  const dept = DATA[currentDept];
+  const proc = dept.procedures[currentProcIdx];
+  proc.instruments.forEach(it => { delete checkState[getCheckKey('inst',it.name)]; });
+  proc.consumables.forEach(it => { delete checkState[getCheckKey('cons',it.name)]; });
+  proc.tray.forEach((_, idx) => { delete trayState[getTrayKey(idx)]; });
+  renderContent();
+}
+
+// ═══════════════════════════════════════════════════════
+//  QR GENERATOR
+// ═══════════════════════════════════════════════════════
+function generateQR() {
+  const dept    = document.getElementById('qr-dept').value;
+  const baseUrl = document.getElementById('qr-url').value.trim() || 'https://apex-care.com';
+  const size    = document.getElementById('qr-size').value;
+  const fullUrl = baseUrl;
+
+  const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(fullUrl)}&size=${size}x${size}&ecc=M&margin=10&color=1A1F2E&bgcolor=FFFFFF`;
+
+  document.getElementById('qr-card-dept-label').textContent = dept;
+  document.getElementById('qr-url-display').textContent = fullUrl;
+  document.getElementById('qr-img').src = qrApiUrl;
+  document.getElementById('qr-dl-link').href = qrApiUrl;
+  document.getElementById('qr-output').classList.add('visible');
+}
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+renderProcList();
+renderContent();
+</script>
+</body>
+</html>
