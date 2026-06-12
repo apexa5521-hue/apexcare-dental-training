@@ -682,8 +682,10 @@ function App() {
         };
       });
       setSync("ok");
-    } catch {
+    } catch (e) {
+      console.error("syncAll error:", e);
       setSync("error");
+      window.__lastSyncError = e.message || String(e);
     }
   };
   useEffect(() => {
