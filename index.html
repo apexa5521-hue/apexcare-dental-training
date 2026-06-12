@@ -2443,24 +2443,24 @@ function EditModalComponent({
         const base64 = ev.target.result;
         const fd = new FormData();
         fd.append("image", base64.split(",")[1]);
-        fd.append("key", "545c36a708f1828150b7845e229e52f1");
         fd.append("name", (form.nameEn || "tool").replace(/[^a-z0-9]/gi, "-").toLowerCase() + "-" + Date.now());
-        fetch("https://api.imgbb.com/1/upload", {
+        fetch("https://api.imgbb.com/1/upload?key=545c36a708f1828150b7845e229e52f1", {
           method: "POST",
           body: fd
         }).then(r => r.json()).then(d => {
-          if (d.success && d.data?.display_url) {
+          if (d.success && d.data && d.data.display_url) {
             set("imageUrl", d.data.display_url);
             setUploadingImg(false);
           } else {
-            // ImgBB failed — store as base64 locally
+            const msg = (d.error && d.error.message) ? d.error.message : JSON.stringify(d);
             set("imageUrl", base64);
             setUploadingImg(false);
-            alert(t2("تعذّر الرفع للإنترنت — تم الحفظ محلياً فقط", "Upload failed — saved locally only"));
+            alert(t2("تعذّر الرفع — السبب: ", "Upload failed — reason: ") + msg + t2(" — تم الحفظ محلياً", " — saved locally"));
           }
-        }).catch(() => {
+        }).catch(err => {
           set("imageUrl", base64);
           setUploadingImg(false);
+          alert(t2("خطأ في الاتصال: ", "Connection error: ") + err.message + t2(" — تم الحفظ محلياً", " — saved locally"));
         });
       };
       reader.readAsDataURL(file);
