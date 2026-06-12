@@ -1012,6 +1012,42 @@ function getToolImage(tool) {
   const q = encodeURIComponent(tool.nameEn + " dental instrument");
   return null; // null = show 🔧 placeholder
 }
+
+// ── Daily Drill: deterministic specialty rotation + 3 random tools
+function buildDrill(db) {
+  const specs = (db.specialties || []).filter(s => (s.tools || []).length >= 4);
+  if (specs.length === 0) return null;
+
+  // Deterministic: day-of-year mod number of specialties
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((now - start) / 86400000);
+  const spec = specs[dayOfYear % specs.length];
+
+  const pool = [...spec.tools];
+  // Shuffle (seeded by day so it's consistent within the same day)
+  const seed = dayOfYear;
+  const shuffled = pool.map((t,i)=>({t,r:((seed*9301+i*49297)%233280)})).sort((a,b)=>a.r-b.r).map(x=>x.t);
+  const picks = shuffled.slice(0, Math.min(3, shuffled.length));
+
+  const questions = picks.map(tool => {
+    // Build 4 options (correct + 3 distractors) from same specialty
+    const others = pool.filter(p => p.id !== tool.id);
+    const distractors = others
+      .map((t,i)=>({t,r:Math.random()}))
+      .sort((a,b)=>a.r-b.r)
+      .slice(0,3)
+      .map(x=>x.t);
+    const optionsPool = [tool, ...distractors];
+    // Shuffle options
+    const opts = optionsPool.map((t,i)=>({t,r:Math.random()})).sort((a,b)=>a.r-b.r).map(x=>x.t);
+    const correctIdx = opts.findIndex(o => o.id === tool.id);
+    return { tool, options: opts, correctIdx };
+  });
+
+  return { specId: spec.id, specColor: spec.color, questions };
+}
+
 function ToolCard({
   tool,
   idx,
@@ -1151,6 +1187,7 @@ function NursePortal({
   const [search, setSearch] = useState("");
   const [activeTab, setTab] = useState("tools");
   const [imgModal, setImgModal] = useState(null); // {nameEn, nameAr} // tools|procedures
+  const [drill, setDrill] = useState(null); // {specId, specColor, questions, idx, answers, done}
 
   const dir = lang === "ar" ? "rtl" : "ltr";
   const filtered = db.specialties.filter(s => !search || s.nameAr.includes(search) || s.nameEn.toLowerCase().includes(search.toLowerCase()) || s.tools?.some(tl => tl.nameAr?.includes(search) || tl.nameEn?.toLowerCase().includes(search.toLowerCase())));
@@ -2014,6 +2051,112 @@ function NursePortal({
     }
   }, "\u203A"))))));
 
+  // DRILL
+  if (page === "drill" && drill) {
+    const q = drill.questions[drill.idx];
+    const answered = drill.answers[drill.idx] !== undefined;
+    const imgSrc = q ? getToolImage(q.tool) : null;
+
+    const pickOption = (oi) => {
+      if (answered) return;
+      const newAnswers = [...drill.answers];
+      newAnswers[drill.idx] = oi;
+      setDrill(d => ({ ...d, answers: newAnswers }));
+    };
+    const nextQ = () => {
+      if (drill.idx + 1 < drill.questions.length) {
+        setDrill(d => ({ ...d, idx: d.idx + 1 }));
+      } else {
+        // Finished — compute score & submit
+        const correct = drill.answers.filter((a,i)=>a===drill.questions[i].correctIdx).length;
+        setDrill(d => ({ ...d, done:true, score: correct }));
+        if (GAS_OK()) {
+          api("submitDrill", {
+            username: user.username,
+            name: user.name,
+            date: new Date().toISOString().slice(0,10),
+            total: drill.questions.length,
+            correct: correct
+          }, token).catch(()=>{});
+        }
+      }
+    };
+
+    if (drill.done) {
+      const correct = drill.score || 0;
+      const total = drill.questions.length;
+      return /*#__PURE__*/React.createElement("div", { style:S.app },
+        NHeader(),
+        /*#__PURE__*/React.createElement("div", { style:S.pg },
+          /*#__PURE__*/React.createElement("div", { style:S.back, onClick:()=>{setPage("home");setDrill(null);} }, "\u2039 ", t("الرئيسية","Home")),
+          /*#__PURE__*/React.createElement("div", { style:{...S.card, textAlign:"center", padding:28} },
+            /*#__PURE__*/React.createElement("div", { style:{fontSize:48, marginBottom:8} }, correct===total ? "\uD83C\uDFC6" : "\uD83C\uDF89"),
+            /*#__PURE__*/React.createElement("div", { style:{fontSize:20, fontWeight:900, marginBottom:6} }, t("أنجزتِ التمرين!","Drill complete!")),
+            /*#__PURE__*/React.createElement("div", { style:{fontSize:15, color:V.muted, marginBottom:18} }, t(`نتيجتك: ${correct} من ${total}`, `Your score: ${correct} / ${total}`)),
+            /*#__PURE__*/React.createElement("button", { style:{...S.pri, width:"100%"}, onClick:()=>{setPage("home");setDrill(null);} }, t("عودة للرئيسية","Back to Home"))
+          )
+        )
+      );
+    }
+
+    return /*#__PURE__*/React.createElement("div", { style:S.app },
+      NHeader(),
+      /*#__PURE__*/React.createElement("div", { style:S.pg },
+        /*#__PURE__*/React.createElement("div", { style:S.back, onClick:()=>{setPage("home");setDrill(null);} }, "\u2039 ", t("الرئيسية","Home")),
+        /*#__PURE__*/React.createElement("div", { style:{fontSize:12, color:V.muted, marginBottom:10, fontWeight:700} }, t(`السؤال ${drill.idx+1} من ${drill.questions.length}`, `Question ${drill.idx+1} of ${drill.questions.length}`)),
+        /*#__PURE__*/React.createElement("div", { style:S.card },
+          /*#__PURE__*/React.createElement("div", { style:{display:"flex", justifyContent:"center", marginBottom:14} },
+            /*#__PURE__*/React.createElement("div", {
+              style:{
+                width:120, height:120, borderRadius:14,
+                background: imgSrc ? "#f8fafc" : `${drill.specColor}10`,
+                border:`1px solid ${imgSrc ? "#e2e8f0" : drill.specColor+"25"}`,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                overflow:"hidden"
+              }
+            },
+              imgSrc
+                ? /*#__PURE__*/React.createElement("img", { src:imgSrc, alt:"", style:{width:"100%",height:"100%",objectFit:"cover"}, onError:e=>{e.target.style.display="none";} })
+                : /*#__PURE__*/React.createElement("span", { style:{fontSize:40} }, "\uD83D\uDD27")
+            )
+          ),
+          /*#__PURE__*/React.createElement("div", { style:{textAlign:"center", fontSize:14, fontWeight:800, marginBottom:16, color:"#1e293b"} },
+            t("ما اسم هذه الأداة؟","What is this tool's name?")
+          ),
+          q.options.map((opt, oi) => {
+            const isCorrect = oi === q.correctIdx;
+            const isPicked  = drill.answers[drill.idx] === oi;
+            let bg = "#f8fafc", border = "#e2e8f0", color = "#1e293b";
+            if (answered) {
+              if (isCorrect) { bg = "#ecfdf5"; border = "#34d399"; color="#059669"; }
+              else if (isPicked) { bg = "#fef2f2"; border="#f87171"; color="#dc2626"; }
+            }
+            return /*#__PURE__*/React.createElement("div", {
+              key: oi,
+              onClick: () => pickOption(oi),
+              style: {
+                padding:"12px 14px", borderRadius:10, border:`1.5px solid ${border}`,
+                background:bg, color, marginBottom:8, cursor: answered?"default":"pointer",
+                fontSize:13, fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center"
+              }
+            },
+              /*#__PURE__*/React.createElement("span", null, tField(opt,"name",lang)),
+              answered && isCorrect && /*#__PURE__*/React.createElement("span", null, "\u2705"),
+              answered && isPicked && !isCorrect && /*#__PURE__*/React.createElement("span", null, "\u274C")
+            );
+          }),
+          answered && /*#__PURE__*/React.createElement("div", {
+            style: {marginTop:14, padding:"10px 12px", background:"#f8fafc", borderRadius:8, fontSize:12, color:"#475569", lineHeight:1.6}
+          }, "\uD83C\uDFAF ", tField(q.tool,"use",lang)),
+          answered && /*#__PURE__*/React.createElement("button", {
+            style:{...S.pri, width:"100%", marginTop:14},
+            onClick: nextQ
+          }, drill.idx+1 < drill.questions.length ? t("السؤال التالي","Next Question") : t("إنهاء","Finish"))
+        )
+      )
+    );
+  }
+
   // HOME
   return /*#__PURE__*/React.createElement("div", {
     style: S.app
@@ -2052,7 +2195,32 @@ function NursePortal({
       fontSize: 12,
       marginTop: 3
     }
-  }, t("اختري تخصصًا أو وحدة للتعلم والمراجعة", "Choose a specialty or module to study"))))), /*#__PURE__*/React.createElement("input", {
+  }, t("اختري تخصصًا أو وحدة للتعلم والمراجعة", "Choose a specialty or module to study"))))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      ...S.card,
+      background: "linear-gradient(135deg,rgba(251,191,36,0.10),rgba(249,115,22,0.06))",
+      border: "1px solid rgba(251,191,36,0.25)",
+      marginBottom: 14,
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10
+    },
+    onClick: () => {
+      const d = buildDrill(db);
+      if (!d) { toastFn(t("لا توجد أدوات كافية للتمرين","Not enough tools for a drill"), "info"); return; }
+      setDrill({ ...d, idx:0, answers:[], done:false });
+      setPage("drill");
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { display:"flex", alignItems:"center", gap:11 }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: { fontSize:28 }
+  }, "\uD83C\uDFAF"), /*#__PURE__*/React.createElement("div", null,
+    /*#__PURE__*/React.createElement("div", { style:{ fontWeight:800, fontSize:14 } }, t("تمرين اليوم","Today's Drill")),
+    /*#__PURE__*/React.createElement("div", { style:{ fontSize:11, color:V.muted, marginTop:2 } }, t("٣ أسئلة سريعة لمراجعة الأدوات","3 quick questions to review tools"))
+  )), /*#__PURE__*/React.createElement("span", { style:{ fontSize:20, color:"#f59e0b" } }, "\u203A")), /*#__PURE__*/React.createElement("input", {
     style: {
       ...S.inp,
       marginBottom: 14
@@ -2250,7 +2418,6 @@ function EditModalComponent({
     return {};
   };
   const [form, setForm] = useState(init);
-  const [uploadingImg, setUploadingImg] = useState(false);
   const set = (k, v) => setForm(f => ({
     ...f,
     [k]: v
@@ -2359,137 +2526,51 @@ function EditModalComponent({
     k: "useEn",
     multi: true
   }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginBottom: 12
-    }
-  }, /*#__PURE__*/React.createElement("label", {
-    style: S.lbl
-  }, t2("صورة الأداة", "Tool Image")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 10,
-      alignItems: "flex-start",
-      marginTop: 6
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 72,
-      height: 72,
-      borderRadius: 10,
-      overflow: "hidden",
-      background: "#f1f5f9",
-      border: "2px dashed #e2e8f0",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      flexShrink: 0,
-      position: "relative"
-    }
-  }, form.imageUrl && form.imageUrl.trim() ? /*#__PURE__*/React.createElement("img", {
-    src: form.imageUrl,
-    alt: "preview",
-    style: {
-      width: "100%",
-      height: "100%",
-      objectFit: "cover"
-    },
-    onError: e => {
-      e.target.style.display = "none";
-    }
-  }) : /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 26,
-      opacity: 0.4
-    }
-  }, "\uD83D\uDD27")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1,
-      display: "flex",
-      flexDirection: "column",
-      gap: 8
-    }
-  }, /*#__PURE__*/React.createElement("label", {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-      padding: "9px 14px",
-      borderRadius: 8,
-      cursor: "pointer",
-      background: uploadingImg ? "#f1f5f9" : "linear-gradient(135deg,#3b82f6,#6366f1)",
-      color: uploadingImg ? "#64748b" : "#fff",
-      fontSize: 13,
-      fontWeight: 700,
-      opacity: uploadingImg ? 0.7 : 1
-    }
-  }, uploadingImg ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", null, "\u23F3"), " ", t2("جارٍ الرفع...", "Uploading...")) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", null, "\uD83D\uDCCE"), " ", t2("اختر صورة", "Choose Image")), /*#__PURE__*/React.createElement("input", {
-    type: "file",
-    accept: "image/jpeg,image/png,image/webp,image/gif",
-    style: {
-      display: "none"
-    },
-    disabled: uploadingImg,
-    onChange: e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      // Validate size (max 8MB for ImgBB)
-      if (file.size > 8 * 1024 * 1024) {
-        alert(t2("حجم الصورة كبير جداً (الحد 8MB)", "Image too large (max 8MB)"));
-        return;
-      }
-      setUploadingImg(true);
-      set("imageUrl", ""); // clear old
-      const reader = new FileReader();
-      reader.onload = ev => {
-        const base64 = ev.target.result;
-        const fd = new FormData();
-        fd.append("image", base64.split(",")[1]);
-        fd.append("name", (form.nameEn || "tool").replace(/[^a-z0-9]/gi, "-").toLowerCase() + "-" + Date.now());
-        fetch("https://api.imgbb.com/1/upload?key=545c36a708f1828150b7845e229e52f1", {
-          method: "POST",
-          body: fd
-        }).then(r => r.json()).then(d => {
-          if (d.success && d.data && d.data.display_url) {
-            set("imageUrl", d.data.display_url);
-            setUploadingImg(false);
-          } else {
-            const msg = (d.error && d.error.message) ? d.error.message : JSON.stringify(d);
-            set("imageUrl", base64);
-            setUploadingImg(false);
-            alert(t2("تعذّر الرفع — السبب: ", "Upload failed — reason: ") + msg + t2(" — تم الحفظ محلياً", " — saved locally"));
+    style: { marginBottom: 12 }
+  },
+    /*#__PURE__*/React.createElement("label", { style: S.lbl }, t2("رابط صورة الأداة","Tool Image URL")),
+    /*#__PURE__*/React.createElement("div", { style: { display:"flex", gap:10, alignItems:"flex-start", marginTop:6 } },
+      /*#__PURE__*/React.createElement("div", {
+        style: {
+          width:72, height:72, borderRadius:10, overflow:"hidden",
+          background:"#f1f5f9", border:"2px dashed #e2e8f0",
+          display:"flex", alignItems:"center", justifyContent:"center",
+          flexShrink:0
+        }
+      },
+        (form.imageUrl && form.imageUrl.trim())
+          ? /*#__PURE__*/React.createElement("img", {
+              src: form.imageUrl, alt:"preview",
+              style:{width:"100%",height:"100%",objectFit:"cover"},
+              onError: e => { e.target.style.display = "none"; }
+            })
+          : /*#__PURE__*/React.createElement("span", { style:{fontSize:26, opacity:0.4} }, "\uD83D\uDD27")
+      ),
+      /*#__PURE__*/React.createElement("div", { style:{flex:1, display:"flex", flexDirection:"column", gap:8} },
+        /*#__PURE__*/React.createElement("input", {
+          style: S.inp,
+          placeholder: t2("ضع رابط الصورة هنا (https://...)","Paste image URL here (https://...)"),
+          value: form.imageUrl || "",
+          onChange: e => set("imageUrl", e.target.value)
+        }),
+        /*#__PURE__*/React.createElement("div", {
+          style:{fontSize:11, color:"#94a3b8", lineHeight:1.6}
+        }, t2(
+          "💡 يمكنك رفع الصورة على imgbb.com أو Google Drive (شارك → نسخ الرابط) ثم لصق الرابط هنا.",
+          "💡 Upload your image to imgbb.com or Google Drive (Share → Copy link) then paste the URL here."
+        )),
+        form.imageUrl && /*#__PURE__*/React.createElement("button", {
+          type:"button",
+          onClick: () => set("imageUrl",""),
+          style:{
+            padding:"4px 10px", borderRadius:6, border:"1px solid #fee2e2",
+            background:"#fff5f5", color:"#ef4444", fontSize:11,
+            cursor:"pointer", fontWeight:700, alignSelf:"flex-start"
           }
-        }).catch(err => {
-          set("imageUrl", base64);
-          setUploadingImg(false);
-          alert(t2("خطأ في الاتصال: ", "Connection error: ") + err.message + t2(" — تم الحفظ محلياً", " — saved locally"));
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-  })), /*#__PURE__*/React.createElement("input", {
-    style: {
-      ...S.inp,
-      fontSize: 11
-    },
-    placeholder: t2("أو ضع رابط الصورة مباشرة...", "Or paste image URL directly..."),
-    value: form.imageUrl && form.imageUrl.startsWith("http") ? form.imageUrl : "",
-    onChange: e => set("imageUrl", e.target.value)
-  }), form.imageUrl && /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    onClick: () => set("imageUrl", ""),
-    style: {
-      padding: "4px 10px",
-      borderRadius: 6,
-      border: "1px solid #fee2e2",
-      background: "#fff5f5",
-      color: "#ef4444",
-      fontSize: 11,
-      cursor: "pointer",
-      fontWeight: 700,
-      alignSelf: "flex-start"
-    }
-  }, t2("🗑 حذف الصورة", "🗑 Remove Image")))))), type === "proc" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(F, {
+        }, t2("🗑 حذف الصورة","🗑 Remove Image"))
+      )
+    )
+  ), type === "proc"), type === "proc" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(F, {
     label: t2("الاسم بالعربي", "Name (Arabic)"),
     k: "nameAr"
   }), /*#__PURE__*/React.createElement(F, {
@@ -2597,6 +2678,8 @@ function AdminPortal({
   const [tab, setTab] = useState("specialties");
   const [modal, setModal] = useState(null); // {type, item?, extra?}
   const [aiModal, setAiModal] = useState(null); // {gId, context}
+  const [drillStats, setDrillStats] = useState(null); // [{username,name,daysCount,accuracy,lastDate,streak}]
+  const [drillLoading, setDrillLoading] = useState(false);
   const dir = lang === "ar" ? "rtl" : "ltr";
   const addSpec = async f => {
     const id = gid(),
@@ -4141,11 +4224,11 @@ answer هو رقم الخيار الصحيح (0-3).`;
       marginBottom: 14,
       flexWrap: "wrap"
     }
-  }, ["specialties", "ipc", "users", "settings"].map(t2 => /*#__PURE__*/React.createElement("button", {
+  }, ["specialties", "ipc", "users", "drill", "settings"].map(t2 => /*#__PURE__*/React.createElement("button", {
     key: t2,
     style: S.tab(tab === t2),
     onClick: () => setTab(t2)
-  }, t2 === "specialties" ? t("🦷 الأقسام", "🦷 Specialties") : t2 === "ipc" ? t("🛡 IPC", "🛡 IPC") : t2 === "users" ? t("👥 المستخدمون", "👥 Users") : t("⚙️ إعدادات", "⚙️ Settings")))), tab === "specialties" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, t2 === "specialties" ? t("🦷 الأقسام", "🦷 Specialties") : t2 === "ipc" ? t("🛡 IPC", "🛡 IPC") : t2 === "users" ? t("👥 المستخدمون", "👥 Users") : t2 === "drill" ? t("🎯 تقدم التدريب", "🎯 Drill Progress") : t("⚙️ إعدادات", "⚙️ Settings")))), tab === "specialties" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       justifyContent: "space-between",
@@ -4349,7 +4432,57 @@ answer هو رقم الخيار الصحيح (0-3).`;
   }, u.role), u.id !== user?.id && /*#__PURE__*/React.createElement("button", {
     onClick: () => delUser(u.id),
     style: S.del
-  }, "\uD83D\uDDD1")))), tab === "settings" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDDD1")))), tab === "drill" && /*#__PURE__*/React.createElement("div", null,
+    /*#__PURE__*/React.createElement("div", { style:{...S.card, marginBottom:12} },
+      /*#__PURE__*/React.createElement("div", { style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8} },
+        /*#__PURE__*/React.createElement("div", { style:{fontWeight:900, fontSize:13} }, "\uD83C\uDFAF ", t("تقدم تمرين اليوم","Daily Drill Progress")),
+        /*#__PURE__*/React.createElement("button", {
+          style: S.sec("#f59e0b"),
+          onClick: () => {
+            if (!GAS_OK()) { toastFn(t("GAS غير مُفعّل","GAS not configured"), "info"); return; }
+            setDrillLoading(true);
+            api("getDrillStats", {}, token)
+              .then(r => setDrillStats(r.data || []))
+              .catch(() => toastFn(t("فشل التحميل","Failed to load"), "error"))
+              .finally(() => setDrillLoading(false));
+          }
+        }, drillLoading ? "..." : t("\uD83D\uDD04 تحديث","\uD83D\uDD04 Refresh"))
+      ),
+      !drillStats && /*#__PURE__*/React.createElement("div", { style:{fontSize:12, color:V.muted, textAlign:"center", padding:"20px 0"} },
+        t("اضغط تحديث لعرض بيانات التدريب","Press Refresh to load drill data")
+      ),
+      drillStats && drillStats.length === 0 && /*#__PURE__*/React.createElement("div", { style:{fontSize:12, color:V.muted, textAlign:"center", padding:"20px 0"} },
+        t("لا توجد بيانات تدريب بعد","No drill data yet")
+      ),
+      drillStats && drillStats.length > 0 && /*#__PURE__*/React.createElement("div", { style:{overflowX:"auto"} },
+        /*#__PURE__*/React.createElement("table", { style:{width:"100%", fontSize:12, borderCollapse:"collapse"} },
+          /*#__PURE__*/React.createElement("thead", null,
+            /*#__PURE__*/React.createElement("tr", { style:{borderBottom:"2px solid #e8edf5"} },
+              ["الممرضة/Nurse","الأيام/Days","الدقة/Accuracy","التتابع/Streak","آخر تمرين/Last"].map((h,i) =>
+                /*#__PURE__*/React.createElement("th", { key:i, style:{textAlign: lang==="ar"?"right":"left", padding:"6px 8px", color:"#64748b", fontWeight:700} }, h)
+              )
+            )
+          ),
+          /*#__PURE__*/React.createElement("tbody", null,
+            drillStats.map((row,i) =>
+              /*#__PURE__*/React.createElement("tr", { key:i, style:{borderBottom:"1px solid #f1f5f9"} },
+                /*#__PURE__*/React.createElement("td", { style:{padding:"7px 8px", fontWeight:700} }, row.name || row.username),
+                /*#__PURE__*/React.createElement("td", { style:{padding:"7px 8px"} }, row.daysCount),
+                /*#__PURE__*/React.createElement("td", { style:{padding:"7px 8px"} },
+                  /*#__PURE__*/React.createElement("span", { style:S.tag(row.accuracy>=80?V.grn:row.accuracy>=50?V.yel:V.red) }, row.accuracy + "%")
+                ),
+                /*#__PURE__*/React.createElement("td", { style:{padding:"7px 8px"} }, row.streak>=7 ? "\uD83C\uDFC6 " + row.streak : row.streak),
+                /*#__PURE__*/React.createElement("td", { style:{padding:"7px 8px", color:"#64748b"} }, row.lastDate)
+              )
+            )
+          )
+        )
+      )
+    ),
+    /*#__PURE__*/React.createElement("div", { style:{fontSize:11, color:V.muted, padding:"0 4px"} },
+      t("\uD83D\uDCC4 البيانات التفصيلية محفوظة في Google Sheet — تبويب \"DrillProgress\"","\uD83D\uDCC4 Detailed data is saved in the Google Sheet — \"DrillProgress\" tab")
+    )
+  ), tab === "settings" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: S.card
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -4392,7 +4525,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
       marginBottom: 8,
       fontSize: 13
     }
-  }, "\uD83D\uDCCA ", t("هيكل Google Sheets", "Sheets Structure")), ["Users", "Specialties", "Tools", "Procedures", "IPC_Modules", "IPC_Steps", "Quizzes", "Logs"].map(sh => /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDCCA ", t("هيكل Google Sheets", "Sheets Structure")), ["Users", "Specialties", "Tools", "Procedures", "IPC_Modules", "IPC_Steps", "Quizzes", "Logs", "DrillProgress"].map(sh => /*#__PURE__*/React.createElement("div", {
     key: sh,
     style: {
       ...S.row,
