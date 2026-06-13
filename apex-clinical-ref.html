@@ -1073,9 +1073,13 @@ async function syncFromGAS() {
         procedures: (sp.procedures || []).map(p => ({
           name: p.nameEn || p.nameAr || '—',
           meta: ['Class: Clinical'],
-          tray: (sp.tools || []).slice(0, 8).map(t => ({
-            img: IMG.composite, label: (t.nameEn || t.nameAr || '').split(' ').slice(0,2).join(' ')
-          })),
+          tray: (sp.tools || []).slice(0, 8).map(t => {
+            const key = guessImgKey(t.nameEn || '');
+            return {
+              img: (t.imageUrl && t.imageUrl.trim()) ? t.imageUrl.trim() : (key ? IMG[key] : IMG.composite),
+              label: (t.nameEn || t.nameAr || '').split(' ').slice(0,2).join(' ')
+            };
+          }),
           instruments: (sp.tools || []).map(t => ({
             name: t.nameEn || t.nameAr || '—',
             tip: t.useEn || t.useAr || '',
@@ -1716,6 +1720,7 @@ function renderChecklist(title, items, type) {
               <input type="checkbox" ${checked?'checked':''} tabindex="-1"/>
               <div class="cl-item-text">
                 <span class="item-label">
+                  ${it.imageUrl ? `<img src="${it.imageUrl}" alt="" style="width:22px;height:22px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-inline-end:6px;" loading="lazy">` : ''}
                   ${it.name}
                   <span class="tooltip-wrap">
                     <button class="tooltip-icon" tabindex="0" aria-label="Info about ${it.name}" onclick="event.stopPropagation()">?</button>
