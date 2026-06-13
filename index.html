@@ -1211,12 +1211,23 @@ function NursePortal({
     const ok = i === (q.answer || 0);
     const ns = quiz.score + (ok ? 1 : 0);
     const ni = quiz.idx + 1;
-    setQuiz(q => ({
-      ...q,
+    const isDone = ni >= quiz.questions.length;
+    setQuiz(qz => ({
+      ...qz,
       idx: ni,
       score: ns,
-      done: ni >= q.questions.length
+      done: isDone
     }));
+    if (isDone && GAS_OK()) {
+      api("submitQuiz", {
+        username: user.username,
+        name: user.name,
+        groupId: quiz.groupId,
+        total: quiz.questions.length,
+        correct: ns,
+        date: new Date().toISOString().slice(0,10)
+      }, token).catch(()=>{});
+    }
   };
   const S = {
     app: {
@@ -2418,10 +2429,34 @@ function EditModalComponent({
     return {};
   };
   const [form, setForm] = useState(init);
+  const [uploading, setUploading] = useState(false);
   const set = (k, v) => setForm(f => ({
     ...f,
     [k]: v
   }));
+  const handleImageFile = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const base64 = String(reader.result).split(",")[1];
+        const res = await api("uploadImage", {
+          base64,
+          mimeType: file.type || "image/jpeg",
+          fileName: file.name || ("tool_" + Date.now() + ".jpg")
+        }, token);
+        if (res && res.ok && res.url) set("imageUrl", res.url);
+      } catch (err) {
+        alert("فشل رفع الصورة: " + (err && err.message ? err.message : err));
+      } finally {
+        setUploading(false);
+        e.target.value = "";
+      }
+    };
+    reader.readAsDataURL(file);
+  };
   const F = ({
     label,
     k,
@@ -2553,6 +2588,20 @@ function EditModalComponent({
           value: form.imageUrl || "",
           onChange: e => set("imageUrl", e.target.value)
         }),
+        /*#__PURE__*/React.createElement("div", { style:{display:"flex", alignItems:"center", gap:8} },
+          /*#__PURE__*/React.createElement("label", {
+            style:{
+              padding:"6px 12px", borderRadius:6, border:"1px solid #38bdf8",
+              background: uploading ? "#e2e8f0" : "#f0f9ff", color:"#0ea5e9", fontSize:12,
+              cursor: uploading ? "default" : "pointer", fontWeight:800
+            }
+          }, uploading ? t2("⏳ جارٍ الرفع...","⏳ Uploading...") : t2("📤 رفع صورة من الجهاز","📤 Upload from device"),
+            /*#__PURE__*/React.createElement("input", {
+              type:"file", accept:"image/*", disabled: uploading,
+              style:{display:"none"}, onChange: handleImageFile
+            })
+          )
+        ),
         /*#__PURE__*/React.createElement("div", {
           style:{fontSize:11, color:"#94a3b8", lineHeight:1.6}
         }, t2(
