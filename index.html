@@ -2434,28 +2434,31 @@ const [form, setForm] = useState(() => init());
     ...f,
     [k]: v
   }));
-  const handleImageFile = (e) => {
+  const handleImageFile = async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     setUploading(true);
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        const base64 = String(reader.result).split(",")[1];
-        const res = await api("uploadImage", {
-          base64,
-          mimeType: file.type || "image/jpeg",
-          fileName: file.name || ("tool_" + Date.now() + ".jpg")
-        }, token);
-        if (res && res.ok && res.url) set("imageUrl", res.url);
-      } catch (err) {
-        alert("فشل رفع الصورة: " + (err && err.message ? err.message : err));
-      } finally {
-        setUploading(false);
-        e.target.value = "";
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", "cmuqyx2d");
+      formData.append("public_id", "tool_" + Date.now());
+      const res = await fetch("https://api.cloudinary.com/v1_1/dnlkxh3qi/image/upload", {
+        method: "POST",
+        body: formData
+      });
+      const json = await res.json();
+      if (json.secure_url) {
+        set("imageUrl", json.secure_url);
+      } else {
+        alert("فشل رفع الصورة: " + (json.error && json.error.message ? json.error.message : JSON.stringify(json)));
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      alert("فشل رفع الصورة: " + (err && err.message ? err.message : err));
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
   };
   const F = ({
     label,
