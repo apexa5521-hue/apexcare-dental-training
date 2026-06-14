@@ -634,8 +634,12 @@ async function api(action, params = {}, token = null) {
 function App() {
   const [lang, setLang] = useState("ar");
   const [db, setDb] = useState(deep(SEED));
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
+  const [token, setToken] = useState(() => {
+    try { return sessionStorage.getItem("apex_token") || null; } catch(_) { return null; }
+  });
+  const [user, setUser] = useState(() => {
+    try { const u = sessionStorage.getItem("apex_user"); return u ? JSON.parse(u) : null; } catch(_) { return null; }
+  });
   const [sync, setSync] = useState("offline");
   const [toast, setToast] = useState(null);
   const t = (ar, en) => translate(ar, en, lang);
@@ -714,6 +718,7 @@ function App() {
         });
         setUser(r.user);
         setToken(r.token);
+        try { sessionStorage.setItem("apex_token", r.token); sessionStorage.setItem("apex_user", JSON.stringify(r.user)); } catch(_) {}
         await syncAll(r.token);
         return r.user;
       } catch {
@@ -730,6 +735,7 @@ function App() {
   const doLogout = () => {
     setUser(null);
     setToken(null);
+    try { sessionStorage.removeItem("apex_token"); sessionStorage.removeItem("apex_user"); } catch(_) {}
   };
 
   // Optimistic mutation
@@ -2434,31 +2440,28 @@ const [form, setForm] = useState(() => init());
     ...f,
     [k]: v
   }));
-  const handleImageFile = async (e) => {
+  const handleImageFile = (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", "cmuqyx2d");
-      formData.append("public_id", "tool_" + Date.now());
-      const res = await fetch("https://api.cloudinary.com/v1_1/dnlkxh3qi/image/upload", {
-        method: "POST",
-        body: formData
-      });
-      const json = await res.json();
-      if (json.secure_url) {
-        set("imageUrl", json.secure_url);
-      } else {
-        alert("فشل رفع الصورة: " + (json.error && json.error.message ? json.error.message : JSON.stringify(json)));
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const base64 = String(reader.result).split(",")[1];
+        const res = await api("uploadImage", {
+          base64,
+          mimeType: file.type || "image/jpeg",
+          fileName: file.name || ("tool_" + Date.now() + ".jpg")
+        }, token);
+        if (res && res.ok && res.url) set("imageUrl", res.url);
+      } catch (err) {
+        alert("فشل رفع الصورة: " + (err && err.message ? err.message : err));
+      } finally {
+        setUploading(false);
+        e.target.value = "";
       }
-    } catch (err) {
-      alert("فشل رفع الصورة: " + (err && err.message ? err.message : err));
-    } finally {
-      setUploading(false);
-      e.target.value = "";
-    }
+    };
+    reader.readAsDataURL(file);
   };
   const F = ({
     label,
