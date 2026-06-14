@@ -634,12 +634,8 @@ async function api(action, params = {}, token = null) {
 function App() {
   const [lang, setLang] = useState("ar");
   const [db, setDb] = useState(deep(SEED));
-  const [token, setToken] = useState(() => {
-    try { return sessionStorage.getItem("apex_token") || null; } catch(_) { return null; }
-  });
-  const [user, setUser] = useState(() => {
-    try { const u = sessionStorage.getItem("apex_user"); return u ? JSON.parse(u) : null; } catch(_) { return null; }
-  });
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
   const [sync, setSync] = useState("offline");
   const [toast, setToast] = useState(null);
   const t = (ar, en) => translate(ar, en, lang);
@@ -718,7 +714,6 @@ function App() {
         });
         setUser(r.user);
         setToken(r.token);
-        try { sessionStorage.setItem("apex_token", r.token); sessionStorage.setItem("apex_user", JSON.stringify(r.user)); } catch(_) {}
         await syncAll(r.token);
         return r.user;
       } catch {
@@ -735,7 +730,6 @@ function App() {
   const doLogout = () => {
     setUser(null);
     setToken(null);
-    try { sessionStorage.removeItem("apex_token"); sessionStorage.removeItem("apex_user"); } catch(_) {}
   };
 
   // Optimistic mutation
@@ -1061,7 +1055,8 @@ function ToolCard({
   t,
   tField,
   lang,
-  V
+  V,
+  onImgClick
 }) {
   const [imgErr, setImgErr] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
@@ -1077,6 +1072,7 @@ function ToolCard({
       alignItems: "flex-start"
     }
   }, /*#__PURE__*/React.createElement("div", {
+    onClick: (imgSrc && imgLoaded && onImgClick) ? onImgClick : undefined,
     style: {
       width: 76,
       height: 76,
@@ -1084,6 +1080,7 @@ function ToolCard({
       borderRadius: 10,
       background: imgSrc && !imgErr ? "#f8fafc" : `${sp.color}10`,
       border: `1px solid ${imgSrc && !imgErr ? "#e2e8f0" : sp.color + "25"}`,
+      cursor: (imgSrc && imgLoaded && onImgClick) ? "zoom-in" : "default",
       overflow: "hidden",
       display: "flex",
       alignItems: "center",
@@ -1434,7 +1431,7 @@ function NursePortal({
       "SSC Kit (Primary Stainless Steel Crowns)": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Stainless_steel_crown.jpg/400px-Stainless_steel_crown.jpg",
       "Spoon Excavator": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Spoon_excavator.jpg/400px-Spoon_excavator.jpg"
     };
-    const imgSrc = toolImages[imgModal.nameEn];
+    const imgSrc = imgModal.imageUrl && imgModal.imageUrl.trim() ? imgModal.imageUrl.trim() : toolImages[imgModal.nameEn];
     return /*#__PURE__*/React.createElement("div", {
       style: {
         position: "fixed",
@@ -1890,7 +1887,8 @@ function NursePortal({
       t: t,
       tField: tField,
       lang: lang,
-      V: V
+      V: V,
+      onImgClick: (tool.imageUrl && tool.imageUrl.trim()) ? () => setImgModal({ nameEn: tool.nameEn, nameAr: tool.nameAr, imageUrl: tool.imageUrl }) : null
     }))), activeTab === "procedures" && /*#__PURE__*/React.createElement("div", {
       style: S.card
     }, (sp.procedures || []).length === 0 && /*#__PURE__*/React.createElement("div", {
@@ -2447,15 +2445,22 @@ const [form, setForm] = useState(() => init());
     const reader = new FileReader();
     reader.onload = async () => {
       try {
-        const base64 = String(reader.result).split(",")[1];
-        const res = await api("uploadImage", {
-          base64,
-          mimeType: file.type || "image/jpeg",
-          fileName: file.name || ("tool_" + Date.now() + ".jpg")
-        }, token);
-        if (res && res.ok && res.url) set("imageUrl", res.url);
+        const dataUrl = String(reader.result);
+        const base64 = dataUrl.split(",")[1];
+        try {
+          const res = await api("uploadImage", {
+            base64,
+            mimeType: file.type || "image/jpeg",
+            fileName: file.name || ("tool_" + Date.now() + ".jpg")
+          }, token);
+          if (res && res.ok && res.url) { set("imageUrl", res.url); return; }
+        } catch (_) {
+          // GAS upload failed — fallback to local data URL
+        }
+        // Fallback: use data URL directly (works offline/without GAS Drive)
+        set("imageUrl", dataUrl);
       } catch (err) {
-        alert("فشل رفع الصورة: " + (err && err.message ? err.message : err));
+        alert("فشل تحميل الصورة: " + (err && err.message ? err.message : err));
       } finally {
         setUploading(false);
         e.target.value = "";
