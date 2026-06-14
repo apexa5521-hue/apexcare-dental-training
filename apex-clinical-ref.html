@@ -2047,22 +2047,82 @@ function showAddItemModal(type) {
   if (!nameVal) return;
   const nameAr = prompt('الاسم بالعربي (اختياري):') || nameVal;
   const tipVal = prompt('Short description / tip:') || '';
-  const imgUrl = prompt('Image URL (optional — leave blank to use auto icon):') || '';
-  const proc = DATA[adminDeptKey].procedures[adminProcIdx];
-  const imgKey = guessImgKey(nameVal);
-  if (type === 'instrument') {
-    proc.instruments.push({ name: nameVal, nameAr, tip: tipVal, imageUrl: imgUrl, _imgKey: imgKey });
-    // Add to tray
-    const trayImg = imgKey ? IMG[imgKey] : IMG.composite;
-    proc.tray.push({ img: imgUrl||trayImg, label: nameVal.split(' ').slice(0,2).join(' '), checked: false });
-    // Write to GAS
-    if (gasToken) gasAddTool(adminDeptKey, { nameEn: nameVal, nameAr: nameAr||nameVal, useEn: tipVal, useAr: nameAr||nameVal, imageUrl: imgUrl }).catch(()=>{});
-  } else {
-    proc.consumables.push({ name: nameVal, nameAr, tip: tipVal, imageUrl: imgUrl });
+
+  // إزالة أي modal قديم
+  const existing = document.getElementById('apex-img-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'apex-img-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:12px;padding:24px;width:320px;max-width:92vw;box-shadow:0 8px 32px rgba(0,0,0,0.25);" onclick="event.stopPropagation()">
+      <div style="font-weight:700;font-size:14px;margin-bottom:12px;">📷 صورة — ${nameVal}</div>
+      <div id="apm-preview" style="width:100%;height:120px;border:2px dashed #cbd5e1;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;overflow:hidden;background:#f8fafc;">
+        <span style="color:#94a3b8;font-size:12px;">اختياري</span>
+      </div>
+      <label style="display:block;padding:7px;background:#f0f9ff;border:1.5px solid #7dd3fc;color:#0369a1;border-radius:7px;font-weight:700;font-size:12px;cursor:pointer;text-align:center;margin-bottom:6px;">
+        📤 رفع صورة
+        <input type="file" accept="image/*" id="apm-file" style="display:none;">
+      </label>
+      <div id="apm-status" style="font-size:11px;color:#64748b;min-height:16px;text-align:center;margin-bottom:10px;"></div>
+      <div style="display:flex;gap:8px;">
+        <button id="apm-save" style="flex:1;padding:8px;background:#0ea5e9;color:#fff;border:none;border-radius:7px;font-weight:700;cursor:pointer;font-size:12px;">حفظ</button>
+        <button id="apm-skip" style="flex:1;padding:8px;background:#f1f5f9;color:#334155;border:none;border-radius:7px;font-weight:700;cursor:pointer;font-size:12px;">بدون صورة</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  let uploadedUrl = '';
+
+  document.getElementById('apm-file').addEventListener('change', async function(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const status = document.getElementById('apm-status');
+    status.textContent = '⏳ جارٍ الرفع...';
+    status.style.color = '#0369a1';
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', 'cmuqyx2d');
+      fd.append('public_id', 'tool_' + Date.now());
+      const res = await fetch('https://api.cloudinary.com/v1_1/dnlkxh3qi/image/upload', { method:'POST', body:fd });
+      const json = await res.json();
+      if (json.secure_url) {
+        uploadedUrl = json.secure_url;
+        document.getElementById('apm-preview').innerHTML = `<img src="${uploadedUrl}" style="width:100%;height:100%;object-fit:cover;">`;
+        status.textContent = '✅ تم';
+        status.style.color = '#16a34a';
+      } else {
+        status.textContent = '❌ ' + (json.error ? json.error.message : 'خطأ');
+        status.style.color = '#dc2626';
+      }
+    } catch(err) {
+      document.getElementById('apm-status').textContent = '❌ ' + err.message;
+      document.getElementById('apm-status').style.color = '#dc2626';
+    }
+  });
+
+  function finalize(imgUrl) {
+    modal.remove();
+    const proc = DATA[adminDeptKey].procedures[adminProcIdx];
+    const imgKey = guessImgKey(nameVal);
+    if (type === 'instrument') {
+      proc.instruments.push({ name: nameVal, nameAr, tip: tipVal, imageUrl: imgUrl, _imgKey: imgKey });
+      const trayImg = imgKey ? IMG[imgKey] : IMG.composite;
+      proc.tray.push({ img: imgUrl||trayImg, label: nameVal.split(' ').slice(0,2).join(' '), checked: false });
+      if (gasToken) gasAddTool(adminDeptKey, { nameEn: nameVal, nameAr: nameAr||nameVal, useEn: tipVal, useAr: nameAr||nameVal, imageUrl: imgUrl }).catch(()=>{});
+    } else {
+      proc.consumables.push({ name: nameVal, nameAr, tip: tipVal, imageUrl: imgUrl });
+    }
+    saveData();
+    renderAdminEditor();
+    showToast(nameVal + ' added ✓');
   }
-  saveData();
-  renderAdminEditor();
-  showToast(nameVal + ' added ✓');
+
+  document.getElementById('apm-save').addEventListener('click', () => finalize(uploadedUrl));
+  document.getElementById('apm-skip').addEventListener('click', () => finalize(''));
+  modal.addEventListener('click', () => finalize(''));
 }
 
 function editInstrument(i) {
