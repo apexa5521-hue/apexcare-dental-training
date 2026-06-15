@@ -3283,27 +3283,14 @@ function AdminPortal({
     toastFn(t("تم إضافة الأداة", "Tool added"));
   };
   const updTool = async (spId, id, f) => {
-    // حدّث البيانات محلياً فوراً
-    setDb(d => {
-      const n = deep(d);
-      const s = n.specialties.find(x => x.id === spId);
+    // حدّث محلياً عبر mut
+    await mut("updateTool", { id, ...f }, d => {
+      const s = d.specialties.find(x => x.id === spId);
       if (s) { const i = s.tools.findIndex(t => t.id === id); if (i >= 0) Object.assign(s.tools[i], f); }
-      return n;
     });
     setAS(s => s?.id === spId ? { ...s, tools: s.tools.map(tl => tl.id === id ? { ...tl, ...f } : tl) } : s);
-
-    // أرسل للـ GAS
-    if (GAS_OK() && token) {
-      try {
-        await api("updateTool", { id, ...f }, token);
-        toastFn(t("تم التحديث", "Updated ✅"));
-        if (f.imageUrl) await syncAll(token);
-      } catch(err) {
-        toastFn(t("فشل الحفظ: " + (err?.message||""), "Save failed: " + (err?.message||"")), "err");
-      }
-    } else {
-      toastFn(t("تم التحديث (محلي)", "Updated locally ✅"));
-    }
+    toastFn(t("تم التحديث ✅", "Updated ✅"));
+    if (f.imageUrl && GAS_OK() && token) await syncAll(token);
   };
   const delTool = async (spId, id) => {
     await mut("deleteTool", {
