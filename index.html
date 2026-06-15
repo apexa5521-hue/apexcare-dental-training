@@ -3066,7 +3066,28 @@ function PhotosAdminTab({ t, lang, V, S, token, db, syncAll, updTool }) {
       .then(r => r.json())
       .then(data => {
         if (data.secure_url) {
-          updTool(spId, tool.id, { ...tool, imageUrl: data.secure_url });
+          // أرسل مباشرة لـ GAS بالـ nameEn للبحث
+          const payload = JSON.stringify({
+            action: "updateTool",
+            token,
+            id: tool.id,
+            nameEn: tool.nameEn,
+            imageUrl: data.secure_url
+          });
+          fetch("https://script.google.com/macros/s/AKfycbzTpfT_7nUaePQ5-T09i8FEevVOzoEiXfqOMWjXOdrLgk-vLM4W58hLBi-K9V3JxO-mBw/exec", {
+            method: "POST", body: payload, headers: { "Content-Type": "text/plain" }
+          })
+          .then(r => r.json())
+          .then(res => {
+            if (res.ok) {
+              // حدّث محلياً
+              tool.imageUrl = data.secure_url;
+              alert(t("✅ تم حفظ الصورة","✅ Image saved"));
+            } else {
+              alert(t("فشل الحفظ: ","Save failed: ") + res.error);
+            }
+          })
+          .catch(() => alert(t("فشل الاتصال بالخادم","Server error")));
         } else {
           alert(t("فشل رفع الصورة","Upload failed"));
         }
