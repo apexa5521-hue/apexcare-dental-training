@@ -2840,7 +2840,7 @@ function EditModalComponent({
       item ? updSpec(item.id, form) : addSpec(form);
     }
     if (type === "tool") {
-      item ? updTool(extra.spId, item.id, form) : addTool(extra.spId, form);
+      item ? updTool(extra.spId, item.id, { ...form, _origNameEn: item.nameEn }) : addTool(extra.spId, form);
     }
     if (type === "proc") {
       item ? updProc(extra.spId, item.id, form) : addProc(extra.spId, form);
@@ -3283,13 +3283,15 @@ function AdminPortal({
     toastFn(t("تم إضافة الأداة", "Tool added"));
   };
   const updTool = async (spId, id, f) => {
-    await mut("updateTool", { id, nameEn: f.nameEn, ...f }, d => {
+    const origNameEn = f._origNameEn || f.nameEn || "";
+    const { _origNameEn, ...cleanForm } = f;
+    await mut("updateTool", { id, nameEn: origNameEn, ...cleanForm }, d => {
       const s = d.specialties.find(x => x.id === spId);
-      if (s) { const i = s.tools.findIndex(t => t.id === id); if (i >= 0) Object.assign(s.tools[i], f); }
+      if (s) { const i = s.tools.findIndex(t => t.id === id); if (i >= 0) Object.assign(s.tools[i], cleanForm); }
     });
-    setAS(s => s?.id === spId ? { ...s, tools: s.tools.map(tl => tl.id === id ? { ...tl, ...f } : tl) } : s);
+    setAS(s => s?.id === spId ? { ...s, tools: s.tools.map(tl => tl.id === id ? { ...tl, ...cleanForm } : tl) } : s);
     toastFn(t("تم التحديث ✅", "Updated ✅"));
-    if (f.imageUrl && GAS_OK() && token) await syncAll(token);
+    if (cleanForm.imageUrl && GAS_OK() && token) await syncAll(token);
   };
   const delTool = async (spId, id) => {
     await mut("deleteTool", {
