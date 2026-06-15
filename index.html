@@ -1402,8 +1402,8 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
               }
             }, t("اضغط لعرض الصورة","Tap to view image"))
           )
-        : /*#__PURE__*/React.createElement("span", { style:{fontSize:13, color:"#475569"} },
-            t("لا توجد صورة","No image")
+        : /*#__PURE__*/React.createElement("span", { style:{fontSize:13, color:"#64748b"} },
+            t("لم تُضَف صورة بعد","No image added yet")
           )
     );
   };
@@ -2176,7 +2176,7 @@ function NursePortal({
       style: S.pri
     }, "\uD83E\uDDEA ", t("ابدأ الاختبار", "Start Quiz")),
     /*#__PURE__*/React.createElement("button", {
-      onClick: () => { setMastery({ spec: sp, stage: 1 }); setPage("mastery"); },
+      onClick: () => { setMastery({ specId: sp.id, stage: 1 }); setPage("mastery"); },
       style: { ...S.pri, background: "linear-gradient(135deg,#8b5cf6,#6366f1)" }
     }, "\uD83C\uDFC6 ", t("إتقان الأدوات", "Master Tools"))))), /*#__PURE__*/React.createElement("div", {
       style: {
@@ -2497,15 +2497,16 @@ function NursePortal({
 
   // ── MASTERY ──────────────────────────────────────────────
   if (page === "mastery" && mastery) {
+    const liveSpec = (db.specialties || []).find(s => s.id === (mastery.specId || mastery.spec?.id));
+    if (!liveSpec) { setPage("home"); return null; }
     return /*#__PURE__*/React.createElement(MasteryView, {
-      key: mastery.spec.id + "_" + mastery.stage,
-      spec: mastery.spec,
+      key: liveSpec.id + "_" + mastery.stage,
+      spec: liveSpec,
       stage: mastery.stage,
       lang, t, tField, V, user, token,
       onBack: () => { setPage("spec"); },
       onDone: (stage, pct) => {
-        // حفظ التقدم في localStorage
-        const key = `mastery_${user.id}_${mastery.spec.id}_${stage}`;
+        const key = `mastery_${user.id}_${liveSpec.id}_${stage}`;
         localStorage.setItem(key, JSON.stringify({ done: true, pct, date: new Date().toISOString() }));
         setPage("spec");
         toastFn(t(`✅ أتقنت المرحلة ${stage}!`, `✅ Stage ${stage} mastered!`), "ok");
