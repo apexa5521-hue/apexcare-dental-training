@@ -3315,11 +3315,9 @@ function AdminPortal({
     if (GAS_OK() && token) {
       try {
         await api("updateTool", { id, ...f }, token);
-        // لو فيه imageUrl — أرسلها مرة ثانية منفصلة لضمان الحفظ
-        if (f.imageUrl) {
-          await api("updateTool", { id, imageUrl: f.imageUrl }, token);
-        }
         toastFn(t("تم التحديث", "Updated"));
+        // لو فيه صورة — أعد تحميل البيانات لضمان ظهورها
+        if (f.imageUrl) await syncAll(token);
       } catch {
         toastFn(t("فشل الحفظ في الخادم", "Server save failed"), "err");
       }
