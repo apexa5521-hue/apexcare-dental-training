@@ -1237,13 +1237,13 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
       setQuestions(qs);
       setGameState("mcq");
     } else if (s === 4) {
-      if (withImg.length < 4) { alert(t("تحتاج 4 أدوات بصور على الأقل","Need 4 tools with images")); return; }
+      if (withImg.length < 4) { alert(t(t("تحتاج 4 أدوات بصور على الأقل","Need 4 tools with images"),"Need 4 tools with images")); return; }
       const qs = buildPickPhoto(withImg);
       setQuestions(qs);
       setGameState("pick");
     } else if (s === 5) {
       const procs = spec.procedures || [];
-      if (procs.length === 0) { alert(t("لا توجد إجراءات","No procedures")); return; }
+      if (procs.length === 0) { alert(t(t("لا توجد إجراءات","No procedures"),"No procedures")); return; }
       const qs = buildTray(procs, tools);
       setQuestions(qs);
       setGameState("tray");
@@ -1424,10 +1424,10 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
     const prog = getMasteryProgress(user.id, spec.id);
     return /*#__PURE__*/React.createElement("div", { style:ss.wrap },
       /*#__PURE__*/React.createElement("div", { style:ss.top },
-        /*#__PURE__*/React.createElement("button", { style:ss.back, onClick:onBack }, "← رجوع"),
+        /*#__PURE__*/React.createElement("button", { style:ss.back, onClick:onBack }, t("← رجوع","← Back")),
         /*#__PURE__*/React.createElement("div", { style:{flex:1} },
-          /*#__PURE__*/React.createElement("div", { style:{fontWeight:900,fontSize:15} }, spec.icon+" "+spec.nameAr),
-          /*#__PURE__*/React.createElement("div", { style:{fontSize:11,color:"#64748b"} }, t("إتقان الأدوات","Tool Mastery"))
+          /*#__PURE__*/React.createElement("div", { style:{fontWeight:900,fontSize:15} }, spec.icon+" "+tField(spec,"name",lang)),
+          /*#__PURE__*/React.createElement("div", { style:{fontSize:11,color:"#64748b"} }, t(t("إتقان الأدوات","Tool Mastery"),"Tool Mastery"))
         )
       ),
       /*#__PURE__*/React.createElement("div", { style:{padding:"16px 16px 8px",fontSize:12,color:"#64748b"} },
@@ -1460,14 +1460,14 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
           !stageUnlocked(curStage) && /*#__PURE__*/React.createElement("div", {
             style:{background:"rgba(100,116,139,.1)",borderRadius:8,padding:"8px 12px",
                    color:"#64748b",fontSize:12,marginBottom:12}
-          }, "🔒 أكمل المرحلة السابقة أولاً"),
+          }, t("🔒 أكمل المرحلة السابقة أولاً","🔒 Complete previous stage first")),
           /*#__PURE__*/React.createElement("button", {
             onClick:()=>startStage(curStage),
             disabled:!stageUnlocked(curStage),
             style:{width:"100%",padding:"14px",borderRadius:10,fontSize:15,fontWeight:900,border:"none",cursor:stageUnlocked(curStage)?"pointer":"not-allowed",
                    background:stageUnlocked(curStage)?`linear-gradient(135deg,${ACC},#8b5cf6)`:"#1e293b",
                    color:stageUnlocked(curStage)?"#fff":"#475569"}
-          }, stageUnlocked(curStage)?(prog[curStage]?.done?"🔁 مراجعة":"▶ ابدأ"):"🔒 مقفول")
+          }, stageUnlocked(curStage)?(prog[curStage]?.done?t("🔁 مراجعة","🔁 Review"):t("▶ ابدأ","▶ Start")):t("🔒 مقفول","🔒 Locked"))
         )
       )
     );
@@ -1479,17 +1479,17 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
     const hasNext = result.passed && nextStage <= 5;
     return /*#__PURE__*/React.createElement("div", { style:{...ss.wrap,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"100vh",gap:16,padding:24,textAlign:"center"} },
       /*#__PURE__*/React.createElement("div", { style:{fontSize:64} }, result.pct>=90?"🏆":result.pct>=70?"🌟":"💪"),
-      /*#__PURE__*/React.createElement("div", { style:{fontSize:22,fontWeight:900} }, result.pct>=90?t("إتقان تام!","Perfect!"):result.pct>=70?t("ممتاز!","Excellent!"):t("حاول مجدداً","Try Again")),
+      /*#__PURE__*/React.createElement("div", { style:{fontSize:22,fontWeight:900} }, result.pct>=90?t(t("إتقان تام!","Perfect!"),"Perfect!"):result.pct>=70?t(t("ممتاز!","Excellent!"),"Excellent!"):t(t("حاول مجدداً","Try Again"),"Try Again")),
       /*#__PURE__*/React.createElement("div", { style:{fontSize:52,fontWeight:900,color:GLD} }, result.pct+"%"),
-      curStage!==1&&/*#__PURE__*/React.createElement("div", { style:{fontSize:13,color:"#64748b"} }, `${score} / ${questions.length} ${t("إجابة صحيحة","correct")}`),
+      curStage!==1&&/*#__PURE__*/React.createElement("div", { style:{fontSize:13,color:"#64748b"} }, `${score} / ${questions.length} ${t(t("إجابة صحيحة","correct"),"correct")}`),
       result.passed&&curStage<5&&/*#__PURE__*/React.createElement("div", {
         style:{background:"rgba(139,92,246,.15)",border:"1px solid #8b5cf6",borderRadius:10,padding:"10px 20px",fontSize:13,color:"#c4b5fd",fontWeight:700}
-      }, `🔓 ${t("فُتحت المرحلة","Unlocked Stage")} ${nextStage}: ${MASTERY_STAGES[nextStage-1].labelAr}`),
+      }, `🔓 ${t(t("فُتحت المرحلة","Unlocked"),"Unlocked Stage")} ${nextStage}: ${MASTERY_STAGES[nextStage-1].labelAr}`),
       result.passed&&curStage===5&&/*#__PURE__*/React.createElement("div", { style:{fontSize:28,letterSpacing:6} }, "⭐⭐⭐"),
       /*#__PURE__*/React.createElement("div", { style:{display:"flex",gap:10,flexWrap:"wrap",justifyContent:"center"} },
-        /*#__PURE__*/React.createElement("button", { onClick:()=>startStage(curStage), style:{padding:"12px 20px",borderRadius:10,background:BG2,border:"1px solid #1e3a5f",color:"#94a3b8",fontWeight:700,cursor:"pointer"} }, "🔁 "+t("إعادة","Retry")),
+        /*#__PURE__*/React.createElement("button", { onClick:()=>startStage(curStage), style:{padding:"12px 20px",borderRadius:10,background:BG2,border:"1px solid #1e3a5f",color:"#94a3b8",fontWeight:700,cursor:"pointer"} }, "🔁 "+t(t("إعادة","Retry"),"Retry")),
         hasNext&&/*#__PURE__*/React.createElement("button", { onClick:()=>startStage(nextStage), style:{padding:"12px 20px",borderRadius:10,background:`linear-gradient(135deg,${ACC},#8b5cf6)`,color:"#fff",fontWeight:900,border:"none",cursor:"pointer"} }, MASTERY_STAGES[nextStage-1].labelAr+" →"),
-        /*#__PURE__*/React.createElement("button", { onClick:()=>{ setGameState(null); setResult(null); }, style:{padding:"12px 20px",borderRadius:10,background:BG2,border:"1px solid #1e3a5f",color:"#94a3b8",fontWeight:700,cursor:"pointer"} }, "← "+t("العودة","Back"))
+        /*#__PURE__*/React.createElement("button", { onClick:()=>{ setGameState(null); setResult(null); }, style:{padding:"12px 20px",borderRadius:10,background:BG2,border:"1px solid #1e3a5f",color:"#94a3b8",fontWeight:700,cursor:"pointer"} }, "← "+t(t("العودة","Back"),"Back"))
       )
     );
   }
@@ -1499,7 +1499,7 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
     const tool = tools[flashIdx];
     return /*#__PURE__*/React.createElement("div", { style:ss.wrap },
       /*#__PURE__*/React.createElement("div", { style:ss.top },
-        /*#__PURE__*/React.createElement("button", { style:ss.back, onClick:()=>setGameState(null) }, "← "+t("رجوع","Back")),
+        /*#__PURE__*/React.createElement("button", { style:ss.back, onClick:()=>setGameState(null) }, "← "+t(t("رجوع","Back"),"Back")),
         /*#__PURE__*/React.createElement("div", { style:{flex:1} },
           /*#__PURE__*/React.createElement("div", { style:{...ss.bar} }, /*#__PURE__*/React.createElement("div", { style:ss.fill(pct) })),
           /*#__PURE__*/React.createElement("div", { style:{fontSize:11,color:"#64748b",marginTop:3,textAlign:"center"} }, `${flashIdx+1} / ${tools.length}`)
@@ -1519,7 +1519,7 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
         /*#__PURE__*/React.createElement("div", { style:{display:"flex",gap:10} },
           flashIdx>0&&/*#__PURE__*/React.createElement("button", { onClick:flashPrev, style:{flex:1,padding:13,borderRadius:10,background:BG2,border:"1px solid #1e3a5f",color:"#94a3b8",fontWeight:700,cursor:"pointer"} }, "← "+t("السابق","Prev")),
           /*#__PURE__*/React.createElement("button", { onClick:flashNext, style:{flex:2,padding:13,borderRadius:10,background:`linear-gradient(135deg,${ACC},#8b5cf6)`,color:"#fff",fontWeight:900,border:"none",cursor:"pointer"} },
-            flashIdx===tools.length-1?t("✅ انتهيت","✅ Done"):t("التالي →","Next →")
+            flashIdx===tools.length-1?t(t("✅ انتهيت","✅ Done"),"✅ Done"):t(t("التالي →","Next →"),"Next →")
           )
         )
       )
@@ -1543,8 +1543,8 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
       /*#__PURE__*/React.createElement("div", { style:{padding:16,display:"flex",flexDirection:"column",alignItems:"center",gap:12} },
         /*#__PURE__*/React.createElement(ImgBox, { tool:q.correct, size:180 }),
         /*#__PURE__*/React.createElement("div", { style:{fontWeight:700,fontSize:15,textAlign:"center"} },
-          isName ? t("ما اسم هذه الأداة؟","What is this instrument called?")
-                 : t("ما وظيفة هذه الأداة؟","What is this instrument used for?")
+          isName ? t(t("ما اسم هذه الأداة؟","Name this tool?"),"What is this instrument called?")
+                 : t(t("ما وظيفة هذه الأداة؟","What does it do?"),"What is this instrument used for?")
         ),
         /*#__PURE__*/React.createElement("div", { style:{width:"100%"} },
           q.opts.map((o,i) => {
@@ -1560,7 +1560,7 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
           })
         ),
         answered !== null && /*#__PURE__*/React.createElement("div", { style:{fontSize:14,fontWeight:700,color:q.opts[answered]?.id===q.correct.id?GRN:RED} },
-          q.opts[answered]?.id===q.correct.id ? t("✅ صحيح!","✅ Correct!") : t("❌ خطأ — راجع الأخضر","❌ Wrong — see green")
+          q.opts[answered]?.id===q.correct.id ? t(t("✅ صحيح!","✅ Correct!"),"✅ Correct!") : t(t("❌ خطأ","❌ Wrong"),"❌ Wrong — see green")
         )
       )
     );
@@ -1580,7 +1580,7 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
       ),
       /*#__PURE__*/React.createElement("div", { style:{padding:16,display:"flex",flexDirection:"column",alignItems:"center",gap:16} },
         /*#__PURE__*/React.createElement("div", { style:{fontSize:17,fontWeight:700,textAlign:"center",lineHeight:1.5} },
-          t("أي صورة تمثّل:","Which image shows:"), " ",
+          t(t("أي صورة تمثّل:","Which image shows:"),"Which image shows:"), " ",
           /*#__PURE__*/React.createElement("span", { style:{color:ACC} }, tField(q.correct,"name",lang))
         ),
         /*#__PURE__*/React.createElement("div", { style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,width:"100%",maxWidth:360} },
@@ -1604,7 +1604,7 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
           })
         ),
         answered !== null && /*#__PURE__*/React.createElement("div", { style:{fontSize:14,fontWeight:700,color:q.opts[answered]?.id===q.correct.id?GRN:RED} },
-          q.opts[answered]?.id===q.correct.id ? t("✅ ممتاز!","✅ Excellent!") : t("❌ الصورة الصحيحة موضّحة","❌ Correct image highlighted")
+          q.opts[answered]?.id===q.correct.id ? t(t("✅ ممتاز!","✅ Excellent!"),"✅ Excellent!") : t(t("❌ خطأ","❌ Wrong"),"❌ Correct image highlighted")
         )
       )
     );
@@ -1625,12 +1625,12 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
       ),
       /*#__PURE__*/React.createElement("div", { style:{padding:16,display:"flex",flexDirection:"column",gap:14} },
         /*#__PURE__*/React.createElement("div", { style:{...ss.card,textAlign:"center"} },
-          /*#__PURE__*/React.createElement("div", { style:{fontSize:13,color:"#64748b",marginBottom:4} }, t("إجراء:","Procedure:")),
+          /*#__PURE__*/React.createElement("div", { style:{fontSize:13,color:"#64748b",marginBottom:4} }, t(t("إجراء:","Procedure:"),"Procedure:")),
           /*#__PURE__*/React.createElement("div", { style:{fontSize:15,fontWeight:900} }, tField(q.proc,"name",lang)),
           /*#__PURE__*/React.createElement("div", { style:{fontSize:12,color:"#64748b",marginTop:4} }, t(`اختر ${q.correct.length} أدوات`,`Pick ${q.correct.length} tools`))
         ),
         /*#__PURE__*/React.createElement("div", { style:{background:BG3,borderRadius:10,padding:10,minHeight:50,display:"flex",flexWrap:"wrap",gap:6,border:"1.5px dashed #1e3a5f"} },
-          traySelected.length===0 ? /*#__PURE__*/React.createElement("span", { style:{fontSize:12,color:"#334155",alignSelf:"center"} }, t("اضغط أداة لإضافتها…","Tap a tool to add…"))
+          traySelected.length===0 ? /*#__PURE__*/React.createElement("span", { style:{fontSize:12,color:"#334155",alignSelf:"center"} }, t(t("اضغط أداة لإضافتها…","Tap a tool to add…"),"Tap a tool to add…"))
           : traySelected.map(id => {
             const tl = q.pool.find(x=>x.id===id);
             if (!tl) return null;
@@ -1655,11 +1655,11 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
           onClick:checkTray, disabled:traySelected.length===0,
           style:{padding:"13px",borderRadius:10,background:traySelected.length?GRN:"#1e293b",
                  color:traySelected.length?"#fff":"#475569",fontWeight:900,border:"none",cursor:traySelected.length?"pointer":"default"}
-        }, t("✓ تحقق","✓ Check"))
+        }, t(t("✓ تحقق","✓ Check"),"✓ Check"))
         : /*#__PURE__*/React.createElement("button", {
           onClick:trayNext,
           style:{padding:"13px",borderRadius:10,background:`linear-gradient(135deg,${ACC},#8b5cf6)`,color:"#fff",fontWeight:900,border:"none",cursor:"pointer"}
-        }, qIdx===questions.length-1 ? t("✅ انتهيت","✅ Finish") : t("التالي →","Next →"))
+        }, qIdx===questions.length-1 ? t(t("✅ انتهيت","✅ Done"),"✅ Finish") : t(t("التالي →","Next →"),"Next →"))
       )
     );
   }
