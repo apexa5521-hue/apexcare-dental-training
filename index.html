@@ -3283,8 +3283,7 @@ function AdminPortal({
     toastFn(t("تم إضافة الأداة", "Tool added"));
   };
   const updTool = async (spId, id, f) => {
-    // حدّث محلياً عبر mut
-    await mut("updateTool", { id, ...f }, d => {
+    await mut("updateTool", { id, nameEn: f.nameEn, ...f }, d => {
       const s = d.specialties.find(x => x.id === spId);
       if (s) { const i = s.tools.findIndex(t => t.id === id); if (i >= 0) Object.assign(s.tools[i], f); }
     });
