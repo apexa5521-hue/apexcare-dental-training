@@ -635,19 +635,13 @@ function App() {
       });
       // ── Only replace if GAS has COMPLETE data (with tools) — otherwise keep SEED
       setDb(d => {
-        // Check if GAS specs have tools loaded
         const gasSpecs = r.data.specialties || [];
         const gasHasTools = gasSpecs.some(s => (s.tools || []).length > 0);
         const gasHasSteps = (r.data.ipcModules || []).some(m => (m.steps || []).length > 0);
         const specs = gasSpecs.length > 0 && gasHasTools ? gasSpecs : d.specialties;
         const ipcs = (r.data.ipcModules || []).length > 0 && gasHasSteps ? r.data.ipcModules : d.ipcModules;
         const quizzes = Object.keys(q).length > 0 ? q : d.quizzes;
-        return {
-          ...d,
-          specialties: specs,
-          ipcModules: ipcs,
-          quizzes
-        };
+        return { ...d, specialties: specs, ipcModules: ipcs, quizzes };
       });
       setSync("ok");
     } catch (e) {
@@ -2820,41 +2814,25 @@ const [form, setForm] = useState(() => init());
     reader.onload = () => {
       const img = new Image();
       img.onload = () => {
-        // ضغط الصورة بـ Canvas — أقصى 300×300 وجودة 55% لتناسب حد Google Sheets (50K حرف)
-        const MAX = 300;
-        let w = img.width, h = img.height;
-        if (w > MAX || h > MAX) {
-          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
-          else       { w = Math.round(w * MAX / h); h = MAX; }
-        }
+        // نضغط لـ 150×150 بجودة 30% = أقل من 8000 حرف — يمر في GAS بسهولة
+        const SIZE = 150;
         const canvas = document.createElement("canvas");
-        canvas.width = w; canvas.height = h;
-        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-        // جرب 55% أولاً — لو ما ضبطت تقليص أكثر
-        let compressed = canvas.toDataURL("image/jpeg", 0.55);
-        if (compressed.length > 48000) {
-          compressed = canvas.toDataURL("image/jpeg", 0.40);
-        }
-        if (compressed.length > 48000) {
-          // آخر محاولة: قلص الأبعاد لـ 200×200
-          const c2 = document.createElement("canvas");
-          const s = Math.min(200, w, h);
-          c2.width = s; c2.height = s;
-          c2.getContext("2d").drawImage(img, 0, 0, s, s);
-          compressed = c2.toDataURL("image/jpeg", 0.50);
-        }
+        canvas.width = SIZE; canvas.height = SIZE;
+        const ctx = canvas.getContext("2d");
+        // crop مربع من المنتصف
+        const side = Math.min(img.width, img.height);
+        const sx = (img.width - side) / 2;
+        const sy = (img.height - side) / 2;
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, SIZE, SIZE);
+        const compressed = canvas.toDataURL("image/jpeg", 0.30);
         set("imageUrl", compressed);
         setUploading(false);
         e.target.value = "";
       };
-      img.onerror = () => {
-        set("imageUrl", String(reader.result));
-        setUploading(false);
-        e.target.value = "";
-      };
+      img.onerror = () => { setUploading(false); e.target.value = ""; };
       img.src = String(reader.result);
     };
-    reader.onerror = () => { setUploading(false); alert("فشل قراءة الملف"); };
+    reader.onerror = () => { setUploading(false); };
     reader.readAsDataURL(file);
   };
   const F = ({
@@ -3323,10 +3301,7 @@ function AdminPortal({
     toastFn(t("تم إضافة الأداة", "Tool added"));
   };
   const updTool = async (spId, id, f) => {
-    await mut("updateTool", {
-      id,
-      ...f
-    }, d => {
+    await mut("updateTool", { id, ...f }, d => {
       const s = d.specialties.find(x => x.id === spId);
       if (s) {
         const i = s.tools.findIndex(t => t.id === id);
@@ -3335,10 +3310,7 @@ function AdminPortal({
     });
     setAS(s => s?.id === spId ? {
       ...s,
-      tools: s.tools.map(t => t.id === id ? {
-        ...t,
-        ...f
-      } : t)
+      tools: s.tools.map(t => t.id === id ? { ...t, ...f } : t)
     } : s);
     toastFn(t("تم التحديث", "Updated"));
   };
