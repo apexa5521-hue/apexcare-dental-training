@@ -1131,11 +1131,11 @@ function ToolCard({
 //  5 مراحل: تعرّف → سمّها → وظيفتها → عكسي → الإجراء
 // ══════════════════════════════════════════════════════════
 const MASTERY_STAGES = [
-  { id:1, labelAr:"🔍 تعرّف",   labelEn:"Recognize",  descAr:"اقرأ كل أداة مع صورتها",      threshold:0  },
-  { id:2, labelAr:"🏷️ سمّها",   labelEn:"Name It",    descAr:"صورة → اختر الاسم الصحيح",   threshold:70 },
-  { id:3, labelAr:"🎯 وظيفتها", labelEn:"Function",   descAr:"صورة → اختر الاستخدام",      threshold:70 },
-  { id:4, labelAr:"🔄 عكسي",    labelEn:"Reverse",    descAr:"الاسم → اختر الصورة الصحيحة",threshold:70 },
-  { id:5, labelAr:"⚕️ الإجراء", labelEn:"Procedure",  descAr:"إجراء → اختر الأدوات",       threshold:70 },
+  { id:1, labelAr:"🔍 تعرّف",   labelEn:"🔍 Recognize",  descAr:"اقرأ كل أداة مع صورتها",       descEn:"Read each tool with its image",      threshold:0  },
+  { id:2, labelAr:"🏷️ سمّها",   labelEn:"🏷️ Name It",    descAr:"صورة → اختر الاسم الصحيح",    descEn:"Image → pick the correct name",      threshold:70 },
+  { id:3, labelAr:"🎯 وظيفتها", labelEn:"🎯 Function",   descAr:"صورة → اختر الاستخدام",       descEn:"Image → pick the function",          threshold:70 },
+  { id:4, labelAr:"🔄 عكسي",    labelEn:"🔄 Reverse",    descAr:"الاسم → اختر الصورة الصحيحة", descEn:"Name → pick the correct image",      threshold:70 },
+  { id:5, labelAr:"⚕️ الإجراء", labelEn:"⚕️ Procedure",  descAr:"إجراء → اختر الأدوات",        descEn:"Procedure → pick the tools",         threshold:70 },
 ];
 
 function compressImg(dataUrl, maxPx=400, quality=0.72) {
@@ -1281,7 +1281,7 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
   const flashNext = () => {
     if (flashIdx < tools.length - 1) { setFlashIdx(i=>i+1); }
     else {
-      saveMasteryStage(user.id, spec.id, 1, 100, user.name, spec.nameAr, "🔍 تعرّف", token);
+      saveMasteryStage(user.id, spec.id, 1, 100, user.name, tField(spec,"name",lang), "🔍 تعرّف", token);
       setResult({ pct:100, passed:true });
       setGameState("result");
     }
@@ -1301,7 +1301,7 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
       if (next >= questions.length) {
         const pct = Math.round(newScore / questions.length * 100);
         const passed = pct >= stDef.threshold;
-        if (passed) saveMasteryStage(user.id, spec.id, curStage, pct, user.name, spec.nameAr, stDef.labelAr, token);
+        if (passed) saveMasteryStage(user.id, spec.id, curStage, pct, user.name, tField(spec,"name",lang), (lang==="ar"?stDef.labelAr:stDef.labelEn), token);
         setResult({ pct, passed });
         setGameState("result");
       } else {
@@ -1324,7 +1324,7 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
       if (next >= questions.length) {
         const pct = Math.round(newScore / questions.length * 100);
         const passed = pct >= stDef.threshold;
-        if (passed) saveMasteryStage(user.id, spec.id, curStage, pct, user.name, spec.nameAr, stDef.labelAr, token);
+        if (passed) saveMasteryStage(user.id, spec.id, curStage, pct, user.name, tField(spec,"name",lang), (lang==="ar"?stDef.labelAr:stDef.labelEn), token);
         setResult({ pct, passed });
         setGameState("result");
       } else {
@@ -1442,16 +1442,16 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
             key:s.id,
             style:ss.stagePill(active,done,locked),
             onClick:()=>!locked&&setCurStage(s.id)
-          }, s.labelAr, done?"\n✅":"", locked?"\n🔒":"");
+          }, (lang==="ar"?s.labelAr:s.labelEn), done?"\n✅":"", locked?"\n🔒":"");
         })
       ),
       /*#__PURE__*/React.createElement("div", { style:{padding:"16px"} },
         /*#__PURE__*/React.createElement("div", { style:{...ss.card, textAlign:"center"} },
           /*#__PURE__*/React.createElement("div", { style:{fontSize:28,marginBottom:8} },
-            stDef.labelAr
+            (lang==="ar"?stDef.labelAr:stDef.labelEn)
           ),
           /*#__PURE__*/React.createElement("div", { style:{fontSize:14,fontWeight:700,color:"#f1f5f9",marginBottom:6} },
-            stDef.descAr
+            (lang==="ar"?stDef.descAr:stDef.descEn)
           ),
           prog[curStage]?.done && /*#__PURE__*/React.createElement("div", {
             style:{background:"rgba(16,185,129,.1)",border:"1px solid "+GRN,borderRadius:8,padding:"8px 12px",
@@ -1484,11 +1484,11 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
       curStage!==1&&/*#__PURE__*/React.createElement("div", { style:{fontSize:13,color:"#64748b"} }, `${score} / ${questions.length} ${t(t("إجابة صحيحة","correct"),"correct")}`),
       result.passed&&curStage<5&&/*#__PURE__*/React.createElement("div", {
         style:{background:"rgba(139,92,246,.15)",border:"1px solid #8b5cf6",borderRadius:10,padding:"10px 20px",fontSize:13,color:"#c4b5fd",fontWeight:700}
-      }, `🔓 ${t(t("فُتحت المرحلة","Unlocked"),"Unlocked Stage")} ${nextStage}: ${MASTERY_STAGES[nextStage-1].labelAr}`),
+      }, `🔓 ${t(t("فُتحت المرحلة","Unlocked"),"Unlocked Stage")} ${nextStage}: ${(lang==="ar"?MASTERY_STAGES[nextStage-1].labelAr:MASTERY_STAGES[nextStage-1].labelEn)}`),
       result.passed&&curStage===5&&/*#__PURE__*/React.createElement("div", { style:{fontSize:28,letterSpacing:6} }, "⭐⭐⭐"),
       /*#__PURE__*/React.createElement("div", { style:{display:"flex",gap:10,flexWrap:"wrap",justifyContent:"center"} },
         /*#__PURE__*/React.createElement("button", { onClick:()=>startStage(curStage), style:{padding:"12px 20px",borderRadius:10,background:BG2,border:"1px solid #1e3a5f",color:"#94a3b8",fontWeight:700,cursor:"pointer"} }, "🔁 "+t(t("إعادة","Retry"),"Retry")),
-        hasNext&&/*#__PURE__*/React.createElement("button", { onClick:()=>startStage(nextStage), style:{padding:"12px 20px",borderRadius:10,background:`linear-gradient(135deg,${ACC},#8b5cf6)`,color:"#fff",fontWeight:900,border:"none",cursor:"pointer"} }, MASTERY_STAGES[nextStage-1].labelAr+" →"),
+        hasNext&&/*#__PURE__*/React.createElement("button", { onClick:()=>startStage(nextStage), style:{padding:"12px 20px",borderRadius:10,background:`linear-gradient(135deg,${ACC},#8b5cf6)`,color:"#fff",fontWeight:900,border:"none",cursor:"pointer"} }, (lang==="ar"?MASTERY_STAGES[nextStage-1].labelAr:MASTERY_STAGES[nextStage-1].labelEn)+" →"),
         /*#__PURE__*/React.createElement("button", { onClick:()=>{ setGameState(null); setResult(null); }, style:{padding:"12px 20px",borderRadius:10,background:BG2,border:"1px solid #1e3a5f",color:"#94a3b8",fontWeight:700,cursor:"pointer"} }, "← "+t(t("العودة","Back"),"Back"))
       )
     );
@@ -1533,7 +1533,7 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
     const optLabel = (o) => isName ? tField(o,"name",lang) : tField(o,"use",lang);
     return /*#__PURE__*/React.createElement("div", { style:ss.wrap },
       /*#__PURE__*/React.createElement("div", { style:ss.top },
-        /*#__PURE__*/React.createElement("div", { style:ss.badge }, stDef.labelAr),
+        /*#__PURE__*/React.createElement("div", { style:ss.badge }, (lang==="ar"?stDef.labelAr:stDef.labelEn)),
         /*#__PURE__*/React.createElement("div", { style:{flex:1,padding:"0 8px"} },
           /*#__PURE__*/React.createElement("div", { style:ss.bar }, /*#__PURE__*/React.createElement("div", { style:ss.fill(pct) })),
           /*#__PURE__*/React.createElement("div", { style:{fontSize:11,color:"#64748b",marginTop:3,textAlign:"center"} }, `${qIdx+1}/${questions.length}`)
@@ -1571,7 +1571,7 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
     const q = questions[qIdx];
     return /*#__PURE__*/React.createElement("div", { style:ss.wrap },
       /*#__PURE__*/React.createElement("div", { style:ss.top },
-        /*#__PURE__*/React.createElement("div", { style:ss.badge }, stDef.labelAr),
+        /*#__PURE__*/React.createElement("div", { style:ss.badge }, (lang==="ar"?stDef.labelAr:stDef.labelEn)),
         /*#__PURE__*/React.createElement("div", { style:{flex:1,padding:"0 8px"} },
           /*#__PURE__*/React.createElement("div", { style:ss.bar }, /*#__PURE__*/React.createElement("div", { style:ss.fill(pct) })),
           /*#__PURE__*/React.createElement("div", { style:{fontSize:11,color:"#64748b",marginTop:3,textAlign:"center"} }, `${qIdx+1}/${questions.length}`)
@@ -1616,7 +1616,7 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
     const correctIds = q.correct.map(x=>x.id);
     return /*#__PURE__*/React.createElement("div", { style:ss.wrap },
       /*#__PURE__*/React.createElement("div", { style:ss.top },
-        /*#__PURE__*/React.createElement("div", { style:ss.badge }, stDef.labelAr),
+        /*#__PURE__*/React.createElement("div", { style:ss.badge }, (lang==="ar"?stDef.labelAr:stDef.labelEn)),
         /*#__PURE__*/React.createElement("div", { style:{flex:1,padding:"0 8px"} },
           /*#__PURE__*/React.createElement("div", { style:ss.bar }, /*#__PURE__*/React.createElement("div", { style:ss.fill(pct) })),
           /*#__PURE__*/React.createElement("div", { style:{fontSize:11,color:"#64748b",marginTop:3,textAlign:"center"} }, `${qIdx+1}/${questions.length}`)
