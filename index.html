@@ -1022,54 +1022,33 @@ function ToolCard({
       borderBottom: "1px solid #f1f5f9",
       alignItems: "flex-start"
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 32,
-      flexShrink: 0,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      gap: 6,
-      paddingTop: 2
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: sp.color,
-      color: "#fff",
-      borderRadius: "50%",
-      width: 22,
-      height: 22,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: 10,
-      fontWeight: 900,
-      flexShrink: 0
-    }
-  }, idx + 1), imgSrc && /*#__PURE__*/React.createElement("a", {
-    href: imgSrc,
-    target: "_blank",
-    rel: "noopener noreferrer",
-    title: t("عرض صورة الأداة", "View tool image"),
-    style: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      width: 28,
-      height: 28,
-      borderRadius: 6,
-      background: `${sp.color}15`,
-      border: `1px solid ${sp.color}40`,
-      color: sp.color,
-      fontSize: 14,
-      textDecoration: "none",
-      cursor: "pointer"
-    }
-  }, "\uD83D\uDDBC\uFE0F")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1,
-      minWidth: 0
-    }
+  },
+  // صورة الأداة أو رقم
+  imgSrc
+    ? /*#__PURE__*/React.createElement("img", {
+        src: imgSrc,
+        alt: tool.nameEn,
+        onClick: () => window.open(imgSrc, "_blank"),
+        style: {
+          width: 64, height: 64, objectFit: "cover",
+          borderRadius: 10, flexShrink: 0, cursor: "zoom-in",
+          border: `2px solid ${sp.color}40`, background: "#f8fafc"
+        },
+        onError: e => {
+          e.target.style.display = "none";
+          e.target.nextSibling && (e.target.nextSibling.style.display = "flex");
+        }
+      })
+    : /*#__PURE__*/React.createElement("div", {
+        style: {
+          width: 64, height: 64, flexShrink: 0, borderRadius: 10,
+          background: `${sp.color}15`, border: `2px solid ${sp.color}30`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 11, fontWeight: 900, color: sp.color
+        }
+      }, idx + 1),
+  /*#__PURE__*/React.createElement("div", {
+    style: { flex: 1, minWidth: 0 }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontWeight: 700,
