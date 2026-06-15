@@ -2211,7 +2211,7 @@ function NursePortal({
       onClick: () => startQuiz(sp.id),
       style: S.pri
     }, "\uD83E\uDDEA ", t("ابدأ الاختبار", "Start Quiz")),
-    (sp.tools || []).some(tl => tl.imageUrl && tl.imageUrl.trim()) && /*#__PURE__*/React.createElement("button", {
+    /*#__PURE__*/React.createElement("button", {
       onClick: () => { setMastery({ spec: sp, stage: 1 }); setPage("mastery"); },
       style: { ...S.pri, background: "linear-gradient(135deg,#8b5cf6,#6366f1)" }
     }, "\uD83C\uDFC6 ", t("إتقان الأدوات", "Master Tools"))))), /*#__PURE__*/React.createElement("div", {
