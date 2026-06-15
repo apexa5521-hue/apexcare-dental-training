@@ -2810,30 +2810,28 @@ const [form, setForm] = useState(() => init());
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     setUploading(true);
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        // نضغط لـ 150×150 بجودة 30% = أقل من 8000 حرف — يمر في GAS بسهولة
-        const SIZE = 150;
-        const canvas = document.createElement("canvas");
-        canvas.width = SIZE; canvas.height = SIZE;
-        const ctx = canvas.getContext("2d");
-        // crop مربع من المنتصف
-        const side = Math.min(img.width, img.height);
-        const sx = (img.width - side) / 2;
-        const sy = (img.height - side) / 2;
-        ctx.drawImage(img, sx, sy, side, side, 0, 0, SIZE, SIZE);
-        const compressed = canvas.toDataURL("image/jpeg", 0.30);
-        set("imageUrl", compressed);
-        setUploading(false);
-        e.target.value = "";
-      };
-      img.onerror = () => { setUploading(false); e.target.value = ""; };
-      img.src = String(reader.result);
-    };
-    reader.onerror = () => { setUploading(false); };
-    reader.readAsDataURL(file);
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "cmuqyx2d");
+
+    fetch("https://api.cloudinary.com/v1_1/dnlkxh3qi/image/upload", {
+      method: "POST",
+      body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.secure_url) {
+        set("imageUrl", data.secure_url);
+      } else {
+        alert(t("فشل رفع الصورة", "Image upload failed"));
+      }
+    })
+    .catch(() => alert(t("فشل رفع الصورة", "Image upload failed")))
+    .finally(() => {
+      setUploading(false);
+      e.target.value = "";
+    });
   };
   const F = ({
     label,
