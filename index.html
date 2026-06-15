@@ -1690,7 +1690,14 @@ function NursePortal({
   const [activeTab, setTab] = useState("tools");
   const [imgModal, setImgModal] = useState(null);
   const [drill, setDrill] = useState(null);
-  const [mastery, setMastery] = useState(null); // {spec, stage, gameState}
+  const [mastery, setMastery] = useState(null); // {specId, stage}
+
+  // sync عند فتح تخصص لضمان ظهور أحدث الصور
+  useEffect(() => {
+    if (activeSpec && GAS_OK() && token) {
+      syncAll(token).catch(() => {});
+    }
+  }, [activeSpec?.id]);
 
   const dir = lang === "ar" ? "rtl" : "ltr";
   const filtered = db.specialties.filter(s => !search || s.nameAr.includes(search) || s.nameEn.toLowerCase().includes(search.toLowerCase()) || s.tools?.some(tl => tl.nameAr?.includes(search) || tl.nameEn?.toLowerCase().includes(search.toLowerCase())));
@@ -2117,8 +2124,6 @@ function NursePortal({
   if (page === "spec" && activeSpec) {
     // Always read from db for fresh data (images etc)
     const sp = db.specialties.find(s => s.id === activeSpec.id) || activeSpec;
-    // تأكد من تحميل أحدث البيانات (بما فيها imageUrl) في الخلفية
-    React.useEffect(() => { if (GAS_OK() && token) syncAll(token).catch(()=>{}); }, [activeSpec?.id]);
     return /*#__PURE__*/React.createElement("div", {
       style: S.app
     }, /*#__PURE__*/React.createElement("link", {
