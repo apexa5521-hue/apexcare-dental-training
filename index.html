@@ -1013,11 +1013,7 @@ function ToolCard({
   V,
   onImgClick
 }) {
-  const [imgErr, setImgErr] = useState(false);
-  const [imgLoaded, setImgLoaded] = useState(false);
-
-  // الصورة من imageUrl المحفوظ في GAS فقط — بدون أي fallback خارجي
-  const imgSrc = !imgErr && tool.imageUrl && tool.imageUrl.trim() ? tool.imageUrl.trim() : null;
+  const imgSrc = tool.imageUrl && tool.imageUrl.trim() ? tool.imageUrl.trim() : null;
   return /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
@@ -1027,73 +1023,49 @@ function ToolCard({
       alignItems: "flex-start"
     }
   }, /*#__PURE__*/React.createElement("div", {
-    onClick: (imgSrc && imgLoaded && onImgClick) ? onImgClick : undefined,
     style: {
-      width: 76,
-      height: 76,
+      width: 32,
       flexShrink: 0,
-      borderRadius: 10,
-      background: imgSrc && !imgErr ? "#f8fafc" : `${sp.color}10`,
-      border: `1px solid ${imgSrc && !imgErr ? "#e2e8f0" : sp.color + "25"}`,
-      cursor: (imgSrc && imgLoaded && onImgClick) ? "zoom-in" : "default",
-      overflow: "hidden",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      position: "relative",
-      flexShrink: 0
-    }
-  }, imgSrc ? /*#__PURE__*/React.createElement("img", {
-    src: imgSrc,
-    alt: tool.nameEn,
-    style: {
-      width: "100%",
-      height: "100%",
-      objectFit: "cover",
-      display: imgLoaded ? "block" : "none"
-    },
-    onLoad: () => setImgLoaded(true),
-    onError: () => {
-      setImgErr(true);
-      setImgLoaded(false);
-    }
-  }) : null, (!imgSrc || !imgLoaded) && /*#__PURE__*/React.createElement("div", {
-    style: {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      gap: 2,
-      opacity: imgSrc && !imgLoaded ? 0.4 : 1
+      gap: 6,
+      paddingTop: 2
     }
-  }, /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 20
-    }
-  }, "\uD83D\uDD27"), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 9,
-      color: sp.color,
-      fontWeight: 700,
-      textAlign: "center",
-      padding: "0 3px"
-    }
-  }, idx + 1)), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      top: 3,
-      [lang === "ar" || lang === "ur" ? "right" : "left"]: 3,
       background: sp.color,
       color: "#fff",
       borderRadius: "50%",
-      width: 17,
-      height: 17,
+      width: 22,
+      height: 22,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      fontSize: 9,
-      fontWeight: 900
+      fontSize: 10,
+      fontWeight: 900,
+      flexShrink: 0
     }
-  }, idx + 1)), /*#__PURE__*/React.createElement("div", {
+  }, idx + 1), imgSrc && /*#__PURE__*/React.createElement("a", {
+    href: imgSrc,
+    target: "_blank",
+    rel: "noopener noreferrer",
+    title: t("عرض صورة الأداة", "View tool image"),
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: 28,
+      height: 28,
+      borderRadius: 6,
+      background: `${sp.color}15`,
+      border: `1px solid ${sp.color}40`,
+      color: sp.color,
+      fontSize: 14,
+      textDecoration: "none",
+      cursor: "pointer"
+    }
+  }, "\uD83D\uDDBC\uFE0F")), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
       minWidth: 0
@@ -1407,10 +1379,32 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
 
   const ImgBox = ({ tool, size=200, radius=12 }) => {
     const src = tool.imageUrl && tool.imageUrl.trim() ? tool.imageUrl.trim() : null;
-    return /*#__PURE__*/React.createElement("div", { style:{...ss.flashImg, height:size, borderRadius:radius} },
-      src ? /*#__PURE__*/React.createElement("img", { src, style:{width:"100%",height:"100%",objectFit:"cover"},
-        onError:e=>{ e.target.style.display="none"; } })
-           : /*#__PURE__*/React.createElement("span", null, "🔧")
+    return /*#__PURE__*/React.createElement("div", {
+      style:{
+        width:"100%", height:size, borderRadius:radius, background:BG3,
+        display:"flex", alignItems:"center", justifyContent:"center",
+        border:"1px solid #1e3a5f", flexDirection:"column", gap:12
+      }
+    },
+      src
+        ? /*#__PURE__*/React.createElement("a", {
+            href: src, target:"_blank", rel:"noopener noreferrer",
+            style:{
+              display:"flex", flexDirection:"column", alignItems:"center", gap:8,
+              textDecoration:"none", color:"#94a3b8"
+            }
+          },
+            /*#__PURE__*/React.createElement("span", { style:{fontSize:36} }, "🖼️"),
+            /*#__PURE__*/React.createElement("span", {
+              style:{
+                fontSize:12, fontWeight:700, padding:"6px 16px",
+                background:"#1e3a5f", borderRadius:20, color:"#93c5fd"
+              }
+            }, t("اضغط لعرض الصورة","Tap to view image"))
+          )
+        : /*#__PURE__*/React.createElement("span", { style:{fontSize:13, color:"#475569"} },
+            t("لا توجد صورة","No image")
+          )
     );
   };
 
@@ -1595,8 +1589,16 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
               key:o.id, style:ss.pickOpt(st),
               onClick:()=>answerPick(i)
             },
-              src ? /*#__PURE__*/React.createElement("img", { src, style:{width:"100%",height:"100%",objectFit:"cover"}, onError:e=>{e.target.style.display="none";} })
-                  : /*#__PURE__*/React.createElement("span", null, "🔧"),
+              src
+                ? /*#__PURE__*/React.createElement("a", {
+                    href: src, target:"_blank", rel:"noopener noreferrer",
+                    onClick:e=>e.stopPropagation(),
+                    style:{display:"flex",flexDirection:"column",alignItems:"center",gap:6,textDecoration:"none",color:"#94a3b8",padding:8}
+                  },
+                    /*#__PURE__*/React.createElement("span", {style:{fontSize:28}}, "🖼️"),
+                    /*#__PURE__*/React.createElement("span", {style:{fontSize:10,fontWeight:700,color:"#93c5fd"}}, t("عرض","View"))
+                  )
+                : /*#__PURE__*/React.createElement("span", {style:{fontSize:13,color:"#475569"}}, t("لا صورة","No img")),
               st && /*#__PURE__*/React.createElement("div", { style:{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.4)",fontSize:28} },
                 st==="correct"?"✅":"❌"
               )
@@ -1887,39 +1889,7 @@ function NursePortal({
       color: "#fff"
     })
   };
-  const ToolImageModal = () => {
-    if (!imgModal) return null;
-    const src = imgModal.imageUrl && imgModal.imageUrl.trim() ? imgModal.imageUrl.trim() : null;
-    return /*#__PURE__*/React.createElement("div", {
-      style: { position:"fixed", inset:0, background:"rgba(0,0,0,0.8)", zIndex:600,
-               display:"flex", alignItems:"center", justifyContent:"center", padding:16 },
-      onClick: e => e.target === e.currentTarget && setImgModal(null)
-    }, /*#__PURE__*/React.createElement("div", {
-      style: { background:"#ffffff", borderRadius:16, padding:20, width:"100%", maxWidth:380,
-               boxShadow:"0 20px 60px rgba(0,0,0,0.4)" }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }
-    }, /*#__PURE__*/React.createElement("div", null,
-        /*#__PURE__*/React.createElement("div", { style:{fontWeight:900,fontSize:16,color:"#1e293b"} }, imgModal.nameAr),
-        /*#__PURE__*/React.createElement("div", { style:{fontSize:12,color:"#64748b",marginTop:2} }, imgModal.nameEn)
-      ), /*#__PURE__*/React.createElement("button", {
-        onClick: () => setImgModal(null),
-        style: { padding:"4px 10px", borderRadius:7, border:"1px solid #fee2e2",
-                 background:"#fff5f5", color:"#ef4444", cursor:"pointer", fontWeight:700, fontSize:13 }
-      }, "\u2715")
-    ), src ? /*#__PURE__*/React.createElement("img", {
-      src, alt: imgModal.nameAr,
-      style: { width:"100%", maxHeight:260, objectFit:"contain", borderRadius:10,
-               background:"#f1f5f9", padding:8, display:"block" },
-      onError: e => { e.target.style.display="none"; }
-    }) : /*#__PURE__*/React.createElement("div", {
-      style: { height:180, display:"flex", flexDirection:"column", alignItems:"center",
-               justifyContent:"center", gap:10, background:"#f8fafc", borderRadius:10 }
-    }, /*#__PURE__*/React.createElement("span", { style:{fontSize:48} }, "\uD83E\uDDB7"),
-       /*#__PURE__*/React.createElement("span", { style:{fontSize:13,color:"#94a3b8"} },
-         t("لم تُضَف صورة بعد","No image added yet"))
-    )));
-  };
+  const ToolImageModal = () => null;
   const NHeader = () => /*#__PURE__*/React.createElement("div", {
     style: S.hdr
   }, /*#__PURE__*/React.createElement("div", {
@@ -2471,19 +2441,22 @@ function NursePortal({
         /*#__PURE__*/React.createElement("div", { style:{fontSize:12, color:V.muted, marginBottom:10, fontWeight:700} }, t(`السؤال ${drill.idx+1} من ${drill.questions.length}`, `Question ${drill.idx+1} of ${drill.questions.length}`)),
         /*#__PURE__*/React.createElement("div", { style:S.card },
           /*#__PURE__*/React.createElement("div", { style:{display:"flex", justifyContent:"center", marginBottom:14} },
-            /*#__PURE__*/React.createElement("div", {
-              style:{
-                width:120, height:120, borderRadius:14,
-                background: imgSrc ? "#f8fafc" : `${drill.specColor}10`,
-                border:`1px solid ${imgSrc ? "#e2e8f0" : drill.specColor+"25"}`,
-                display:"flex", alignItems:"center", justifyContent:"center",
-                overflow:"hidden"
-              }
-            },
-              imgSrc
-                ? /*#__PURE__*/React.createElement("img", { src:imgSrc, alt:"", style:{width:"100%",height:"100%",objectFit:"cover"}, onError:e=>{e.target.style.display="none";} })
-                : /*#__PURE__*/React.createElement("span", { style:{fontSize:40} }, "\uD83D\uDD27")
-            )
+            imgSrc
+              ? /*#__PURE__*/React.createElement("a", {
+                  href: imgSrc, target:"_blank", rel:"noopener noreferrer",
+                  style:{
+                    display:"flex", flexDirection:"column", alignItems:"center", gap:8,
+                    textDecoration:"none", padding:"14px 24px",
+                    background:`${drill.specColor}10`, borderRadius:14,
+                    border:`1px solid ${drill.specColor}40`
+                  }
+                },
+                  /*#__PURE__*/React.createElement("span", {style:{fontSize:32}}, "🖼️"),
+                  /*#__PURE__*/React.createElement("span", {style:{fontSize:12, fontWeight:700, color:drill.specColor}},
+                    t("اضغط لعرض الصورة","Tap to view image")
+                  )
+                )
+              : null
           ),
           /*#__PURE__*/React.createElement("div", { style:{textAlign:"center", fontSize:14, fontWeight:800, marginBottom:16, color:"#1e293b"} },
             t("ما اسم هذه الأداة؟","What is this tool's name?")
