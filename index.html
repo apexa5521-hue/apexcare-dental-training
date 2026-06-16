@@ -1360,7 +1360,7 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
     const src = tool.imageUrl && tool.imageUrl.trim() ? tool.imageUrl.trim() : null;
     return /*#__PURE__*/React.createElement("div", {
       style:{
-        width:"100%", height:size, borderRadius:radius, background:BG3,
+        width:"100%", maxWidth:360, height:size, margin:"0 auto", borderRadius:radius, background:BG3,
         display:"flex", alignItems:"center", justifyContent:"center",
         border:"1px solid #1e3a5f", overflow:"hidden", position:"relative"
       }
@@ -1368,7 +1368,7 @@ function MasteryView({ spec, stage, lang, t, tField, V, user, token, onBack, onD
       src && /*#__PURE__*/React.createElement("img", {
         src, alt: tool.nameEn || tool.nameAr || "",
         onClick: () => window.open(src, "_blank"),
-        style:{ width:"100%", height:"100%", objectFit:"cover", cursor:"zoom-in" },
+        style:{ width:"100%", height:"100%", objectFit:"contain", cursor:"zoom-in" },
         onError: e => {
           e.target.style.display = "none";
           e.target.nextSibling && (e.target.nextSibling.style.display = "flex");
