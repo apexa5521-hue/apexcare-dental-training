@@ -2690,6 +2690,27 @@ function NursePortal({
   }, l)))))));
 }
 
+// مكوّن إدخال مستقل تماماً — لا يُعاد إنشاؤه أبداً، يحل مشكلة قفز المؤشر عند الكتابة
+function FField({ label, value, onChange, multi = false, inputType = "text" }) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: { marginBottom: 10 }
+  },
+    /*#__PURE__*/React.createElement("label", { style: { fontSize:12, fontWeight:700, color:"#64748b", display:"block", marginBottom:4 } }, label),
+    multi
+      ? /*#__PURE__*/React.createElement("textarea", {
+          style: { width:"100%", padding:"8px 10px", borderRadius:8, border:"1.5px solid #e2e8f0", fontSize:13, minHeight:60, boxSizing:"border-box", fontFamily:"inherit" },
+          value: value,
+          onChange: e => onChange(e.target.value)
+        })
+      : /*#__PURE__*/React.createElement("input", {
+          style: { width:"100%", padding:"8px 10px", borderRadius:8, border:"1.5px solid #e2e8f0", fontSize:13, boxSizing:"border-box", fontFamily:"inherit" },
+          type: inputType,
+          value: value,
+          onChange: e => onChange(e.target.value)
+        })
+  );
+}
+
 //  ADMIN PORTAL — لوحة تحكم كاملة
 function EditModalComponent({
   modal,
@@ -2798,22 +2819,10 @@ function EditModalComponent({
     k,
     multi = false,
     inputType = "text"
-  }) => /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginBottom: 10
-    }
-  }, /*#__PURE__*/React.createElement("label", {
-    style: S.lbl
-  }, label), multi ? /*#__PURE__*/React.createElement("textarea", {
-    style: S.ta,
-    value: form[k] || "",
-    onChange: e => set(k, e.target.value)
-  }) : /*#__PURE__*/React.createElement("input", {
-    style: S.inp,
-    type: inputType,
-    value: form[k] || "",
-    onChange: e => set(k, e.target.value)
-  }));
+  }) => /*#__PURE__*/React.createElement(FField, {
+    label, value: form[k] || "", multi, inputType,
+    onChange: v => set(k, v)
+  });
   const save = () => {
     if (type === "spec") {
       item ? updSpec(item.id, form) : addSpec(form);
