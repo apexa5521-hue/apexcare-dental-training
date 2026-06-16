@@ -3322,6 +3322,14 @@ function AdminPortal({
   const [page, setPage] = useState("dashboard"); // dashboard|spec_detail|ipc_detail
   const [activeSpec, setAS] = useState(null);
   const [activeIPC, setAI] = useState(null);
+
+  // حدّث activeSpec تلقائياً من db بعد أي sync أو تعديل
+  useEffect(() => {
+    if (activeSpec) {
+      const fresh = db.specialties.find(s => s.id === activeSpec.id);
+      if (fresh && fresh !== activeSpec) setAS(fresh);
+    }
+  }, [db]);
   const [tab, setTab] = useState("specialties");
   const [modal, setModal] = useState(null); // {type, item?, extra?}
   const [aiModal, setAiModal] = useState(null); // {gId, context}
@@ -3368,24 +3376,9 @@ function AdminPortal({
     toastFn(t("تم الحذف", "Deleted"));
   };
   const addTool = async (spId, f) => {
-    const id = gid(),
-      item = {
-        ...f,
-        id,
-        specialtyId: spId
-      };
-    await mut("addTool", {
-      specialtyId: spId,
-      ...f
-    }, d => {
-      const s = d.specialties.find(x => x.id === spId);
-      if (s) s.tools.push(item);
-    });
-    setAS(s => s?.id === spId ? {
-      ...s,
-      tools: [...s.tools, item]
-    } : s);
-    toastFn(t("تم إضافة الأداة", "Tool added"));
+    await mut("addTool", { specialtyId: spId, ...f }, d => {});
+    toastFn(t("تم إضافة الأداة ✅", "Tool added ✅"));
+    if (GAS_OK() && token) await syncAll(token);
   };
   const updTool = async (spId, id, f) => {
     const origNameEn = f._origNameEn || f.nameEn || "";
