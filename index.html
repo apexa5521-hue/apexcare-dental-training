@@ -2735,6 +2735,7 @@ function EditModalComponent({
   t,
   lang,
   token,
+  db,
   addSpec,
   updSpec,
   addTool,
@@ -2754,6 +2755,7 @@ function EditModalComponent({
     item,
     extra
   } = modal;
+  const procTools = type === "proc" ? ((db?.specialties || []).find(s => s.id === extra?.spId)?.tools || []) : [];
   const init = () => {
     if (type === "spec") return {
       nameAr: item?.nameAr || "",
@@ -2768,10 +2770,17 @@ function EditModalComponent({
       useEn: item?.useEn || "",
       imageUrl: item?.imageUrl || ""
     };
-    if (type === "proc") return {
-      nameAr: item?.nameAr || "",
-      nameEn: item?.nameEn || ""
-    };
+    if (type === "proc") {
+      let toolIds = [], consumableIds = [];
+      try { toolIds = JSON.parse(item?.toolIds || "[]"); } catch(_) {}
+      try { consumableIds = JSON.parse(item?.consumableIds || "[]"); } catch(_) {}
+      return {
+        nameAr: item?.nameAr || "",
+        nameEn: item?.nameEn || "",
+        toolIds,
+        consumableIds
+      };
+    }
     if (type === "ipcmod") return {
       nameAr: item?.nameAr || "",
       nameEn: item?.nameEn || "",
@@ -2847,7 +2856,8 @@ function EditModalComponent({
       item ? updTool(extra.spId, item.id, { ...form, _origNameEn: item.nameEn }) : addTool(extra.spId, form);
     }
     if (type === "proc") {
-      item ? updProc(extra.spId, item.id, form) : addProc(extra.spId, form);
+      const payload = { ...form, toolIds: JSON.stringify(form.toolIds || []), consumableIds: JSON.stringify(form.consumableIds || []) };
+      item ? updProc(extra.spId, item.id, payload) : addProc(extra.spId, payload);
     }
     if (type === "ipcmod") {
       item ? updIPC(item.id, form) : addIPC(form);
@@ -2989,7 +2999,52 @@ function EditModalComponent({
   }), /*#__PURE__*/React.createElement(F, {
     label: t2("الاسم بالإنجليزي", "Name (English)"),
     k: "nameEn"
-  })), type === "ipcmod" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(F, {
+  }), /*#__PURE__*/React.createElement("div", { style:{ marginBottom:12 } },
+    /*#__PURE__*/React.createElement("label", { style:S.lbl }, t2("🧰 أدوات صينية الإجراء (تظهر في صفحة المرجع)","🧰 Procedure tray instruments (shown in reference page)")),
+    /*#__PURE__*/React.createElement("div", {
+      style:{ maxHeight:160, overflowY:"auto", border:"1px solid #e2e8f0", borderRadius:8, padding:8, marginTop:6 }
+    },
+      procTools.length === 0
+        ? /*#__PURE__*/React.createElement("div", { style:{fontSize:11.5, color:"#94a3b8"} }, t2("أضف أدوات لهذا التخصص أولاً","Add tools to this specialty first"))
+        : procTools.map(tl => /*#__PURE__*/React.createElement("label", {
+            key: "ti_" + tl.id,
+            style:{ display:"flex", alignItems:"center", gap:8, padding:"4px 2px", fontSize:12.5, cursor:"pointer" }
+          },
+            /*#__PURE__*/React.createElement("input", {
+              type:"checkbox",
+              checked: (form.toolIds || []).includes(tl.id),
+              onChange: e => set("toolIds", e.target.checked
+                ? [...(form.toolIds || []), tl.id]
+                : (form.toolIds || []).filter(x => x !== tl.id))
+            }),
+            tl.nameAr || tl.nameEn
+          ))
+    ),
+    /*#__PURE__*/React.createElement("div", { style:{fontSize:10.5, color:"#94a3b8", marginTop:4} },
+      t2("بدون تحديد، تُعرض كل أدوات التخصص مؤقتًا","If none selected, all specialty tools show temporarily")
+    )
+  ), /*#__PURE__*/React.createElement("div", { style:{ marginBottom:12 } },
+    /*#__PURE__*/React.createElement("label", { style:S.lbl }, t2("🧪 المستلزمات (Consumables)","🧪 Consumables")),
+    /*#__PURE__*/React.createElement("div", {
+      style:{ maxHeight:160, overflowY:"auto", border:"1px solid #e2e8f0", borderRadius:8, padding:8, marginTop:6 }
+    },
+      procTools.length === 0
+        ? /*#__PURE__*/React.createElement("div", { style:{fontSize:11.5, color:"#94a3b8"} }, t2("أضف أدوات لهذا التخصص أولاً","Add tools to this specialty first"))
+        : procTools.map(tl => /*#__PURE__*/React.createElement("label", {
+            key: "ci_" + tl.id,
+            style:{ display:"flex", alignItems:"center", gap:8, padding:"4px 2px", fontSize:12.5, cursor:"pointer" }
+          },
+            /*#__PURE__*/React.createElement("input", {
+              type:"checkbox",
+              checked: (form.consumableIds || []).includes(tl.id),
+              onChange: e => set("consumableIds", e.target.checked
+                ? [...(form.consumableIds || []), tl.id]
+                : (form.consumableIds || []).filter(x => x !== tl.id))
+            }),
+            tl.nameAr || tl.nameEn
+          ))
+    )
+  )), type === "ipcmod" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(F, {
     label: t2("الاسم بالعربي", "Name (Arabic)"),
     k: "nameAr"
   }), /*#__PURE__*/React.createElement(F, {
@@ -4286,6 +4341,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
     t: t,
     lang: lang,
     token: token,
+    db: db,
     addSpec: addSpec,
     updSpec: updSpec,
     addTool: addTool,
