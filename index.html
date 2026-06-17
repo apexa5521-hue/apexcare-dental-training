@@ -2972,7 +2972,7 @@ function EditModalComponent({
           }, uploading ? t2("⏳ جارٍ المعالجة...","⏳ Processing...") : t2("📸 رفع صورة من الجهاز","📸 Upload photo")),
           /*#__PURE__*/React.createElement("input", {
             id:"tool-img-input",
-            type:"file", accept:"image/*", capture:"environment",
+            type:"file", accept:"image/*",
             style:{display:"none"}, onChange: handleImageFile
           })
         ),
@@ -3233,7 +3233,7 @@ function PhotosAdminTab({ t, lang, V, S, token, db, syncAll, updTool }) {
           },
             uploading === tool.id ? t("⏳ جارٍ...","⏳...") : (tool.imageUrl ? t("🔄 تغيير","🔄 Change") : t("📸 رفع","📸 Upload")),
             /*#__PURE__*/React.createElement("input", {
-              type:"file", accept:"image/*", capture:"environment",
+              type:"file", accept:"image/*",
               style:{display:"none"},
               disabled: uploading === tool.id,
               onChange: e => { uploadPhoto(tool, sp.id, e.target.files?.[0]); e.target.value=""; }
