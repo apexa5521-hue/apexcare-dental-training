@@ -1240,7 +1240,7 @@ function showSyncStatus(status) {
     local:   ['●', '#9ca3af', 'Local data (Sheets empty)'],
   };
   const [dot, color, txt] = map[status] || map.local;
-  el.innerHTML = `<span style="color:${color};font-size:.65rem;">{dot}</span> ${txt}`;
+  el.innerHTML = `<span style="color:${color};font-size:.65rem;">${dot}</span> ${txt}`;
 }
 
 // ── GAS Login for Admin
