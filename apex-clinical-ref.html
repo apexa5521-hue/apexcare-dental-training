@@ -1152,27 +1152,38 @@ async function syncFromGAS() {
     specs.forEach(sp => {
       const key = sp.id;
       if (!key) return;
+      const allTools = sp.tools || [];
+      const toSlot = t => {
+        const k = guessImgKey(t.nameEn || '');
+        return {
+          img: (t.imageUrl && t.imageUrl.trim()) ? t.imageUrl.trim() : (k ? IMG[k] : IMG.composite),
+          label: (t.nameEn || t.nameAr || '').split(' ').slice(0,2).join(' ')
+        };
+      };
+      const toInst = t => ({
+        name: t.nameEn || t.nameAr || '—',
+        tip: t.useEn || t.useAr || '',
+        imageUrl: t.imageUrl || null,
+        _imgKey: guessImgKey(t.nameEn || '')
+      });
       DATA[key] = {
         name: sp.nameEn || sp.nameAr || key,
-        procedures: (sp.procedures || []).map(p => ({
-          name: p.nameEn || p.nameAr || '—',
-          meta: ['Class: Clinical'],
-          tray: (sp.tools || []).slice(0, 8).map(t => {
-            const key = guessImgKey(t.nameEn || '');
-            return {
-              img: (t.imageUrl && t.imageUrl.trim()) ? t.imageUrl.trim() : (key ? IMG[key] : IMG.composite),
-              label: (t.nameEn || t.nameAr || '').split(' ').slice(0,2).join(' ')
-            };
-          }),
-          instruments: (sp.tools || []).map(t => ({
-            name: t.nameEn || t.nameAr || '—',
-            tip: t.useEn || t.useAr || '',
-            imageUrl: t.imageUrl || null,
-            _imgKey: guessImgKey(t.nameEn || '')
-          })),
-          consumables: [],
-          doctors: { default: { add_instruments:[], add_consumables:[], note:'Standard protocol' } }
-        }))
+        procedures: (sp.procedures || []).map(p => {
+          let toolIds = [], consumableIds = [];
+          try { toolIds = JSON.parse(p.toolIds || "[]"); } catch(_) {}
+          try { consumableIds = JSON.parse(p.consumableIds || "[]"); } catch(_) {}
+          // لو لم تُحدَّد أدوات لهذا الإجراء بعد، نعرض كل أدوات التخصص مؤقتًا
+          const instrumentTools = toolIds.length ? allTools.filter(t => toolIds.includes(t.id)) : allTools;
+          const consumableTools = consumableIds.length ? allTools.filter(t => consumableIds.includes(t.id)) : [];
+          return {
+            name: p.nameEn || p.nameAr || '—',
+            meta: ['Class: Clinical'],
+            tray: instrumentTools.map(toSlot),
+            instruments: instrumentTools.map(toInst),
+            consumables: consumableTools.map(toInst),
+            doctors: { default: { add_instruments:[], add_consumables:[], note:'Standard protocol' } }
+          };
+        })
       };
     });
 
