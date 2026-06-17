@@ -2607,6 +2607,23 @@ function NursePortal({
       fontSize: 18
     }
   }, "\u203A"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      ...S.spC("#818cf8"),
+      marginBottom: 14,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10
+    },
+    onClick: () => window.open("apex-clinical-ref.html", "_blank")
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { display:"flex", alignItems:"center", gap:11 }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: { fontSize:28 }
+  }, "\uD83D\uDCCB"), /*#__PURE__*/React.createElement("div", null,
+    /*#__PURE__*/React.createElement("div", { style:{ fontWeight:800, fontSize:14 } }, t("المرجع السريع للإجراءات","Clinical Quick Reference")),
+    /*#__PURE__*/React.createElement("div", { style:{ fontSize:11, color:V.muted, marginTop:2 } }, t("صواني الأدوات وخطوات كل إجراء — تتزامن تلقائيًا مع ما تضيفه هنا","Instrument trays & steps — auto-synced with what you add here"))
+  )), /*#__PURE__*/React.createElement("span", { style:{ fontSize:18, color:"#818cf8" } }, "\u2197")), /*#__PURE__*/React.createElement("div", {
     style: S.h2
   }, "\uD83E\uDDB7 ", t("التخصصات الطبية", "Medical Specialties"), " ", /*#__PURE__*/React.createElement("span", {
     style: S.tag()
@@ -4854,11 +4871,11 @@ answer هو رقم الخيار الصحيح (0-3).`;
       marginBottom: 14,
       flexWrap: "wrap"
     }
-  }, ["specialties", "ipc", "users", "drill", "photos", "mastery", "settings"].map(t2 => /*#__PURE__*/React.createElement("button", {
+  }, ["specialties", "ipc", "users", "drill", "photos", "mastery", "clinicalref", "settings"].map(t2 => /*#__PURE__*/React.createElement("button", {
     key: t2,
     style: S.tab(tab === t2),
-    onClick: () => setTab(t2)
-  }, t2 === "specialties" ? t("🦷 الأقسام", "🦷 Specialties") : t2 === "ipc" ? t("🛡 IPC", "🛡 IPC") : t2 === "users" ? t("👥 المستخدمون", "👥 Users") : t2 === "drill" ? t("🎯 تقدم التدريب", "🎯 Drill Progress") : t2 === "photos" ? t("📸 صور الأدوات", "📸 Tool Photos") : t2 === "mastery" ? t("🏆 إتقان الأدوات", "🏆 Mastery") : t("⚙️ إعدادات", "⚙️ Settings"))))), tab === "specialties" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    onClick: () => t2 === "clinicalref" ? window.open("apex-clinical-ref.html", "_blank") : setTab(t2)
+  }, t2 === "specialties" ? t("🦷 الأقسام", "🦷 Specialties") : t2 === "ipc" ? t("🛡 IPC", "🛡 IPC") : t2 === "users" ? t("👥 المستخدمون", "👥 Users") : t2 === "drill" ? t("🎯 تقدم التدريب", "🎯 Drill Progress") : t2 === "photos" ? t("📸 صور الأدوات", "📸 Tool Photos") : t2 === "mastery" ? t("🏆 إتقان الأدوات", "🏆 Mastery") : t2 === "clinicalref" ? t("🔗 المرجع السريع", "🔗 Clinical Ref") : t("⚙️ إعدادات", "⚙️ Settings"))))), tab === "specialties" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       justifyContent: "space-between",
