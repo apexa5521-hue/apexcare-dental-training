@@ -2173,7 +2173,7 @@ async function addDoctorPrompt() {
   if (!name) return;
   try {
     const r = await gasAddDoctor(adminDeptKey, name);
-    if (!r.ok || !r.data) { showToast('❌ Failed to save — try again'); return; }
+    if (!r.ok || !r.data) { console.error('addDoctor failed:', r); showToast('❌ ' + (r.error || 'Failed to save — try again')); return; }
     DATA[adminDeptKey].doctorList = DATA[adminDeptKey].doctorList || [];
     DATA[adminDeptKey].doctorList.push({ id: r.data.id, name });
     DATA[adminDeptKey].procedures.forEach(p => {
@@ -2181,7 +2181,7 @@ async function addDoctorPrompt() {
     });
     renderAdminEditor();
     showToast('Doctor "' + name + '" added ✓');
-  } catch(e) { showToast('❌ Failed to save — try again'); }
+  } catch(e) { console.error('addDoctor error:', e); showToast('❌ ' + e.message); }
 }
 
 async function deleteDoctorAdmin(doctorId) {
@@ -2191,13 +2191,13 @@ async function deleteDoctorAdmin(doctorId) {
   if (!confirm('Delete doctor "' + doc.name + '" and all their preferences? This cannot be undone.')) return;
   try {
     const r = await gasDeleteDoctor(doctorId);
-    if (!r.ok) { showToast('❌ Failed to delete — try again'); return; }
+    if (!r.ok) { console.error('deleteDoctor failed:', r); showToast('❌ ' + (r.error || 'Failed to delete — try again')); return; }
     DATA[adminDeptKey].doctorList = DATA[adminDeptKey].doctorList.filter(d => d.id !== doctorId);
     DATA[adminDeptKey].procedures.forEach(p => { delete p.doctors[doc.name]; });
     RAW_DOCTOR_PREFS = RAW_DOCTOR_PREFS.filter(pr => pr.doctorId !== doctorId);
     renderAdminEditor();
     showToast('Doctor removed ✓');
-  } catch(e) { showToast('❌ Failed to delete — try again'); }
+  } catch(e) { console.error('deleteDoctor error:', e); showToast('❌ ' + e.message); }
 }
 
 let dpmDoctorId = null;
@@ -2239,7 +2239,7 @@ async function saveDoctorPref() {
   const existing = RAW_DOCTOR_PREFS.find(pr => pr.procedureId === proc.id && pr.doctorId === doc.id);
   try {
     const r = await gasSaveDoctorPref(existing ? existing.id : null, proc.id, doc.id, addToolIds, addConsumableIds, note);
-    if (!r.ok) { showToast('❌ Failed to save — try again'); return; }
+    if (!r.ok) { console.error('saveDoctorPref failed:', r); showToast('❌ ' + (r.error || 'Failed to save — try again')); return; }
     if (existing) {
       existing.addToolIds = JSON.stringify(addToolIds);
       existing.addConsumableIds = JSON.stringify(addConsumableIds);
@@ -2251,7 +2251,7 @@ async function saveDoctorPref() {
     closeDoctorPrefModal();
     renderAdminEditor();
     showToast('Saved ✓');
-  } catch(e) { showToast('❌ Failed to save — try again'); }
+  } catch(e) { console.error('saveDoctorPref error:', e); showToast('❌ ' + e.message); }
 }
 
 // ── CRUD: Departments ────────────────────────────────────
