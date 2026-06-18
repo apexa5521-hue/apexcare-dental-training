@@ -2075,6 +2075,24 @@ function renderAdminEditor() {
       </div>
     </div>
 
+    <!-- Doctors card (department-level — same doctor roster is shared across all this department's procedures) -->
+    <div class="adm-card">
+      <div class="adm-card-head">
+        <span>Doctors (${(dept.doctorList||[]).length})</span>
+        <button class="adm-btn primary" onclick="addDoctorPrompt()">+ Add Doctor</button>
+      </div>
+      <div>
+        ${(dept.doctorList||[]).map(doc => `
+          <div class="adm-list-item">
+            <span>${doc.name}</span>
+            <div class="adm-actions">
+              <button class="adm-btn danger" onclick="deleteDoctorAdmin('${doc.id}')">✕</button>
+            </div>
+          </div>`).join('') || '<div style="padding:10px 14px;font-size:.78rem;color:var(--ink3);font-family:var(--font-mono);">No doctors yet for this department.</div>'}
+      </div>
+      <div style="padding:8px 14px;font-size:.7rem;color:var(--ink3);font-family:var(--font-mono);">Open a procedure below to set each doctor's extra instruments/consumables for it.</div>
+    </div>
+
     ${adminProcIdx !== null ? renderProcEditor() : '<div style="padding:12px;font-size:.78rem;font-family:var(--font-mono);color:var(--ink3);">Click a procedure to edit its instruments & checklist.</div>'}
   `;
 }
@@ -2121,7 +2139,6 @@ function renderProcEditor() {
       </div>
       <div class="adm-actions">
         <button class="adm-btn" onclick="openDoctorPrefModal('${doc.id}')">Edit prefs</button>
-        <button class="adm-btn danger" onclick="deleteDoctorAdmin('${doc.id}')">✕ Doctor</button>
       </div>
     </div>`;
   }).join('');
@@ -2158,10 +2175,8 @@ function renderProcEditor() {
 
     <!-- Doctor Preferences -->
     <div class="adm-card">
-      <div class="adm-card-head"><span>Doctor Preferences (${doctorList.length})</span>
-        <button class="adm-btn primary" onclick="addDoctorPrompt()">+ Add Doctor</button>
-      </div>
-      <div>${docRows || '<div style="padding:10px 14px;font-size:.78rem;color:var(--ink3);font-family:var(--font-mono);">No doctors yet for this department.</div>'}</div>
+      <div class="adm-card-head"><span>Doctor Preferences (${doctorList.length})</span></div>
+      <div>${docRows || '<div style="padding:10px 14px;font-size:.78rem;color:var(--ink3);font-family:var(--font-mono);">No doctors yet — add one from the "Doctors" card above (right after picking the department).</div>'}</div>
     </div>
   `;
 }
