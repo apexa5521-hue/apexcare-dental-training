@@ -770,38 +770,6 @@ body {
   padding: 16px;
 }
 #item-modal-bg.open { display: flex; }
-#dpm-bg {
-  display: none;
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,.45);
-  z-index: 9000;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-#dpm-bg.open { display: flex; }
-#dpm-modal {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  width: 100%;
-  max-width: 460px;
-  max-height: 90vh;
-  overflow-y: auto;
-  padding: 22px 20px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.3);
-}
-#dpm-modal h3 {
-  margin: 0 0 16px;
-  font-size: .9rem;
-  font-weight: 800;
-  color: var(--ink);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-#dpm-modal h3 button { background: none; border: none; cursor: pointer; font-size: 1.2rem; color: var(--ink2); padding: 0 4px; }
-.dpm-box { max-height: 160px; overflow-y: auto; border: 1.5px solid var(--border); border-radius: 7px; padding: 8px; background: var(--bg); margin-bottom: 12px; }
 #item-modal {
   background: var(--bg2);
   border: 1px solid var(--border);
@@ -1158,7 +1126,7 @@ body {
 // ═══════════════════════════════════════════════════════
 //  GAS SYNC — Same backend as Training Platform
 // ═══════════════════════════════════════════════════════
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzTpfT_7nUaePQ5-T09i8FEevVOzoEiXfqOMWjXOdrLgk-vLM4W58hLBi-K9V3JxO-mBw/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxTRSoLTZ8NVRcP-iXvm_Fw3mVcFneDr4az_nK-ILsF8OEbDw6YY-bLNLHPXF1r0bRfPg/exec";
 let gasToken = localStorage.getItem('refToken') || null;
 
 async function gasCall(action, params={}) {
@@ -1323,24 +1291,9 @@ async function gasAddProc(spId, procData) {
   return gasCall('addProcedure', { specialtyId: spId, nameAr: procData.nameAr||procData.nameEn, nameEn: procData.nameEn||procData.nameAr, order: 99 });
 }
 
-// ── Doctors / Doctor Preferences — backed by the Sheet (not localStorage) ─
+// ── Doctors / Doctor Preferences — تُقرأ فقط من الشيت هنا.
+// إدارة الإضافة/الحذف/التعديل صارت من مكان آخر (مو من هذي الصفحة).
 let RAW_DOCTOR_PREFS = []; // [{id, procedureId, doctorId, addToolIds, addConsumableIds, note}]
-async function gasAddDoctor(spId, name) {
-  return gasCall('addDoctor', { specialtyId: spId, nameAr: name, nameEn: name, order: 99 });
-}
-async function gasDeleteDoctor(id) {
-  return gasCall('deleteDoctor', { id });
-}
-async function gasSaveDoctorPref(existingId, procedureId, doctorId, addToolIds, addConsumableIds, note) {
-  const payload = {
-    procedureId, doctorId,
-    addToolIds: JSON.stringify(addToolIds || []),
-    addConsumableIds: JSON.stringify(addConsumableIds || []),
-    note: note || ''
-  };
-  if (existingId) return gasCall('updateDoctorPref', { id: existingId, ...payload });
-  return gasCall('addDoctorPref', payload);
-}
 
 // ── Instrument images — inline SVG data URIs (no external requests)
 const IMG = {
@@ -2075,22 +2028,17 @@ function renderAdminEditor() {
       </div>
     </div>
 
-    <!-- Doctors card (department-level — same doctor roster is shared across all this department's procedures) -->
+    <!-- Doctors (إدارة الإضافة/الحذف انتقلت لمكان آخر — هذا القسم للقراءة فقط من بيانات الشيت) -->
     <div class="adm-card">
       <div class="adm-card-head">
         <span>Doctors (${(dept.doctorList||[]).length})</span>
-        <button class="adm-btn primary" onclick="addDoctorPrompt()">+ Add Doctor</button>
       </div>
       <div>
         ${(dept.doctorList||[]).map(doc => `
           <div class="adm-list-item">
             <span>${doc.name}</span>
-            <div class="adm-actions">
-              <button class="adm-btn danger" onclick="deleteDoctorAdmin('${doc.id}')">✕</button>
-            </div>
           </div>`).join('') || '<div style="padding:10px 14px;font-size:.78rem;color:var(--ink3);font-family:var(--font-mono);">No doctors yet for this department.</div>'}
       </div>
-      <div style="padding:8px 14px;font-size:.7rem;color:var(--ink3);font-family:var(--font-mono);">Open a procedure below to set each doctor's extra instruments/consumables for it.</div>
     </div>
 
     ${adminProcIdx !== null ? renderProcEditor() : '<div style="padding:12px;font-size:.78rem;font-family:var(--font-mono);color:var(--ink3);">Click a procedure to edit its instruments & checklist.</div>'}
@@ -2128,17 +2076,13 @@ function renderProcEditor() {
   const doctorList = DATA[adminDeptKey].doctorList || [];
   const docRows = doctorList.map(doc => {
     const pref = proc.doctors[doc.name];
-    const summary = pref && (pref.add_instruments.length || pref.add_consumables.length)
-      ? `+${pref.add_instruments.length} instruments, +${pref.add_consumables.length} consumables`
-      : 'No extra items for this procedure';
+    const items = [...(pref?.add_instruments || []), ...(pref?.add_consumables || [])];
+    const summary = items.length ? items.join(', ') : 'No extra items for this procedure (uses standard tray)';
     return `
     <div class="adm-list-item">
       <div style="flex:1;">
         <div style="font-family:var(--font-mono);font-size:.8rem;">${doc.name}</div>
         <div style="font-size:.7rem;color:var(--ink3);">${summary}${pref && pref.note ? ' — ' + pref.note : ''}</div>
-      </div>
-      <div class="adm-actions">
-        <button class="adm-btn" onclick="openDoctorPrefModal('${doc.id}')">Edit prefs</button>
       </div>
     </div>`;
   }).join('');
@@ -2173,102 +2117,15 @@ function renderProcEditor() {
       <div>${consList || '<div style="padding:10px 14px;font-size:.78rem;color:var(--ink3);font-family:var(--font-mono);">No consumables yet.</div>'}</div>
     </div>
 
-    <!-- Doctor Preferences -->
+    <!-- Doctor Preferences (للعرض فقط — الإدارة انتقلت لمكان آخر) -->
     <div class="adm-card">
       <div class="adm-card-head"><span>Doctor Preferences (${doctorList.length})</span></div>
-      <div>${docRows || '<div style="padding:10px 14px;font-size:.78rem;color:var(--ink3);font-family:var(--font-mono);">No doctors yet — add one from the "Doctors" card above (right after picking the department).</div>'}</div>
+      <div>${docRows || '<div style="padding:10px 14px;font-size:.78rem;color:var(--ink3);font-family:var(--font-mono);">No doctors yet for this department.</div>'}</div>
     </div>
   `;
 }
 
 // ── CRUD: Doctors / Doctor Preferences (Sheet-backed) ────
-async function addDoctorPrompt() {
-  if (!gasToken) { showToast('⚠️ Sign in with your real username/password first (not the quick password)'); return; }
-  const name = prompt('Doctor name:');
-  if (!name) return;
-  try {
-    const r = await gasAddDoctor(adminDeptKey, name);
-    if (!r.ok || !r.data) { console.error('addDoctor failed:', r); showToast('❌ ' + (r.error || 'Failed to save — try again')); return; }
-    DATA[adminDeptKey].doctorList = DATA[adminDeptKey].doctorList || [];
-    DATA[adminDeptKey].doctorList.push({ id: r.data.id, name });
-    DATA[adminDeptKey].procedures.forEach(p => {
-      p.doctors[name] = { add_instruments: [], add_consumables: [], note: '' };
-    });
-    renderAdminEditor();
-    showToast('Doctor "' + name + '" added ✓');
-  } catch(e) { console.error('addDoctor error:', e); showToast('❌ ' + e.message); }
-}
-
-async function deleteDoctorAdmin(doctorId) {
-  if (!gasToken) { showToast('⚠️ Sign in with your real username/password first (not the quick password)'); return; }
-  const doc = (DATA[adminDeptKey].doctorList || []).find(d => d.id === doctorId);
-  if (!doc) return;
-  if (!confirm('Delete doctor "' + doc.name + '" and all their preferences? This cannot be undone.')) return;
-  try {
-    const r = await gasDeleteDoctor(doctorId);
-    if (!r.ok) { console.error('deleteDoctor failed:', r); showToast('❌ ' + (r.error || 'Failed to delete — try again')); return; }
-    DATA[adminDeptKey].doctorList = DATA[adminDeptKey].doctorList.filter(d => d.id !== doctorId);
-    DATA[adminDeptKey].procedures.forEach(p => { delete p.doctors[doc.name]; });
-    RAW_DOCTOR_PREFS = RAW_DOCTOR_PREFS.filter(pr => pr.doctorId !== doctorId);
-    renderAdminEditor();
-    showToast('Doctor removed ✓');
-  } catch(e) { console.error('deleteDoctor error:', e); showToast('❌ ' + e.message); }
-}
-
-let dpmDoctorId = null;
-function openDoctorPrefModal(doctorId) {
-  if (!gasToken) { showToast('⚠️ Sign in with your real username/password first (not the quick password)'); return; }
-  dpmDoctorId = doctorId;
-  const dept = DATA[adminDeptKey];
-  const doc = (dept.doctorList || []).find(d => d.id === doctorId);
-  const proc = dept.procedures[adminProcIdx];
-  if (!doc || !proc) return;
-  const pref = proc.doctors[doc.name] || { add_instruments: [], add_consumables: [], note: '' };
-  document.getElementById('dpm-title').textContent = doc.name + ' — ' + proc.name;
-  document.getElementById('dpm-note').value = pref.note || '';
-  const tools = dept.allTools || [];
-  const rowsHtml = (checkedNames, prefix) => tools.map(tl => `
-    <label style="display:flex;align-items:center;gap:8px;padding:4px 2px;font-size:.78rem;cursor:pointer;font-family:var(--font-mono);">
-      <input type="checkbox" data-${prefix}-name="${tl.name.replace(/"/g,'&quot;')}" ${checkedNames.includes(tl.name) ? 'checked' : ''}>
-      ${tl.name}
-    </label>`).join('') || '<div style="font-size:.75rem;color:var(--ink3);">No tools in this department yet.</div>';
-  document.getElementById('dpm-instruments').innerHTML = rowsHtml(pref.add_instruments || [], 'inst');
-  document.getElementById('dpm-consumables').innerHTML = rowsHtml(pref.add_consumables || [], 'cons');
-  document.getElementById('dpm-bg').classList.add('open');
-}
-function closeDoctorPrefModal() {
-  document.getElementById('dpm-bg').classList.remove('open');
-  dpmDoctorId = null;
-}
-async function saveDoctorPref() {
-  const dept = DATA[adminDeptKey];
-  const doc = (dept.doctorList || []).find(d => d.id === dpmDoctorId);
-  const proc = dept.procedures[adminProcIdx];
-  if (!doc || !proc) return;
-  const addInst = Array.from(document.querySelectorAll('#dpm-instruments [data-inst-name]:checked')).map(el => el.getAttribute('data-inst-name'));
-  const addCons = Array.from(document.querySelectorAll('#dpm-consumables [data-cons-name]:checked')).map(el => el.getAttribute('data-cons-name'));
-  const note = document.getElementById('dpm-note').value.trim();
-  const toolIdByName = name => (dept.allTools || []).find(t => t.name === name)?.id;
-  const addToolIds = addInst.map(toolIdByName).filter(Boolean);
-  const addConsumableIds = addCons.map(toolIdByName).filter(Boolean);
-  const existing = RAW_DOCTOR_PREFS.find(pr => pr.procedureId === proc.id && pr.doctorId === doc.id);
-  try {
-    const r = await gasSaveDoctorPref(existing ? existing.id : null, proc.id, doc.id, addToolIds, addConsumableIds, note);
-    if (!r.ok) { console.error('saveDoctorPref failed:', r); showToast('❌ ' + (r.error || 'Failed to save — try again')); return; }
-    if (existing) {
-      existing.addToolIds = JSON.stringify(addToolIds);
-      existing.addConsumableIds = JSON.stringify(addConsumableIds);
-      existing.note = note;
-    } else {
-      RAW_DOCTOR_PREFS.push({ id: r.data.id, procedureId: proc.id, doctorId: doc.id, addToolIds: JSON.stringify(addToolIds), addConsumableIds: JSON.stringify(addConsumableIds), note });
-    }
-    proc.doctors[doc.name] = { add_instruments: addInst, add_consumables: addCons, note };
-    closeDoctorPrefModal();
-    renderAdminEditor();
-    showToast('Saved ✓');
-  } catch(e) { console.error('saveDoctorPref error:', e); showToast('❌ ' + e.message); }
-}
-
 // ── CRUD: Departments ────────────────────────────────────
 function addDept() {
   const name = prompt('Department name (English):');
@@ -2594,31 +2451,6 @@ function applyHashDept() {
 })();
 </script>
 <!-- ── Add / Edit Item Modal ── -->
-<div id="dpm-bg" onclick="if(event.target===this)closeDoctorPrefModal()">
-  <div id="dpm-modal">
-    <h3>
-      <span id="dpm-title">Doctor Preferences</span>
-      <button onclick="closeDoctorPrefModal()">✕</button>
-    </h3>
-    <div class="im-field">
-      <label>Extra Instruments (on top of the standard tray)</label>
-      <div class="dpm-box" id="dpm-instruments"></div>
-    </div>
-    <div class="im-field">
-      <label>Extra Consumables</label>
-      <div class="dpm-box" id="dpm-consumables"></div>
-    </div>
-    <div class="im-field">
-      <label>Note (shown to the nurse)</label>
-      <input id="dpm-note" type="text" placeholder="e.g. Prefers CHX final rinse">
-    </div>
-    <div class="im-actions">
-      <button class="im-cancel" onclick="closeDoctorPrefModal()">Cancel</button>
-      <button class="im-save" onclick="saveDoctorPref()">Save</button>
-    </div>
-  </div>
-</div>
-
 <div id="item-modal-bg" onclick="if(event.target===this)closeItemModal()">
   <div id="item-modal">
     <h3>
