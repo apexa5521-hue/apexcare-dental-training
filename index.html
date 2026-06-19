@@ -545,7 +545,7 @@ const GAS_OK = () => !GAS_URL.includes("YOUR_DEPLOYMENT_ID");
 
 //  SEED DATA
 // SEED loaded from window.__SEED
-const SEED = window.__SEED;
+const SEED = { doctorPrefs: [], ...(window.__SEED || {}) };
 //  TRANSLATIONS — Urdu (ur) & Bahasa Indonesia (id)
 const TR = window.__TR;
 
@@ -641,7 +641,8 @@ function App() {
         const specs = gasSpecs.length > 0 && gasHasTools ? gasSpecs : d.specialties;
         const ipcs = (r.data.ipcModules || []).length > 0 && gasHasSteps ? r.data.ipcModules : d.ipcModules;
         const quizzes = Object.keys(q).length > 0 ? q : d.quizzes;
-        return { ...d, specialties: specs, ipcModules: ipcs, quizzes };
+        const doctorPrefs = r.data.doctorPrefs || d.doctorPrefs || [];
+        return { ...d, specialties: specs, ipcModules: ipcs, quizzes, doctorPrefs };
       });
       setSync("ok");
     } catch (e) {
@@ -3129,6 +3130,154 @@ function EditModalComponent({
 
 // ── لوحة تقييم الإتقان في الأدمن ──────────────────────────
 // ── صفحة رفع صور الأدوات — بدون فتح نوافذ ──────────────────
+function DoctorsAdminTab({ t, lang, V, S, db, addDoctor, delDoctor, saveDoctorPref }) {
+  const [selSpec, setSelSpec] = React.useState("");
+  const [selDoctor, setSelDoctor] = React.useState("");
+  const [selProc, setSelProc] = React.useState("");
+  const [checkedInst, setCheckedInst] = React.useState([]); // toolIds
+  const [checkedCons, setCheckedCons] = React.useState([]); // toolIds
+  const [note, setNote] = React.useState("");
+  const [newDoctorName, setNewDoctorName] = React.useState("");
+
+  const specs = db?.specialties || [];
+  const sp = specs.find(s => s.id === selSpec);
+  const doctors = sp?.doctors || [];
+  const doctor = doctors.find(d => d.id === selDoctor);
+  const procedures = sp?.procedures || [];
+  const proc = procedures.find(p => p.id === selProc);
+  const allTools = sp?.tools || [];
+
+  // لما نختار طبيب + إجراء، نحمّل تفضيلاته المحفوظة (إن وجدت)
+  React.useEffect(() => {
+    if (!selDoctor || !selProc) { setCheckedInst([]); setCheckedCons([]); setNote(""); return; }
+    const pref = (db?.doctorPrefs || []).find(p => p.procedureId === selProc && p.doctorId === selDoctor);
+    let ti = [], ci = [];
+    try { ti = JSON.parse(pref?.addToolIds || "[]"); } catch(_) {}
+    try { ci = JSON.parse(pref?.addConsumableIds || "[]"); } catch(_) {}
+    setCheckedInst(ti);
+    setCheckedCons(ci);
+    setNote(pref?.note || "");
+  }, [selDoctor, selProc, db]);
+
+  const toggle = (arr, setArr, id) => {
+    setArr(arr.includes(id) ? arr.filter(x => x !== id) : [...arr, id]);
+  };
+
+  const colStyle = { ...S.card, flex: 1, minWidth: 220, maxHeight: 360, overflowY: "auto" };
+  const rowBtn = (active) => ({
+    padding: "9px 12px", borderRadius: 9, cursor: "pointer", fontSize: 12.5, fontWeight: 700,
+    marginBottom: 6, border: active ? "1.5px solid #6366f1" : "1px solid #1e3a5f",
+    background: active ? "#6366f120" : "transparent", color: active ? "#a5b4fc" : V.text,
+    display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8
+  });
+
+  return /*#__PURE__*/React.createElement("div", null,
+    /*#__PURE__*/React.createElement("div", { style: { ...S.card, marginBottom: 12 } },
+      /*#__PURE__*/React.createElement("div", { style: { fontWeight: 900, fontSize: 13, marginBottom: 10 } },
+        t("👨‍⚕️ ربط الأطباء بالتخصصات", "👨‍⚕️ Link Doctors to Specialties")
+      ),
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 11.5, color: V.muted, marginBottom: 10, lineHeight: 1.7 } },
+        t("اختر التخصص أولًا، أضف أسماء الأطباء تحته، ثم اختر طبيب وإجراء لتحديد أدوات/مستلزمات إضافية خاصة به (تظهر بصفحة المرجع السريع).",
+          "Pick a specialty first, add doctor names under it, then pick a doctor + procedure to set extra tools/consumables just for them (shown on the Clinical Reference page).")
+      ),
+      /*#__PURE__*/React.createElement("select", {
+        style: S.inp,
+        value: selSpec,
+        onChange: e => { setSelSpec(e.target.value); setSelDoctor(""); setSelProc(""); }
+      },
+        /*#__PURE__*/React.createElement("option", { value: "" }, t("— اختر التخصص —", "— Select specialty —")),
+        specs.map(s => /*#__PURE__*/React.createElement("option", { key: s.id, value: s.id }, s.nameAr || s.nameEn))
+      )
+    ),
+
+    !sp ? null : /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap" } },
+
+      // عمود الأطباء
+      /*#__PURE__*/React.createElement("div", { style: colStyle },
+        /*#__PURE__*/React.createElement("div", { style: { fontWeight: 800, fontSize: 12.5, marginBottom: 8 } },
+          t("الأطباء", "Doctors") + ` (${doctors.length})`
+        ),
+        /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10 } },
+          /*#__PURE__*/React.createElement("input", {
+            style: { ...S.inp, flex: 1 },
+            placeholder: t("اسم الطبيب", "Doctor name"),
+            value: newDoctorName,
+            onChange: e => setNewDoctorName(e.target.value),
+            onKeyDown: e => { if (e.key === "Enter" && newDoctorName.trim()) { addDoctor(sp.id, { nameAr: newDoctorName.trim(), nameEn: newDoctorName.trim(), order: 99 }); setNewDoctorName(""); } }
+          }),
+          /*#__PURE__*/React.createElement("button", {
+            style: { padding: "8px 14px", borderRadius: 8, border: "1px solid #34d39960", background: "#34d39920", color: "#34d399", fontWeight: 800, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" },
+            onClick: () => { if (newDoctorName.trim()) { addDoctor(sp.id, { nameAr: newDoctorName.trim(), nameEn: newDoctorName.trim(), order: 99 }); setNewDoctorName(""); } }
+          }, t("+ إضافة", "+ Add"))
+        ),
+        doctors.length === 0
+          ? /*#__PURE__*/React.createElement("div", { style: { fontSize: 11.5, color: V.muted } }, t("لا يوجد أطباء بعد لهذا التخصص", "No doctors yet for this specialty"))
+          : doctors.map(d => /*#__PURE__*/React.createElement("div", { key: d.id, style: rowBtn(selDoctor === d.id), onClick: () => { setSelDoctor(d.id); setSelProc(""); } },
+              /*#__PURE__*/React.createElement("span", null, d.nameAr || d.nameEn),
+              /*#__PURE__*/React.createElement("span", {
+                onClick: e => { e.stopPropagation(); if (confirm(t("حذف هذا الطبيب وكل تفضيلاته؟", "Delete this doctor and all their preferences?"))) delDoctor(sp.id, d.id); },
+                style: { color: "#f87171", fontSize: 14 }
+              }, "✕")
+            ))
+      ),
+
+      // عمود الإجراءات
+      !doctor ? null : /*#__PURE__*/React.createElement("div", { style: colStyle },
+        /*#__PURE__*/React.createElement("div", { style: { fontWeight: 800, fontSize: 12.5, marginBottom: 8 } },
+          t("إجراءات", "Procedures") + ` — ${doctor.nameAr || doctor.nameEn}`
+        ),
+        procedures.length === 0
+          ? /*#__PURE__*/React.createElement("div", { style: { fontSize: 11.5, color: V.muted } }, t("لا توجد إجراءات لهذا التخصص بعد", "No procedures yet for this specialty"))
+          : procedures.map(p => {
+              const hasPref = (db?.doctorPrefs || []).some(pr => pr.procedureId === p.id && pr.doctorId === doctor.id && (JSON.parse(pr.addToolIds||"[]").length || JSON.parse(pr.addConsumableIds||"[]").length || pr.note));
+              return /*#__PURE__*/React.createElement("div", { key: p.id, style: rowBtn(selProc === p.id), onClick: () => setSelProc(p.id) },
+                /*#__PURE__*/React.createElement("span", null, p.nameAr || p.nameEn),
+                hasPref && /*#__PURE__*/React.createElement("span", { style: { fontSize: 10, color: "#34d399" } }, "●")
+              );
+            })
+      ),
+
+      // عمود الأدوات/المستلزمات الإضافية لهذا الطبيب+الإجراء
+      !proc ? null : /*#__PURE__*/React.createElement("div", { style: { ...colStyle, flex: 2, minWidth: 280 } },
+        /*#__PURE__*/React.createElement("div", { style: { fontWeight: 800, fontSize: 12.5, marginBottom: 8 } },
+          t("إضافات خاصة بـ", "Extras for") + ` ${doctor.nameAr || doctor.nameEn} — ${proc.nameAr || proc.nameEn}`
+        ),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 10.5, color: V.muted, marginBottom: 10 } },
+          t("هذي إضافة فوق الصينية القياسية للإجراء (مش بديل عنها).", "These are added on top of the procedure's standard tray (not a replacement).")
+        ),
+        /*#__PURE__*/React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, marginBottom: 4, color: "#93c5fd" } }, t("🧰 أدوات إضافية", "🧰 Extra instruments")),
+        /*#__PURE__*/React.createElement("div", { style: { maxHeight: 130, overflowY: "auto", border: "1px solid #1e3a5f", borderRadius: 8, padding: 6, marginBottom: 10 } },
+          allTools.length === 0
+            ? /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: V.muted } }, t("لا توجد أدوات بهذا التخصص", "No tools in this specialty"))
+            : allTools.map(tl => /*#__PURE__*/React.createElement("label", { key: "i_" + tl.id, style: { display: "flex", alignItems: "center", gap: 8, padding: "3px 2px", fontSize: 12, cursor: "pointer" } },
+                /*#__PURE__*/React.createElement("input", { type: "checkbox", checked: checkedInst.includes(tl.id), onChange: () => toggle(checkedInst, setCheckedInst, tl.id) }),
+                tl.nameAr || tl.nameEn
+              ))
+        ),
+        /*#__PURE__*/React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, marginBottom: 4, color: "#fbbf24" } }, t("🧪 مستلزمات إضافية", "🧪 Extra consumables")),
+        /*#__PURE__*/React.createElement("div", { style: { maxHeight: 130, overflowY: "auto", border: "1px solid #1e3a5f", borderRadius: 8, padding: 6, marginBottom: 10 } },
+          allTools.length === 0
+            ? /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: V.muted } }, t("لا توجد أدوات بهذا التخصص", "No tools in this specialty"))
+            : allTools.map(tl => /*#__PURE__*/React.createElement("label", { key: "c_" + tl.id, style: { display: "flex", alignItems: "center", gap: 8, padding: "3px 2px", fontSize: 12, cursor: "pointer" } },
+                /*#__PURE__*/React.createElement("input", { type: "checkbox", checked: checkedCons.includes(tl.id), onChange: () => toggle(checkedCons, setCheckedCons, tl.id) }),
+                tl.nameAr || tl.nameEn
+              ))
+        ),
+        /*#__PURE__*/React.createElement("input", {
+          style: { ...S.inp, marginBottom: 10 },
+          placeholder: t("ملاحظة تظهر للممرضة (اختياري)", "Note shown to the nurse (optional)"),
+          value: note,
+          onChange: e => setNote(e.target.value)
+        }),
+        /*#__PURE__*/React.createElement("button", {
+          style: { width: "100%", padding: "10px 14px", borderRadius: 9, border: "1px solid #6366f160", background: "#6366f125", color: "#a5b4fc", fontWeight: 800, fontSize: 13, cursor: "pointer" },
+          onClick: () => saveDoctorPref(proc.id, doctor.id, checkedInst, checkedCons, note)
+        }, t("💾 حفظ", "💾 Save"))
+      )
+    )
+  );
+}
+
 function PhotosAdminTab({ t, lang, V, S, token, db, syncAll, updTool }) {
   const [selSpec, setSelSpec] = React.useState("");
   const [uploading, setUploading] = React.useState(null); // tool id
@@ -3527,6 +3676,48 @@ function AdminPortal({
       procedures: s.procedures.filter(p => p.id !== id)
     } : s);
     toastFn(t("تم الحذف", "Deleted"));
+  };
+  // ── الأطباء (مرتبطين بتخصص) وتفضيلاتهم لكل إجراء ─────────
+  const addDoctor = async (spId, f) => {
+    const id = gid(),
+      item = { ...f, id, specialtyId: spId };
+    await mut("addDoctor", { specialtyId: spId, ...f }, d => {
+      const s = d.specialties.find(x => x.id === spId);
+      if (s) { s.doctors = s.doctors || []; s.doctors.push(item); }
+    });
+    setAS(s => s?.id === spId ? { ...s, doctors: [...(s.doctors || []), item] } : s);
+    toastFn(t("تم إضافة الطبيب", "Doctor added"));
+  };
+  const delDoctor = async (spId, id) => {
+    await mut("deleteDoctor", { id }, d => {
+      const s = d.specialties.find(x => x.id === spId);
+      if (s) s.doctors = (s.doctors || []).filter(dc => dc.id !== id);
+      d.doctorPrefs = (d.doctorPrefs || []).filter(pr => pr.doctorId !== id);
+    });
+    setAS(s => s?.id === spId ? { ...s, doctors: (s.doctors || []).filter(dc => dc.id !== id) } : s);
+    toastFn(t("تم حذف الطبيب", "Doctor deleted"));
+  };
+  const saveDoctorPref = async (procId, doctorId, addToolIds, addConsumableIds, note) => {
+    const existing = (db.doctorPrefs || []).find(pr => pr.procedureId === procId && pr.doctorId === doctorId);
+    const payload = {
+      procedureId: procId, doctorId,
+      addToolIds: JSON.stringify(addToolIds || []),
+      addConsumableIds: JSON.stringify(addConsumableIds || []),
+      note: note || ""
+    };
+    if (existing) {
+      await mut("updateDoctorPref", { id: existing.id, ...payload }, d => {
+        const pr = (d.doctorPrefs || []).find(p => p.id === existing.id);
+        if (pr) Object.assign(pr, payload);
+      });
+    } else {
+      const id = gid();
+      await mut("addDoctorPref", payload, d => {
+        d.doctorPrefs = d.doctorPrefs || [];
+        d.doctorPrefs.push({ id, ...payload });
+      });
+    }
+    toastFn(t("تم حفظ تفضيلات الطبيب", "Doctor preferences saved"));
   };
   const addIPC = async f => {
     const id = gid(),
@@ -4927,11 +5118,11 @@ answer هو رقم الخيار الصحيح (0-3).`;
       marginBottom: 14,
       flexWrap: "wrap"
     }
-  }, ["specialties", "ipc", "users", "drill", "photos", "mastery", "clinicalref", "settings"].map(t2 => /*#__PURE__*/React.createElement("button", {
+  }, ["specialties", "ipc", "doctors", "users", "drill", "photos", "mastery", "clinicalref", "settings"].map(t2 => /*#__PURE__*/React.createElement("button", {
     key: t2,
     style: S.tab(tab === t2),
     onClick: () => t2 === "clinicalref" ? window.open("apex-clinical-ref.html", "_blank") : setTab(t2)
-  }, t2 === "specialties" ? t("🦷 الأقسام", "🦷 Specialties") : t2 === "ipc" ? t("🛡 IPC", "🛡 IPC") : t2 === "users" ? t("👥 المستخدمون", "👥 Users") : t2 === "drill" ? t("🎯 تقدم التدريب", "🎯 Drill Progress") : t2 === "photos" ? t("📸 صور الأدوات", "📸 Tool Photos") : t2 === "mastery" ? t("🏆 إتقان الأدوات", "🏆 Mastery") : t2 === "clinicalref" ? t("🔗 المرجع السريع", "🔗 Clinical Ref") : t("⚙️ إعدادات", "⚙️ Settings"))))), tab === "specialties" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, t2 === "specialties" ? t("🦷 الأقسام", "🦷 Specialties") : t2 === "ipc" ? t("🛡 IPC", "🛡 IPC") : t2 === "doctors" ? t("👨‍⚕️ الأطباء", "👨‍⚕️ Doctors") : t2 === "users" ? t("👥 المستخدمون", "👥 Users") : t2 === "drill" ? t("🎯 تقدم التدريب", "🎯 Drill Progress") : t2 === "photos" ? t("📸 صور الأدوات", "📸 Tool Photos") : t2 === "mastery" ? t("🏆 إتقان الأدوات", "🏆 Mastery") : t2 === "clinicalref" ? t("🔗 المرجع السريع", "🔗 Clinical Ref") : t("⚙️ إعدادات", "⚙️ Settings"))))), tab === "specialties" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       justifyContent: "space-between",
@@ -5186,6 +5377,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
       t("\uD83D\uDCC4 البيانات التفصيلية محفوظة في Google Sheet — تبويب \"DrillProgress\"","\uD83D\uDCC4 Detailed data is saved in the Google Sheet — \"DrillProgress\" tab")
     )
   ), tab === "photos" && /*#__PURE__*/React.createElement(PhotosAdminTab, { t, lang, V, S, token, db, syncAll, updTool }),
+  tab === "doctors" && /*#__PURE__*/React.createElement(DoctorsAdminTab, { t, lang, V, S, db, addDoctor, delDoctor, saveDoctorPref }),
   tab === "mastery" && /*#__PURE__*/React.createElement(MasteryAdminTab, { t, lang, V, S, token, db }),
   tab === "settings" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: S.card
