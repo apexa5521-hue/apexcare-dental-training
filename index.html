@@ -695,8 +695,8 @@ function App() {
     setToken(null);
   };
 
-  // Optimistic mutation — يرجّع true/false حسب نجاح الحفظ الفعلي بالسيرفر،
-  // ويرجّع الحالة المحلية للوضع السابق لو فشل الحفظ (عشان الواجهة ما "تكذب")
+  // Optimistic mutation — يرجّع استجابة السيرفر الحقيقية (فيها الـ id الفعلي
+  // من الشيت) عند النجاح، أو false عند الفشل (ويتراجع عن التعديل المحلي)
   const mut = async (gasAction, gasParams, localFn) => {
     let prevDb;
     setDb(d => {
@@ -708,9 +708,9 @@ function App() {
     if (GAS_OK() && token) {
       setSync("syncing");
       try {
-        await api(gasAction, gasParams, token);
+        const res = await api(gasAction, gasParams, token);
         setSync("ok");
-        return true;
+        return res;
       } catch (e) {
         setSync("error");
         toastFn(t("❌ فشل الحفظ بالشيت: ", "❌ Failed to save to Sheet: ") + (e?.message || ""), "err");
@@ -3689,14 +3689,23 @@ function AdminPortal({
   };
   // ── الأطباء (مرتبطين بتخصص) وتفضيلاتهم لكل إجراء ─────────
   const addDoctor = async (spId, f) => {
-    const id = gid(),
-      item = { ...f, id, specialtyId: spId };
-    const ok = await mut("addDoctor", { specialtyId: spId, ...f }, d => {
+    const tempId = gid(),
+      item = { ...f, id: tempId, specialtyId: spId };
+    const res = await mut("addDoctor", { specialtyId: spId, ...f }, d => {
       const s = d.specialties.find(x => x.id === spId);
       if (s) { s.doctors = s.doctors || []; s.doctors.push(item); }
     });
-    if (ok) {
-      setAS(s => s?.id === spId ? { ...s, doctors: [...(s.doctors || []), item] } : s);
+    if (res && res.data && res.data.id) {
+      const realId = res.data.id;
+      // نستبدل الرقم المؤقت بالرقم الحقيقي من الشيت — وإلا أي تعديل لاحق
+      // (مثل تفضيلات هذا الطبيب) بيشير لمعرّف ما هو موجود فعليًا بالشيت
+      setDb(d => {
+        const n = deep(d);
+        const s = n.specialties.find(x => x.id === spId);
+        if (s) { const doc = (s.doctors || []).find(dc => dc.id === tempId); if (doc) doc.id = realId; }
+        return n;
+      });
+      setAS(s => s?.id === spId ? { ...s, doctors: [...(s.doctors || []).filter(dc => dc.id !== tempId), { ...item, id: realId }] } : s);
       toastFn(t("✅ تم إضافة الطبيب وحفظه بالشيت", "✅ Doctor added and saved to Sheet"));
     }
   };
@@ -3719,20 +3728,31 @@ function AdminPortal({
       addConsumableIds: JSON.stringify(addConsumableIds || []),
       note: note || ""
     };
-    let ok;
     if (existing) {
-      ok = await mut("updateDoctorPref", { id: existing.id, ...payload }, d => {
+      const res = await mut("updateDoctorPref", { id: existing.id, ...payload }, d => {
         const pr = (d.doctorPrefs || []).find(p => p.id === existing.id);
         if (pr) Object.assign(pr, payload);
       });
+      if (res) toastFn(t("✅ تم حفظ تفضيلات الطبيب بالشيت", "✅ Doctor preferences saved to Sheet"));
     } else {
-      const id = gid();
-      ok = await mut("addDoctorPref", payload, d => {
+      const tempId = gid();
+      const res = await mut("addDoctorPref", payload, d => {
         d.doctorPrefs = d.doctorPrefs || [];
-        d.doctorPrefs.push({ id, ...payload });
+        d.doctorPrefs.push({ id: tempId, ...payload });
       });
+      if (res && res.data && res.data.id) {
+        const realId = res.data.id;
+        // نفس مبدأ الأطباء — نستبدل المعرّف المؤقت بالحقيقي من الشيت
+        setDb(d => {
+          const n = deep(d);
+          n.doctorPrefs = n.doctorPrefs || [];
+          const pr = n.doctorPrefs.find(p => p.id === tempId);
+          if (pr) pr.id = realId;
+          return n;
+        });
+        toastFn(t("✅ تم حفظ تفضيلات الطبيب بالشيت", "✅ Doctor preferences saved to Sheet"));
+      }
     }
-    if (ok) toastFn(t("✅ تم حفظ تفضيلات الطبيب بالشيت", "✅ Doctor preferences saved to Sheet"));
   };
   const addIPC = async f => {
     const id = gid(),
