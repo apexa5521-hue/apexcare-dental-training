@@ -695,9 +695,12 @@ function App() {
     setToken(null);
   };
 
-  // Optimistic mutation
+  // Optimistic mutation — يرجّع true/false حسب نجاح الحفظ الفعلي بالسيرفر،
+  // ويرجّع الحالة المحلية للوضع السابق لو فشل الحفظ (عشان الواجهة ما "تكذب")
   const mut = async (gasAction, gasParams, localFn) => {
+    let prevDb;
     setDb(d => {
+      prevDb = d;
       const n = deep(d);
       localFn(n);
       return n;
@@ -707,11 +710,18 @@ function App() {
       try {
         await api(gasAction, gasParams, token);
         setSync("ok");
-      } catch {
+        return true;
+      } catch (e) {
         setSync("error");
-        toastFn(t("فشل الحفظ في الخادم", "Server save failed"), "err");
+        toastFn(t("❌ فشل الحفظ بالشيت: ", "❌ Failed to save to Sheet: ") + (e?.message || ""), "err");
+        setDb(() => prevDb); // تراجع — التعديل ما انحفظ فعليًا
+        return false;
       }
     }
+    // ما فيه اتصال GAS أو ما فيه توكن — تراجع، لأن التعديل لن يُحفظ بالشيت أصلًا
+    toastFn(t("⚠️ غير متصل بالخادم — لم يُحفظ التغيير", "⚠️ Not connected to server — change not saved"), "err");
+    setDb(() => prevDb);
+    return false;
   };
   if (!user) return /*#__PURE__*/React.createElement(LoginScreen, {
     lang: lang,
@@ -3681,21 +3691,25 @@ function AdminPortal({
   const addDoctor = async (spId, f) => {
     const id = gid(),
       item = { ...f, id, specialtyId: spId };
-    await mut("addDoctor", { specialtyId: spId, ...f }, d => {
+    const ok = await mut("addDoctor", { specialtyId: spId, ...f }, d => {
       const s = d.specialties.find(x => x.id === spId);
       if (s) { s.doctors = s.doctors || []; s.doctors.push(item); }
     });
-    setAS(s => s?.id === spId ? { ...s, doctors: [...(s.doctors || []), item] } : s);
-    toastFn(t("تم إضافة الطبيب", "Doctor added"));
+    if (ok) {
+      setAS(s => s?.id === spId ? { ...s, doctors: [...(s.doctors || []), item] } : s);
+      toastFn(t("✅ تم إضافة الطبيب وحفظه بالشيت", "✅ Doctor added and saved to Sheet"));
+    }
   };
   const delDoctor = async (spId, id) => {
-    await mut("deleteDoctor", { id }, d => {
+    const ok = await mut("deleteDoctor", { id }, d => {
       const s = d.specialties.find(x => x.id === spId);
       if (s) s.doctors = (s.doctors || []).filter(dc => dc.id !== id);
       d.doctorPrefs = (d.doctorPrefs || []).filter(pr => pr.doctorId !== id);
     });
-    setAS(s => s?.id === spId ? { ...s, doctors: (s.doctors || []).filter(dc => dc.id !== id) } : s);
-    toastFn(t("تم حذف الطبيب", "Doctor deleted"));
+    if (ok) {
+      setAS(s => s?.id === spId ? { ...s, doctors: (s.doctors || []).filter(dc => dc.id !== id) } : s);
+      toastFn(t("✅ تم حذف الطبيب من الشيت", "✅ Doctor deleted from Sheet"));
+    }
   };
   const saveDoctorPref = async (procId, doctorId, addToolIds, addConsumableIds, note) => {
     const existing = (db.doctorPrefs || []).find(pr => pr.procedureId === procId && pr.doctorId === doctorId);
@@ -3705,19 +3719,20 @@ function AdminPortal({
       addConsumableIds: JSON.stringify(addConsumableIds || []),
       note: note || ""
     };
+    let ok;
     if (existing) {
-      await mut("updateDoctorPref", { id: existing.id, ...payload }, d => {
+      ok = await mut("updateDoctorPref", { id: existing.id, ...payload }, d => {
         const pr = (d.doctorPrefs || []).find(p => p.id === existing.id);
         if (pr) Object.assign(pr, payload);
       });
     } else {
       const id = gid();
-      await mut("addDoctorPref", payload, d => {
+      ok = await mut("addDoctorPref", payload, d => {
         d.doctorPrefs = d.doctorPrefs || [];
         d.doctorPrefs.push({ id, ...payload });
       });
     }
-    toastFn(t("تم حفظ تفضيلات الطبيب", "Doctor preferences saved"));
+    if (ok) toastFn(t("✅ تم حفظ تفضيلات الطبيب بالشيت", "✅ Doctor preferences saved to Sheet"));
   };
   const addIPC = async f => {
     const id = gid(),
