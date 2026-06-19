@@ -3029,7 +3029,7 @@ function EditModalComponent({
                 ? [...(form.toolIds || []), tl.id]
                 : (form.toolIds || []).filter(x => x !== tl.id))
             }),
-            tl.nameAr || tl.nameEn
+            tField(tl, "name", lang)
           ))
     ),
     /*#__PURE__*/React.createElement("div", { style:{fontSize:10.5, color:"#94a3b8", marginTop:4} },
@@ -3053,7 +3053,7 @@ function EditModalComponent({
                 ? [...(form.consumableIds || []), tl.id]
                 : (form.consumableIds || []).filter(x => x !== tl.id))
             }),
-            tl.nameAr || tl.nameEn
+            tField(tl, "name", lang)
           ))
     )
   )), type === "ipcmod" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(F, { form, set,
@@ -3213,7 +3213,7 @@ function DoctorsAdminTab({ t, lang, V, S, db, addDoctor, delDoctor, saveDoctorPr
         onChange: e => { setSelSpec(e.target.value); setSelDoctor(""); setSelProc(""); }
       },
         /*#__PURE__*/React.createElement("option", { value: "" }, t("— اختر التخصص —", "— Select specialty —")),
-        specs.map(s => /*#__PURE__*/React.createElement("option", { key: s.id, value: s.id }, s.nameAr || s.nameEn))
+        specs.map(s => /*#__PURE__*/React.createElement("option", { key: s.id, value: s.id }, tField(s, "name", lang)))
       )
     ),
 
@@ -3240,7 +3240,7 @@ function DoctorsAdminTab({ t, lang, V, S, db, addDoctor, delDoctor, saveDoctorPr
         doctors.length === 0
           ? /*#__PURE__*/React.createElement("div", { style: { fontSize: 11.5, color: V.muted } }, t("لا يوجد أطباء بعد لهذا التخصص", "No doctors yet for this specialty"))
           : doctors.map(d => /*#__PURE__*/React.createElement("div", { key: d.id, style: rowBtn(selDoctor === d.id), onClick: () => { setSelDoctor(d.id); setSelProc(""); } },
-              /*#__PURE__*/React.createElement("span", null, d.nameAr || d.nameEn),
+              /*#__PURE__*/React.createElement("span", null, tField(d, "name", lang)),
               /*#__PURE__*/React.createElement("span", {
                 onClick: e => { e.stopPropagation(); if (confirm(t("حذف هذا الطبيب وكل تفضيلاته؟", "Delete this doctor and all their preferences?"))) delDoctor(sp.id, d.id); },
                 style: { color: "#f87171", fontSize: 14 }
@@ -3251,7 +3251,7 @@ function DoctorsAdminTab({ t, lang, V, S, db, addDoctor, delDoctor, saveDoctorPr
       // عمود الإجراءات
       !doctor ? null : /*#__PURE__*/React.createElement("div", { style: colStyle },
         /*#__PURE__*/React.createElement("div", { style: { fontWeight: 800, fontSize: 12.5, marginBottom: 8 } },
-          t("إجراءات", "Procedures") + ` — ${doctor.nameAr || doctor.nameEn}`
+          t("إجراءات", "Procedures") + ` — ${tField(doctor, "name", lang)}`
         ),
         procedures.length === 0
           ? /*#__PURE__*/React.createElement("div", { style: { fontSize: 11.5, color: V.muted } }, t("لا توجد إجراءات لهذا التخصص بعد", "No procedures yet for this specialty"))
@@ -3263,7 +3263,7 @@ function DoctorsAdminTab({ t, lang, V, S, db, addDoctor, delDoctor, saveDoctorPr
                  (() => { try { return JSON.parse(pr.removeConsumableIds||"[]").length; } catch(_) { return 0; } })() ||
                  pr.note));
               return /*#__PURE__*/React.createElement("div", { key: p.id, style: rowBtn(selProc === p.id), onClick: () => setSelProc(p.id) },
-                /*#__PURE__*/React.createElement("span", null, p.nameAr || p.nameEn),
+                /*#__PURE__*/React.createElement("span", null, tField(p, "name", lang)),
                 hasPref && /*#__PURE__*/React.createElement("span", { style: { fontSize: 10, color: "#34d399" } }, "●")
               );
             })
@@ -3272,7 +3272,7 @@ function DoctorsAdminTab({ t, lang, V, S, db, addDoctor, delDoctor, saveDoctorPr
       // عمود الصينية النهائية لهذا الطبيب+الإجراء (تحديد كامل: إضافة أو استبعاد)
       !proc ? null : /*#__PURE__*/React.createElement("div", { style: { ...colStyle, flex: 2, minWidth: 280 } },
         /*#__PURE__*/React.createElement("div", { style: { fontWeight: 800, fontSize: 12.5, marginBottom: 8 } },
-          t("صينية", "Tray for") + ` ${doctor.nameAr || doctor.nameEn} — ${proc.nameAr || proc.nameEn}`
+          t("صينية", "Tray for") + ` ${tField(doctor,"name",lang)} — ${tField(proc,"name",lang)}`
         ),
         /*#__PURE__*/React.createElement("div", { style: { fontSize: 10.5, color: V.muted, marginBottom: 10 } },
           t("محدد افتراضيًا = الصينية القياسية لكل أطباء هذا التخصص. شيل علامة أي أداة لاستبعادها لهذا الطبيب فقط، أو علّم أداة جديدة لإضافتها له فقط.",
@@ -3288,7 +3288,7 @@ function DoctorsAdminTab({ t, lang, V, S, db, addDoctor, delDoctor, saveDoctorPr
                 return /*#__PURE__*/React.createElement("label", { key: "i_" + tl.id, style: { display: "flex", alignItems: "center", gap: 8, padding: "3px 2px", fontSize: 12, cursor: "pointer" } },
                   /*#__PURE__*/React.createElement("input", { type: "checkbox", checked: isChecked, onChange: () => toggle(checkedInst, setCheckedInst, tl.id) }),
                   /*#__PURE__*/React.createElement("span", { style: { textDecoration: (isDefault && !isChecked) ? "line-through" : "none", color: (!isDefault && isChecked) ? "#34d399" : V.text } },
-                    tl.nameAr || tl.nameEn
+                    tField(tl, "name", lang)
                   ),
                   isDefault && /*#__PURE__*/React.createElement("span", { style: { fontSize: 9, color: V.muted, marginInlineStart: "auto" } }, t("قياسي", "default"))
                 );
@@ -3304,7 +3304,7 @@ function DoctorsAdminTab({ t, lang, V, S, db, addDoctor, delDoctor, saveDoctorPr
                 return /*#__PURE__*/React.createElement("label", { key: "c_" + tl.id, style: { display: "flex", alignItems: "center", gap: 8, padding: "3px 2px", fontSize: 12, cursor: "pointer" } },
                   /*#__PURE__*/React.createElement("input", { type: "checkbox", checked: isChecked, onChange: () => toggle(checkedCons, setCheckedCons, tl.id) }),
                   /*#__PURE__*/React.createElement("span", { style: { textDecoration: (isDefault && !isChecked) ? "line-through" : "none", color: (!isDefault && isChecked) ? "#34d399" : V.text } },
-                    tl.nameAr || tl.nameEn
+                    tField(tl, "name", lang)
                   ),
                   isDefault && /*#__PURE__*/React.createElement("span", { style: { fontSize: 9, color: V.muted, marginInlineStart: "auto" } }, t("قياسي", "default"))
                 );
@@ -3385,7 +3385,7 @@ function PhotosAdminTab({ t, lang, V, S, token, db, syncAll, updTool }) {
         style:{width:"100%", padding:"8px 12px", borderRadius:8, border:"1px solid #e2e8f0", fontSize:13}
       },
         /*#__PURE__*/React.createElement("option", { value:"" }, t("— اختر التخصص —","— Select Specialty —")),
-        specs.map(s => /*#__PURE__*/React.createElement("option", { key:s.id, value:s.id }, s.icon+" "+s.nameAr))
+        specs.map(s => /*#__PURE__*/React.createElement("option", { key:s.id, value:s.id }, s.icon+" "+tField(s, "name", lang)))
       )
     ),
 
@@ -3412,7 +3412,7 @@ function PhotosAdminTab({ t, lang, V, S, token, db, syncAll, updTool }) {
 
           // اسم الأداة
           /*#__PURE__*/React.createElement("div", { style:{flex:1, fontSize:13, fontWeight:600, lineHeight:1.4} },
-            tool.nameAr,
+            tField(tool, "name", lang),
             /*#__PURE__*/React.createElement("div", { style:{fontSize:11, color:V.muted, fontWeight:400} }, tool.nameEn)
           ),
 
@@ -3542,7 +3542,7 @@ function MasteryAdminTab({ t, lang, V, S, token, db }) {
                          background:"#fff", borderRadius:7, border:"1px solid #f1f5f9" }
               },
                 /*#__PURE__*/React.createElement("div", { style:{fontSize:12, fontWeight:700, flex:1, color:"#334155"} },
-                  (specs.find(s=>s.id===spId)?.icon||"🦷") + " " + (sp.nameAr||spId)
+                  (specs.find(s=>s.id===spId)?.icon||"🦷") + " " + (tField(specs.find(s=>s.id===spId), "name", lang) || sp.nameAr || spId)
                 ),
                 stagesArr.map(s => {
                   const done = !!sp.stages[s];
