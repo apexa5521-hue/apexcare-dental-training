@@ -3145,8 +3145,8 @@ function DoctorsAdminTab({ t, lang, V, S, db, addDoctor, delDoctor, saveDoctorPr
   const [selSpec, setSelSpec] = React.useState("");
   const [selDoctor, setSelDoctor] = React.useState("");
   const [selProc, setSelProc] = React.useState("");
-  const [checkedInst, setCheckedInst] = React.useState([]); // toolIds
-  const [checkedCons, setCheckedCons] = React.useState([]); // toolIds
+  const [checkedInst, setCheckedInst] = React.useState([]); // toolIds — القائمة النهائية الظاهرة للطبيب
+  const [checkedCons, setCheckedCons] = React.useState([]); // toolIds — القائمة النهائية الظاهرة للطبيب
   const [note, setNote] = React.useState("");
   const [newDoctorName, setNewDoctorName] = React.useState("");
 
@@ -3158,20 +3158,36 @@ function DoctorsAdminTab({ t, lang, V, S, db, addDoctor, delDoctor, saveDoctorPr
   const proc = procedures.find(p => p.id === selProc);
   const allTools = sp?.tools || [];
 
-  // لما نختار طبيب + إجراء، نحمّل تفضيلاته المحفوظة (إن وجدت)
+  let defaultToolIds = [], defaultConsumableIds = [];
+  try { defaultToolIds = JSON.parse(proc?.toolIds || "[]"); } catch(_) {}
+  try { defaultConsumableIds = JSON.parse(proc?.consumableIds || "[]"); } catch(_) {}
+  // لو الإجراء ما حدد له أدوات بعد، القياسي = كل أدوات التخصص (نفس سلوك صفحة المرجع)
+  const effectiveDefaultInst = defaultToolIds.length ? defaultToolIds : allTools.map(tl => tl.id);
+
+  // لما نختار طبيب + إجراء، نبني القائمة النهائية = (القياسي - المستبعد) + المُضاف
   React.useEffect(() => {
     if (!selDoctor || !selProc) { setCheckedInst([]); setCheckedCons([]); setNote(""); return; }
     const pref = (db?.doctorPrefs || []).find(p => p.procedureId === selProc && p.doctorId === selDoctor);
-    let ti = [], ci = [];
-    try { ti = JSON.parse(pref?.addToolIds || "[]"); } catch(_) {}
-    try { ci = JSON.parse(pref?.addConsumableIds || "[]"); } catch(_) {}
-    setCheckedInst(ti);
-    setCheckedCons(ci);
+    let addTi = [], addCi = [], removeTi = [], removeCi = [];
+    try { addTi = JSON.parse(pref?.addToolIds || "[]"); } catch(_) {}
+    try { addCi = JSON.parse(pref?.addConsumableIds || "[]"); } catch(_) {}
+    try { removeTi = JSON.parse(pref?.removeToolIds || "[]"); } catch(_) {}
+    try { removeCi = JSON.parse(pref?.removeConsumableIds || "[]"); } catch(_) {}
+    setCheckedInst([...effectiveDefaultInst.filter(id => !removeTi.includes(id)), ...addTi]);
+    setCheckedCons([...defaultConsumableIds.filter(id => !removeCi.includes(id)), ...addCi]);
     setNote(pref?.note || "");
   }, [selDoctor, selProc, db]);
 
   const toggle = (arr, setArr, id) => {
     setArr(arr.includes(id) ? arr.filter(x => x !== id) : [...arr, id]);
+  };
+
+  const handleSave = () => {
+    const addToolIds = checkedInst.filter(id => !effectiveDefaultInst.includes(id));
+    const removeToolIds = effectiveDefaultInst.filter(id => !checkedInst.includes(id));
+    const addConsumableIds = checkedCons.filter(id => !defaultConsumableIds.includes(id));
+    const removeConsumableIds = defaultConsumableIds.filter(id => !checkedCons.includes(id));
+    saveDoctorPref(proc.id, doctor.id, addToolIds, addConsumableIds, note, removeToolIds, removeConsumableIds);
   };
 
   const colStyle = { ...S.card, flex: 1, minWidth: 220, maxHeight: 360, overflowY: "auto" };
@@ -3188,8 +3204,8 @@ function DoctorsAdminTab({ t, lang, V, S, db, addDoctor, delDoctor, saveDoctorPr
         t("👨‍⚕️ ربط الأطباء بالتخصصات", "👨‍⚕️ Link Doctors to Specialties")
       ),
       /*#__PURE__*/React.createElement("div", { style: { fontSize: 11.5, color: V.muted, marginBottom: 10, lineHeight: 1.7 } },
-        t("اختر التخصص أولًا، أضف أسماء الأطباء تحته، ثم اختر طبيب وإجراء لتحديد أدوات/مستلزمات إضافية خاصة به (تظهر بصفحة المرجع السريع).",
-          "Pick a specialty first, add doctor names under it, then pick a doctor + procedure to set extra tools/consumables just for them (shown on the Clinical Reference page).")
+        t("اختر التخصص أولًا، أضف أسماء الأطباء تحته، ثم اختر طبيب وإجراء — تقدر تشيل أو تضيف أي أداة لتحدد بالضبط شو يظهر له بالصينية.",
+          "Pick a specialty first, add doctor names under it, then pick a doctor + procedure — check/uncheck any tool to set exactly what shows in their tray.")
       ),
       /*#__PURE__*/React.createElement("select", {
         style: S.inp,
@@ -3240,7 +3256,12 @@ function DoctorsAdminTab({ t, lang, V, S, db, addDoctor, delDoctor, saveDoctorPr
         procedures.length === 0
           ? /*#__PURE__*/React.createElement("div", { style: { fontSize: 11.5, color: V.muted } }, t("لا توجد إجراءات لهذا التخصص بعد", "No procedures yet for this specialty"))
           : procedures.map(p => {
-              const hasPref = (db?.doctorPrefs || []).some(pr => pr.procedureId === p.id && pr.doctorId === doctor.id && (JSON.parse(pr.addToolIds||"[]").length || JSON.parse(pr.addConsumableIds||"[]").length || pr.note));
+              const hasPref = (db?.doctorPrefs || []).some(pr => pr.procedureId === p.id && pr.doctorId === doctor.id &&
+                ((() => { try { return JSON.parse(pr.addToolIds||"[]").length; } catch(_) { return 0; } })() ||
+                 (() => { try { return JSON.parse(pr.addConsumableIds||"[]").length; } catch(_) { return 0; } })() ||
+                 (() => { try { return JSON.parse(pr.removeToolIds||"[]").length; } catch(_) { return 0; } })() ||
+                 (() => { try { return JSON.parse(pr.removeConsumableIds||"[]").length; } catch(_) { return 0; } })() ||
+                 pr.note));
               return /*#__PURE__*/React.createElement("div", { key: p.id, style: rowBtn(selProc === p.id), onClick: () => setSelProc(p.id) },
                 /*#__PURE__*/React.createElement("span", null, p.nameAr || p.nameEn),
                 hasPref && /*#__PURE__*/React.createElement("span", { style: { fontSize: 10, color: "#34d399" } }, "●")
@@ -3248,31 +3269,46 @@ function DoctorsAdminTab({ t, lang, V, S, db, addDoctor, delDoctor, saveDoctorPr
             })
       ),
 
-      // عمود الأدوات/المستلزمات الإضافية لهذا الطبيب+الإجراء
+      // عمود الصينية النهائية لهذا الطبيب+الإجراء (تحديد كامل: إضافة أو استبعاد)
       !proc ? null : /*#__PURE__*/React.createElement("div", { style: { ...colStyle, flex: 2, minWidth: 280 } },
         /*#__PURE__*/React.createElement("div", { style: { fontWeight: 800, fontSize: 12.5, marginBottom: 8 } },
-          t("إضافات خاصة بـ", "Extras for") + ` ${doctor.nameAr || doctor.nameEn} — ${proc.nameAr || proc.nameEn}`
+          t("صينية", "Tray for") + ` ${doctor.nameAr || doctor.nameEn} — ${proc.nameAr || proc.nameEn}`
         ),
         /*#__PURE__*/React.createElement("div", { style: { fontSize: 10.5, color: V.muted, marginBottom: 10 } },
-          t("هذي إضافة فوق الصينية القياسية للإجراء (مش بديل عنها).", "These are added on top of the procedure's standard tray (not a replacement).")
+          t("محدد افتراضيًا = الصينية القياسية لكل أطباء هذا التخصص. شيل علامة أي أداة لاستبعادها لهذا الطبيب فقط، أو علّم أداة جديدة لإضافتها له فقط.",
+            "Pre-checked = the standard tray shared by all doctors in this specialty. Uncheck an item to exclude it just for this doctor, or check a new one to add it just for them.")
         ),
-        /*#__PURE__*/React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, marginBottom: 4, color: "#93c5fd" } }, t("🧰 أدوات إضافية", "🧰 Extra instruments")),
-        /*#__PURE__*/React.createElement("div", { style: { maxHeight: 130, overflowY: "auto", border: "1px solid #1e3a5f", borderRadius: 8, padding: 6, marginBottom: 10 } },
+        /*#__PURE__*/React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, marginBottom: 4, color: "#93c5fd" } }, t("🧰 الأدوات", "🧰 Instruments")),
+        /*#__PURE__*/React.createElement("div", { style: { maxHeight: 150, overflowY: "auto", border: "1px solid #1e3a5f", borderRadius: 8, padding: 6, marginBottom: 10 } },
           allTools.length === 0
             ? /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: V.muted } }, t("لا توجد أدوات بهذا التخصص", "No tools in this specialty"))
-            : allTools.map(tl => /*#__PURE__*/React.createElement("label", { key: "i_" + tl.id, style: { display: "flex", alignItems: "center", gap: 8, padding: "3px 2px", fontSize: 12, cursor: "pointer" } },
-                /*#__PURE__*/React.createElement("input", { type: "checkbox", checked: checkedInst.includes(tl.id), onChange: () => toggle(checkedInst, setCheckedInst, tl.id) }),
-                tl.nameAr || tl.nameEn
-              ))
+            : allTools.map(tl => {
+                const isDefault = effectiveDefaultInst.includes(tl.id);
+                const isChecked = checkedInst.includes(tl.id);
+                return /*#__PURE__*/React.createElement("label", { key: "i_" + tl.id, style: { display: "flex", alignItems: "center", gap: 8, padding: "3px 2px", fontSize: 12, cursor: "pointer" } },
+                  /*#__PURE__*/React.createElement("input", { type: "checkbox", checked: isChecked, onChange: () => toggle(checkedInst, setCheckedInst, tl.id) }),
+                  /*#__PURE__*/React.createElement("span", { style: { textDecoration: (isDefault && !isChecked) ? "line-through" : "none", color: (!isDefault && isChecked) ? "#34d399" : V.text } },
+                    tl.nameAr || tl.nameEn
+                  ),
+                  isDefault && /*#__PURE__*/React.createElement("span", { style: { fontSize: 9, color: V.muted, marginInlineStart: "auto" } }, t("قياسي", "default"))
+                );
+              })
         ),
-        /*#__PURE__*/React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, marginBottom: 4, color: "#fbbf24" } }, t("🧪 مستلزمات إضافية", "🧪 Extra consumables")),
-        /*#__PURE__*/React.createElement("div", { style: { maxHeight: 130, overflowY: "auto", border: "1px solid #1e3a5f", borderRadius: 8, padding: 6, marginBottom: 10 } },
+        /*#__PURE__*/React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, marginBottom: 4, color: "#fbbf24" } }, t("🧪 المستلزمات", "🧪 Consumables")),
+        /*#__PURE__*/React.createElement("div", { style: { maxHeight: 150, overflowY: "auto", border: "1px solid #1e3a5f", borderRadius: 8, padding: 6, marginBottom: 10 } },
           allTools.length === 0
             ? /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: V.muted } }, t("لا توجد أدوات بهذا التخصص", "No tools in this specialty"))
-            : allTools.map(tl => /*#__PURE__*/React.createElement("label", { key: "c_" + tl.id, style: { display: "flex", alignItems: "center", gap: 8, padding: "3px 2px", fontSize: 12, cursor: "pointer" } },
-                /*#__PURE__*/React.createElement("input", { type: "checkbox", checked: checkedCons.includes(tl.id), onChange: () => toggle(checkedCons, setCheckedCons, tl.id) }),
-                tl.nameAr || tl.nameEn
-              ))
+            : allTools.map(tl => {
+                const isDefault = defaultConsumableIds.includes(tl.id);
+                const isChecked = checkedCons.includes(tl.id);
+                return /*#__PURE__*/React.createElement("label", { key: "c_" + tl.id, style: { display: "flex", alignItems: "center", gap: 8, padding: "3px 2px", fontSize: 12, cursor: "pointer" } },
+                  /*#__PURE__*/React.createElement("input", { type: "checkbox", checked: isChecked, onChange: () => toggle(checkedCons, setCheckedCons, tl.id) }),
+                  /*#__PURE__*/React.createElement("span", { style: { textDecoration: (isDefault && !isChecked) ? "line-through" : "none", color: (!isDefault && isChecked) ? "#34d399" : V.text } },
+                    tl.nameAr || tl.nameEn
+                  ),
+                  isDefault && /*#__PURE__*/React.createElement("span", { style: { fontSize: 9, color: V.muted, marginInlineStart: "auto" } }, t("قياسي", "default"))
+                );
+              })
         ),
         /*#__PURE__*/React.createElement("input", {
           style: { ...S.inp, marginBottom: 10 },
@@ -3282,7 +3318,7 @@ function DoctorsAdminTab({ t, lang, V, S, db, addDoctor, delDoctor, saveDoctorPr
         }),
         /*#__PURE__*/React.createElement("button", {
           style: { width: "100%", padding: "10px 14px", borderRadius: 9, border: "1px solid #6366f160", background: "#6366f125", color: "#a5b4fc", fontWeight: 800, fontSize: 13, cursor: "pointer" },
-          onClick: () => saveDoctorPref(proc.id, doctor.id, checkedInst, checkedCons, note)
+          onClick: handleSave
         }, t("💾 حفظ", "💾 Save"))
       )
     )
@@ -3722,12 +3758,14 @@ function AdminPortal({
       toastFn(t("✅ تم حذف الطبيب من الشيت", "✅ Doctor deleted from Sheet"));
     }
   };
-  const saveDoctorPref = async (procId, doctorId, addToolIds, addConsumableIds, note) => {
+  const saveDoctorPref = async (procId, doctorId, addToolIds, addConsumableIds, note, removeToolIds, removeConsumableIds) => {
     const existing = (db.doctorPrefs || []).find(pr => pr.procedureId === procId && pr.doctorId === doctorId);
     const payload = {
       procedureId: procId, doctorId,
       addToolIds: JSON.stringify(addToolIds || []),
       addConsumableIds: JSON.stringify(addConsumableIds || []),
+      removeToolIds: JSON.stringify(removeToolIds || []),
+      removeConsumableIds: JSON.stringify(removeConsumableIds || []),
       note: note || ""
     };
     if (existing) {
