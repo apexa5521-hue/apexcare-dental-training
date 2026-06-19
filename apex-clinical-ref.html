@@ -1183,19 +1183,23 @@ async function syncFromGAS() {
           const consumableTools = consumableIds.length ? allTools.filter(t => consumableIds.includes(t.id)) : [];
 
           // بناء تفضيلات كل دكتور لهذا الإجراء بالذات
-          const doctorsObj = { default: { add_instruments:[], add_consumables:[], note:'Standard protocol' } };
+          const doctorsObj = { default: { add_instruments:[], add_consumables:[], remove_instruments:[], remove_consumables:[], note:'Standard protocol' } };
           spDoctors.forEach(doc => {
             if (!doc.id) return;
             const docName = doc.nameEn || doc.nameAr || doc.id;
             const pref = allPrefs.find(pr => pr.procedureId === p.id && pr.doctorId === doc.id);
-            let addToolIds = [], addConsumableIds = [];
+            let addToolIds = [], addConsumableIds = [], removeToolIds = [], removeConsumableIds = [];
             if (pref) {
               try { addToolIds = JSON.parse(pref.addToolIds || "[]"); } catch(_) {}
               try { addConsumableIds = JSON.parse(pref.addConsumableIds || "[]"); } catch(_) {}
+              try { removeToolIds = JSON.parse(pref.removeToolIds || "[]"); } catch(_) {}
+              try { removeConsumableIds = JSON.parse(pref.removeConsumableIds || "[]"); } catch(_) {}
             }
             doctorsObj[docName] = {
               add_instruments: addToolIds.map(toolNameById).filter(Boolean),
               add_consumables: addConsumableIds.map(toolNameById).filter(Boolean),
+              remove_instruments: removeToolIds.map(toolNameById).filter(Boolean),
+              remove_consumables: removeConsumableIds.map(toolNameById).filter(Boolean),
               note: (pref && pref.note) || ''
             };
           });
@@ -1752,10 +1756,12 @@ function renderContent() {
   const selectedDoctor = doctorSelect ? doctorSelect.value : 'default';
   const docPref = proc.doctors[selectedDoctor] || proc.doctors['default'];
 
-  // Build instruments list with doctor additions
-  const instruments = [...proc.instruments];
-  const consumables = [...proc.consumables];
+  // Build instruments/consumables list with doctor exclusions + additions applied
+  let instruments = [...proc.instruments];
+  let consumables = [...proc.consumables];
   if (docPref) {
+    if (docPref.remove_instruments?.length) instruments = instruments.filter(i => !docPref.remove_instruments.includes(i.name));
+    if (docPref.remove_consumables?.length) consumables = consumables.filter(i => !docPref.remove_consumables.includes(i.name));
     docPref.add_instruments.forEach(name => { if (!instruments.find(i=>i.name===name)) instruments.push({name, tip:"Added per doctor preference.", _added:true}); });
     docPref.add_consumables.forEach(name => { if (!consumables.find(i=>i.name===name)) consumables.push({name, tip:"Added per doctor preference.", _added:true}); });
   }
@@ -1766,10 +1772,15 @@ function renderContent() {
   instruments.forEach(it => { if (checkState[getCheckKey('inst',it.name)]) checkedCount++; });
   consumables.forEach(it => { if (checkState[getCheckKey('cons',it.name)]) checkedCount++; });
 
-  // Tray slots
-  const tray = proc.tray.map((slot, idx) => ({...slot, checked: !!trayState[getTrayKey(idx)]}));
+  // Tray slots — تُبنى من قائمة الأدوات النهائية (بعد الاستبعاد/الإضافة)
+  // عشان الصينية المرئية تطابق دايمًا شيكليست "BASIC INSTRUMENTS" بالضبط
+  const tray = instruments.map((it, idx) => ({
+    img: it.imageUrl || (it._imgKey ? IMG[it._imgKey] : IMG.composite),
+    label: it.name.split(' ').slice(0,2).join(' '),
+    checked: !!trayState[getTrayKey(idx)]
+  }));
   const trayChecked = tray.filter(s=>s.checked).length;
-  const trayDone = trayChecked === tray.length;
+  const trayDone = tray.length > 0 && trayChecked === tray.length;
 
   const html = `
     <div class="proc-header">
