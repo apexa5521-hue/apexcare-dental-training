@@ -540,7 +540,7 @@ const {
 } = React;
 
 //  CONFIG
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzTpfT_7nUaePQ5-T09i8FEevVOzoEiXfqOMWjXOdrLgk-vLM4W58hLBi-K9V3JxO-mBw/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxTRSoLTZ8NVRcP-iXvm_Fw3mVcFneDr4az_nK-ILsF8OEbDw6YY-bLNLHPXF1r0bRfPg/exec";
 const GAS_OK = () => !GAS_URL.includes("YOUR_DEPLOYMENT_ID");
 
 //  SEED DATA
@@ -3314,7 +3314,7 @@ function PhotosAdminTab({ t, lang, V, S, token, db, syncAll, updTool }) {
             nameEn: tool.nameEn,
             imageUrl: data.secure_url
           });
-          fetch("https://script.google.com/macros/s/AKfycbzTpfT_7nUaePQ5-T09i8FEevVOzoEiXfqOMWjXOdrLgk-vLM4W58hLBi-K9V3JxO-mBw/exec", {
+          fetch("https://script.google.com/macros/s/AKfycbxTRSoLTZ8NVRcP-iXvm_Fw3mVcFneDr4az_nK-ILsF8OEbDw6YY-bLNLHPXF1r0bRfPg/exec", {
             method: "POST", body: payload, headers: { "Content-Type": "text/plain" }
           })
           .then(r => r.json())
