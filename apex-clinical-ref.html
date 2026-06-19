@@ -391,6 +391,26 @@ body {
   font-family: var(--font-mono);
   color: var(--ink3);
 }
+.checklist-quick-actions {
+  display: flex;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+}
+.quick-action-btn {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 5px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--ink2);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.quick-action-btn:hover { background: var(--accent-bg, #eef2ff); border-color: var(--accent, #6366f1); color: var(--accent, #6366f1); }
 .checklist-body { padding: 6px 0; }
 
 .cl-item {
@@ -1842,7 +1862,10 @@ function renderContent() {
   document.getElementById('content-area').innerHTML = html;
 }
 
+let currentChecklistItems = { inst: [], cons: [] }; // آخر قوائم معروضة فعليًا (بعد تطبيق تفضيلات الدكتور) — تُستخدم لأزرار تحديد/إلغاء الكل
+
 function renderChecklist(title, items, type) {
+  currentChecklistItems[type] = items;
   const count = items.filter(it => checkState[getCheckKey(type, it.name)]).length;
   return `
     <div class="checklist-card">
@@ -1850,6 +1873,11 @@ function renderChecklist(title, items, type) {
         <span class="head-label">${title}</span>
         <span class="counter">${count} / ${items.length}</span>
       </div>
+      ${items.length > 0 ? `
+      <div class="checklist-quick-actions">
+        <button class="quick-action-btn" onclick="selectAllChecklist('${type}', true)">✓ Select all</button>
+        <button class="quick-action-btn" onclick="selectAllChecklist('${type}', false)">Deselect all</button>
+      </div>` : ''}
       <div class="checklist-body">
         ${items.map(it => {
           const key = getCheckKey(type, it.name);
@@ -1873,6 +1901,12 @@ function renderChecklist(title, items, type) {
     </div>`;
 }
 
+function selectAllChecklist(type, checked) {
+  const items = currentChecklistItems[type] || [];
+  items.forEach(it => { checkState[getCheckKey(type, it.name)] = checked; });
+  renderContent();
+}
+
 function toggleCheck(event, type, name) {
   event.preventDefault();
   const key = getCheckKey(type, name);
@@ -1889,8 +1923,8 @@ function toggleTray(idx) {
 function resetChecklist() {
   const dept = DATA[currentDept];
   const proc = dept.procedures[currentProcIdx];
-  proc.instruments.forEach(it => { delete checkState[getCheckKey('inst',it.name)]; });
-  proc.consumables.forEach(it => { delete checkState[getCheckKey('cons',it.name)]; });
+  (currentChecklistItems.inst.length ? currentChecklistItems.inst : proc.instruments).forEach(it => { delete checkState[getCheckKey('inst',it.name)]; });
+  (currentChecklistItems.cons.length ? currentChecklistItems.cons : proc.consumables).forEach(it => { delete checkState[getCheckKey('cons',it.name)]; });
   proc.tray.forEach((_, idx) => { delete trayState[getTrayKey(idx)]; });
   renderContent();
 }
