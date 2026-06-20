@@ -1092,7 +1092,8 @@ body {
           </div>
           <div class="form-group">
             <label for="qr-url">System Base URL</label>
-            <input type="url" id="qr-url" placeholder="https://apex-care.com/department" value="https://apexa5521-hue.github.io/apexcare-dental-training/"/>
+            <input type="url" id="qr-url" placeholder="https://apex-care.com/department" value="https://apexa5521-hue.github.io/apexcare-dental-training/apex-clinical-ref.html"/>
+            <div style="font-size:.7rem;color:var(--ink3);margin-top:5px;font-family:var(--font-mono);">⚠️ Must end in <code>apex-clinical-ref.html</code> — not the repo root, or the QR opens the wrong page.</div>
           </div>
           <div class="form-group">
             <label for="qr-size">QR Size (px)</label>
@@ -2018,6 +2019,10 @@ function generateQR() {
   const deptRaw = document.getElementById('qr-dept').value;
   const baseUrl = document.getElementById('qr-url').value.trim().replace(/\/$/, '') || 'https://apex-care.com';
   const size    = document.getElementById('qr-size').value;
+
+  if (!/apex-clinical-ref\.html$/i.test(baseUrl)) {
+    alert('⚠️ The base URL must end in "apex-clinical-ref.html" (not just the repo root), or the QR code will open the wrong page entirely and silently ignore the department.');
+  }
 
   // Build dept slug from the English name before "—"
   const deptSlug = deptRaw.split('—')[0].trim().toLowerCase()
