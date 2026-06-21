@@ -972,7 +972,7 @@ function LoginScreen({
       fontSize: 11,
       marginTop: 10
     }
-  }, t("تجريبي: -----/---- | ----/a-----", "Demo: -----/---- | ----/----"))));
+  }, t("تجريبي: nurse1/1234 | admin/admin123", "Demo: nurse1/1234 | admin/admin123"))));
 }
 
 //  NURSE PORTAL — تجربة تعلم نظيفة وبدون تعديل
@@ -1736,7 +1736,7 @@ function ProcTrayQuickPlay({ db, lang, user, token, onBack, toastFn }) {
     });
     const pct = Math.round(okCount / round.pool.length * 100);
     setSession(s => ({ rounds: s.rounds + 1, totalPct: s.totalPct + pct }));
-    saveMasteryStage(user.id, round.sp.id, 5, pct, user.name, tField(round.sp,"name",lang), (lang==="ar"?"⚕️ صينية الإجراء":"⚕️ Procedure Tray"), token);
+    saveMasteryStage(user.id, round.sp.id, 5, pct, user.name, tField(round.sp,"name",lang), "TrayQuickPlay", token);
   };
 
   const next = () => {
@@ -3546,6 +3546,104 @@ function DoctorsAdminTab({ t, lang, V, S, db, addDoctor, delDoctor, saveDoctorPr
           style: { width: "100%", padding: "10px 14px", borderRadius: 9, border: "1px solid #6366f160", background: "#6366f125", color: "#a5b4fc", fontWeight: 800, fontSize: 13, cursor: "pointer" },
           onClick: handleSave
         }, t("💾 حفظ", "💾 Save"))
+      )
+    )
+  );
+}
+
+function TrayDrillAdminTab({ t, lang, V, S, token, db }) {
+  const [rows, setRows]       = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [filter, setFilter]   = useState("");
+
+  const load = () => {
+    if (!GAS_OK()) return;
+    setLoading(true);
+    api("getMasteryReport", {}, token)
+      .then(r => setRows((r.rows || []).filter(x => x.stageName === "TrayQuickPlay")))
+      .catch(() => setRows([]))
+      .finally(() => setLoading(false));
+  };
+
+  const specs = db?.specialties || [];
+
+  // تجميع: لكل ممرضة → عدد المحاولات، متوسط النتيجة، آخر تاريخ، وتفصيل لكل تخصص لعبته
+  const summary = React.useMemo(() => {
+    if (!rows || rows.length === 0) return [];
+    const map = {};
+    rows.forEach(r => {
+      const k = r.username;
+      if (!map[k]) map[k] = { username:r.username, name:r.name, attempts:0, totalPct:0, lastDate:"", bySpec:{} };
+      map[k].attempts += 1;
+      map[k].totalPct += (r.pct || 0);
+      if (!map[k].lastDate || r.date > map[k].lastDate) map[k].lastDate = r.date;
+      if (!map[k].bySpec[r.specId]) map[k].bySpec[r.specId] = { nameAr:r.specNameAr, attempts:0, totalPct:0 };
+      map[k].bySpec[r.specId].attempts += 1;
+      map[k].bySpec[r.specId].totalPct += (r.pct || 0);
+    });
+    return Object.values(map)
+      .map(n => ({ ...n, avgPct: Math.round(n.totalPct / n.attempts) }))
+      .filter(n => !filter || n.name.includes(filter) || n.username.includes(filter))
+      .sort((a,b) => b.attempts - a.attempts);
+  }, [rows, filter]);
+
+  return /*#__PURE__*/React.createElement("div", null,
+    /*#__PURE__*/React.createElement("div", { style:{...S.card, marginBottom:12} },
+      /*#__PURE__*/React.createElement("div", { style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10} },
+        /*#__PURE__*/React.createElement("div", { style:{fontWeight:900, fontSize:13} },
+          "🧺 ", t("نتائج صينية الإجراء","Procedure Tray Results")
+        ),
+        /*#__PURE__*/React.createElement("button", {
+          style: S.sec("#6366f1"),
+          onClick: load
+        }, loading ? "..." : t("🔄 تحديث","🔄 Refresh"))
+      ),
+      /*#__PURE__*/React.createElement("div", { style:{fontSize:11.5, color:V.muted, marginBottom:10, lineHeight:1.7} },
+        t("تتبّع لعبة «صينية الإجراء» اللي تظهر بالصفحة الرئيسية للممرضة — تختار أدوات إجراء عشوائي وتُصحَّح فورًا.",
+          "Tracks the home-screen \"Procedure Tray\" game where nurses pick a random procedure's tools and get instant scoring.")
+      ),
+      rows && /*#__PURE__*/React.createElement("input", {
+        placeholder: t("بحث باسم الممرضة...","Search nurse name..."),
+        value: filter,
+        onChange: e => setFilter(e.target.value),
+        style: { width:"100%", padding:"8px 12px", borderRadius:8, border:"1px solid #e2e8f0",
+                 fontSize:13, marginBottom:12, boxSizing:"border-box" }
+      }),
+
+      !rows && /*#__PURE__*/React.createElement("div", { style:{fontSize:12, color:V.muted, textAlign:"center", padding:"20px 0"} },
+        t("اضغط تحديث لعرض نتائج اللعبة","Press Refresh to load game results")
+      ),
+      rows && rows.length === 0 && /*#__PURE__*/React.createElement("div", { style:{fontSize:12, color:V.muted, textAlign:"center", padding:"20px 0"} },
+        t("ما فيه محاولات بعد — انتظر حتى تجرّب الممرضات اللعبة","No attempts yet — wait for nurses to try the game")
+      ),
+
+      rows && summary.length > 0 && /*#__PURE__*/React.createElement("div", null,
+        summary.map(nurse => /*#__PURE__*/React.createElement("div", {
+          key: nurse.username,
+          style: { background:"#f8fafc", borderRadius:10, padding:12, marginBottom:10, border:"1px solid #e2e8f0" }
+        },
+          /*#__PURE__*/React.createElement("div", { style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8, flexWrap:"wrap", gap:6} },
+            /*#__PURE__*/React.createElement("div", { style:{fontWeight:900, fontSize:13} }, "👩‍⚕️ ", nurse.name),
+            /*#__PURE__*/React.createElement("div", { style:{display:"flex", gap:6} },
+              /*#__PURE__*/React.createElement("span", { style: S.tag(nurse.avgPct>=80?V.grn:nurse.avgPct>=40?"#f59e0b":V.red) }, t("متوسط ","avg ") + nurse.avgPct + "%"),
+              /*#__PURE__*/React.createElement("span", { style: S.tag("#6366f1") }, nurse.attempts + " " + t("محاولة","tries"))
+            )
+          ),
+          /*#__PURE__*/React.createElement("div", { style:{fontSize:10.5, color:V.muted, marginBottom:8} }, t("آخر لعب: ","Last played: ") + (nurse.lastDate || "—")),
+          Object.entries(nurse.bySpec).map(([spId, sp]) => {
+            const avg = Math.round(sp.totalPct / sp.attempts);
+            return /*#__PURE__*/React.createElement("div", {
+              key: spId,
+              style: { display:"flex", alignItems:"center", gap:8, marginBottom:6, padding:"6px 8px", background:"#fff", borderRadius:7, border:"1px solid #f1f5f9" }
+            },
+              /*#__PURE__*/React.createElement("div", { style:{fontSize:12, fontWeight:700, flex:1, color:"#334155"} },
+                (specs.find(s=>s.id===spId)?.icon||"🦷") + " " + (tField(specs.find(s=>s.id===spId), "name", lang) || sp.nameAr || spId)
+              ),
+              /*#__PURE__*/React.createElement("span", { style:{fontSize:11, color:V.muted} }, sp.attempts + "× "),
+              /*#__PURE__*/React.createElement("span", { style: S.tag(avg>=80?V.grn:avg>=40?"#f59e0b":V.red) }, avg + "%")
+            );
+          })
+        ))
       )
     )
   );
@@ -5419,11 +5517,11 @@ answer هو رقم الخيار الصحيح (0-3).`;
       marginBottom: 14,
       flexWrap: "wrap"
     }
-  }, ["specialties", "ipc", "doctors", "users", "drill", "photos", "mastery", "clinicalref", "settings"].map(t2 => /*#__PURE__*/React.createElement("button", {
+  }, ["specialties", "ipc", "doctors", "users", "drill", "traydrill", "photos", "mastery", "clinicalref", "settings"].map(t2 => /*#__PURE__*/React.createElement("button", {
     key: t2,
     style: S.tab(tab === t2),
     onClick: () => t2 === "clinicalref" ? window.open("apex-clinical-ref.html", "_blank") : setTab(t2)
-  }, t2 === "specialties" ? t("🦷 الأقسام", "🦷 Specialties") : t2 === "ipc" ? t("🛡 IPC", "🛡 IPC") : t2 === "doctors" ? t("👨‍⚕️ الأطباء", "👨‍⚕️ Doctors") : t2 === "users" ? t("👥 المستخدمون", "👥 Users") : t2 === "drill" ? t("🎯 تقدم التدريب", "🎯 Drill Progress") : t2 === "photos" ? t("📸 صور الأدوات", "📸 Tool Photos") : t2 === "mastery" ? t("🏆 إتقان الأدوات", "🏆 Mastery") : t2 === "clinicalref" ? t("🔗 المرجع السريع", "🔗 Clinical Ref") : t("⚙️ إعدادات", "⚙️ Settings"))))), tab === "specialties" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, t2 === "specialties" ? t("🦷 الأقسام", "🦷 Specialties") : t2 === "ipc" ? t("🛡 IPC", "🛡 IPC") : t2 === "doctors" ? t("👨‍⚕️ الأطباء", "👨‍⚕️ Doctors") : t2 === "users" ? t("👥 المستخدمون", "👥 Users") : t2 === "drill" ? t("🎯 تقدم التدريب", "🎯 Drill Progress") : t2 === "traydrill" ? t("🧺 صينية الإجراء", "🧺 Procedure Tray") : t2 === "photos" ? t("📸 صور الأدوات", "📸 Tool Photos") : t2 === "mastery" ? t("🏆 إتقان الأدوات", "🏆 Mastery") : t2 === "clinicalref" ? t("🔗 المرجع السريع", "🔗 Clinical Ref") : t("⚙️ إعدادات", "⚙️ Settings"))))), tab === "specialties" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       justifyContent: "space-between",
@@ -5680,6 +5778,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
   ), tab === "photos" && /*#__PURE__*/React.createElement(PhotosAdminTab, { t, lang, V, S, token, db, syncAll, updTool }),
   tab === "doctors" && /*#__PURE__*/React.createElement(DoctorsAdminTab, { t, lang, V, S, db, addDoctor, delDoctor, saveDoctorPref }),
   tab === "mastery" && /*#__PURE__*/React.createElement(MasteryAdminTab, { t, lang, V, S, token, db }),
+  tab === "traydrill" && /*#__PURE__*/React.createElement(TrayDrillAdminTab, { t, lang, V, S, token, db }),
   tab === "settings" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: S.card
   }, /*#__PURE__*/React.createElement("div", {
