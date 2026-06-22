@@ -5140,7 +5140,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
       }),
       style: S.edt
     }, "\u270F\uFE0F ", t("تعديل", "Edit")), /*#__PURE__*/React.createElement("button", {
-      onClick: () => delSpec(sp.id),
+      onClick: () => { if(confirm(lang==="ar"?"هل تريد حذف هذا التخصص وكل محتوياته؟":"Delete this specialty and all its contents?")) delSpec(sp.id); },
       style: S.del
     }, "\uD83D\uDDD1 ", t("حذف", "Delete"))))), /*#__PURE__*/React.createElement("div", {
       style: S.card
@@ -5211,7 +5211,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
       }),
       style: S.edt
     }, "\u270F\uFE0F"), /*#__PURE__*/React.createElement("button", {
-      onClick: () => delTool(sp.id, tool.id),
+      onClick: () => { if(confirm(lang==="ar"?"هل تريد حذف هذه الأداة؟":"Delete this tool?")) delTool(sp.id, tool.id); },
       style: S.del
     }, "\uD83D\uDDD1"))))), /*#__PURE__*/React.createElement("div", {
       style: S.card
@@ -5268,7 +5268,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
       }),
       style: S.edt
     }, "\u270F\uFE0F"), /*#__PURE__*/React.createElement("button", {
-      onClick: () => delProc(sp.id, proc.id),
+      onClick: () => { if(confirm(lang==="ar"?"هل تريد حذف هذا الإجراء؟":"Delete this procedure?")) delProc(sp.id, proc.id); },
       style: S.del
     }, "\uD83D\uDDD1"))))), /*#__PURE__*/React.createElement("div", {
       style: S.card
@@ -5405,7 +5405,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
       }),
       style: S.edt
     }, "\u270F\uFE0F"), /*#__PURE__*/React.createElement("button", {
-      onClick: () => delIPC(mod.id),
+      onClick: () => { if(confirm(lang==="ar"?"هل تريد حذف هذا الموديول وكل خطواته؟":"Delete this IPC module and all its steps?")) delIPC(mod.id); },
       style: S.del
     }, "\uD83D\uDDD1 ", t("حذف", "Del"))))), /*#__PURE__*/React.createElement("div", {
       style: S.card
@@ -5459,7 +5459,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
       }),
       style: S.edt
     }, "\u270F\uFE0F"), /*#__PURE__*/React.createElement("button", {
-      onClick: () => delStep(mod.id, step.id),
+      onClick: () => { if(confirm(lang==="ar"?"هل تريد حذف هذه الخطوة؟":"Delete this step?")) delStep(mod.id, step.id); },
       style: S.del
     }, "\uD83D\uDDD1"))))), /*#__PURE__*/React.createElement("div", {
       style: S.card
@@ -5649,7 +5649,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
     }),
     style: S.edt
   }, "\u270F\uFE0F"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => delSpec(sp.id),
+    onClick: () => { if(confirm(lang==="ar"?"هل تريد حذف هذا التخصص وكل محتوياته؟":"Delete this specialty and all its contents?")) delSpec(sp.id); },
     style: S.del
   }, "\uD83D\uDDD1"))))), tab === "ipc" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -5711,7 +5711,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
     }),
     style: S.edt
   }, "\u270F\uFE0F"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => delIPC(mod.id),
+    onClick: () => { if(confirm(lang==="ar"?"هل تريد حذف هذا الموديول وكل خطواته؟":"Delete this IPC module and all its steps?")) delIPC(mod.id); },
     style: S.del
   }, "\uD83D\uDDD1"))))), tab === "users" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -5791,7 +5791,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
   }, "@", u.username)), /*#__PURE__*/React.createElement("span", {
     style: S.tag(u.role === "admin" ? V.pur : V.grn)
   }, u.role), u.id !== user?.id && /*#__PURE__*/React.createElement("button", {
-    onClick: () => delUser(u.id),
+    onClick: () => { if(confirm(lang==="ar"?"هل تريد حذف هذا المستخدم؟":"Delete this user?")) delUser(u.id); },
     style: S.del
   }, "\uD83D\uDDD1")))), tab === "drill" && /*#__PURE__*/React.createElement("div", null,
     /*#__PURE__*/React.createElement("div", { style:{...S.card, marginBottom:12} },
