@@ -1086,8 +1086,8 @@ body {
               <option value="Periodontics — قسم اللثة">Periodontics</option>
               <option value="General Dentistry — طب الأسنان العام">General Dentistry</option>
               <option value="Pedodontics — طب أسنان الأطفال">Pedodontics</option>
-              <option value="- — -">-</option>
-              <option value="- — -">Radiology</option>
+              <option value="Reception — الاستقبال">Reception</option>
+              <option value="Radiology — قسم الأشعة">Radiology</option>
             </select>
           </div>
           <div class="form-group">
@@ -1810,6 +1810,7 @@ function switchTab(tab) {
 function onDeptChange() {
   currentDept = document.getElementById('dept-select').value;
   currentProcIdx = 0;
+  _lastRenderKey = ""; _lastDoctor = "";
   renderProcList();
   renderContent();
 }
@@ -1823,7 +1824,7 @@ function renderProcList() {
     el.className = 'proc-item' + (i === currentProcIdx ? ' active' : '');
     el.setAttribute('role','option');
     el.setAttribute('aria-selected', i === currentProcIdx ? 'true' : 'false');
-    el.onclick = () => { currentProcIdx = i; renderProcList(); renderContent(); };
+    el.onclick = () => { currentProcIdx = i; _lastRenderKey=""; _lastDoctor=""; renderProcList(); renderContent(); };
     el.innerHTML = `<span class="proc-num">${String(i+1).padStart(2,'0')}</span> ${proc.name}`;
     list.appendChild(el);
   });
@@ -1836,6 +1837,13 @@ function getTrayKey(idx) {
   return `${currentDept}_${currentProcIdx}_t${idx}`;
 }
 
+let _lastRenderKey = "";   // مفتاح الرندر الأخير — لو ما تغيّر ما نعيد بناء كل شيء
+let _lastDoctor = "";
+
+function _renderKey() {
+  return `${currentDept}:${currentProcIdx}`;
+}
+
 function renderContent() {
   const dept = DATA[currentDept];
   const proc = dept.procedures[currentProcIdx];
@@ -1843,7 +1851,7 @@ function renderContent() {
   const selectedDoctor = doctorSelect ? doctorSelect.value : 'default';
   const docPref = proc.doctors[selectedDoctor] || proc.doctors['default'];
 
-  // Build instruments/consumables list with doctor exclusions + additions applied
+  // Build final instruments/consumables (with doctor add/remove applied)
   let instruments = [...proc.instruments];
   let consumables = [...proc.consumables];
   if (docPref) {
@@ -1853,14 +1861,24 @@ function renderContent() {
     docPref.add_consumables.forEach(name => { if (!consumables.find(i=>i.name===name)) consumables.push({name, tip:"Added per doctor preference.", _added:true}); });
   }
 
-  // Count checked
-  const totalItems = instruments.length + consumables.length;
-  let checkedCount = 0;
-  instruments.forEach(it => { if (checkState[getCheckKey('inst',it.name)]) checkedCount++; });
-  consumables.forEach(it => { if (checkState[getCheckKey('cons',it.name)]) checkedCount++; });
+  currentChecklistItems.inst = instruments;
+  currentChecklistItems.cons = consumables;
 
-  // Tray slots — تُبنى من قائمة الأدوات النهائية (بعد الاستبعاد/الإضافة)
-  // عشان الصينية المرئية تطابق دايمًا شيكليست "BASIC INSTRUMENTS" بالضبط
+  const renderKey = _renderKey();
+  const doctorChanged = selectedDoctor !== _lastDoctor;
+
+  // ── لو التخصص/الإجراء ما تغيّر: تحديث جزئي بدل إعادة بناء كامل ──────────
+  if (renderKey === _lastRenderKey && !doctorChanged) {
+    _updateCounts(instruments, consumables);
+    _updateTraySlots();
+    _updateChecklistBoxes(instruments, consumables);
+    return;
+  }
+
+  _lastRenderKey = renderKey;
+  _lastDoctor = selectedDoctor;
+
+  // Build tray
   const tray = instruments.map((it, idx) => ({
     img: it.imageUrl || (it._imgKey ? IMG[it._imgKey] : IMG.composite),
     label: it.name.split(' ').slice(0,2).join(' '),
@@ -1868,6 +1886,9 @@ function renderContent() {
   }));
   const trayChecked = tray.filter(s=>s.checked).length;
   const trayDone = tray.length > 0 && trayChecked === tray.length;
+  const checkedCount = instruments.filter(it => checkState[getCheckKey('inst',it.name)]).length
+                     + consumables.filter(it => checkState[getCheckKey('cons',it.name)]).length;
+  const totalItems = instruments.length + consumables.length;
 
   const html = `
     <div class="proc-header">
@@ -1875,7 +1896,7 @@ function renderContent() {
       <h1>${proc.name}</h1>
       <div class="proc-meta">
         ${proc.meta.map(m => `<span class="meta-tag">${m}</span>`).join('')}
-        <span class="meta-tag">${checkedCount}/${totalItems} items checked</span>
+        <span class="meta-tag" id="rc-total-badge">${checkedCount}/${totalItems} items checked</span>
       </div>
     </div>
 
@@ -1883,14 +1904,14 @@ function renderContent() {
     <div class="tray-visual">
       <div class="tray-header">
         <span class="tray-title">Instrument Tray — Top View</span>
-        <span class="tray-status${trayDone?' done':''}">
+        <span class="tray-status${trayDone?' done':''}" id="rc-tray-status">
           <span class="dot"></span>
           ${trayDone ? 'Tray Ready' : `${trayChecked}/${tray.length} placed`}
         </span>
       </div>
-      <div class="tray-grid">
+      <div class="tray-grid" id="rc-tray-grid">
         ${tray.map((slot,idx) => `
-          <div class="tray-slot${slot.checked?' checked':''}" tabindex="0"
+          <div class="tray-slot${slot.checked?' checked':''}" tabindex="0" data-tray-idx="${idx}"
                role="button" aria-pressed="${slot.checked}"
                title="${slot.label}"
                onclick="toggleTray(${idx})"
@@ -1931,7 +1952,63 @@ function renderContent() {
   document.getElementById('content-area').innerHTML = html;
 }
 
-let currentChecklistItems = { inst: [], cons: [] }; // آخر قوائم معروضة فعليًا (بعد تطبيق تفضيلات الدكتور) — تُستخدم لأزرار تحديد/إلغاء الكل
+// ── تحديثات جزئية خفيفة (لا تعيد بناء innerHTML الكاملة) ──────────────────
+
+function _updateCounts(instruments, consumables) {
+  const checkedCount = instruments.filter(it => checkState[getCheckKey('inst',it.name)]).length
+                     + consumables.filter(it => checkState[getCheckKey('cons',it.name)]).length;
+  const totalItems = instruments.length + consumables.length;
+  const badge = document.getElementById('rc-total-badge');
+  if (badge) badge.textContent = `${checkedCount}/${totalItems} items checked`;
+
+  // حدّث عداد كل checklist-card-head
+  ['inst','cons'].forEach(type => {
+    const items = currentChecklistItems[type] || [];
+    const count = items.filter(it => checkState[getCheckKey(type, it.name)]).length;
+    const el = document.querySelector(`[data-cl-counter="${type}"]`);
+    if (el) el.textContent = `${count} / ${items.length}`;
+  });
+}
+
+function _updateTraySlots() {
+  const dept = DATA[currentDept];
+  const proc = dept.procedures[currentProcIdx];
+  const grid = document.getElementById('rc-tray-grid');
+  if (!grid) return;
+  const slots = grid.querySelectorAll('.tray-slot:not(.empty)');
+  let trayChecked = 0;
+  slots.forEach(el => {
+    const idx = parseInt(el.getAttribute('data-tray-idx'));
+    const isChecked = !!trayState[getTrayKey(idx)];
+    el.classList.toggle('checked', isChecked);
+    el.setAttribute('aria-pressed', isChecked);
+    if (isChecked) trayChecked++;
+  });
+  const statusEl = document.getElementById('rc-tray-status');
+  if (statusEl) {
+    const total = slots.length;
+    const done = trayChecked === total && total > 0;
+    statusEl.className = 'tray-status' + (done ? ' done' : '');
+    statusEl.innerHTML = `<span class="dot"></span>${done ? 'Tray Ready' : `${trayChecked}/${total} placed`}`;
+  }
+}
+
+function _updateChecklistBoxes(instruments, consumables) {
+  const area = document.getElementById('content-area');
+  if (!area) return;
+  area.querySelectorAll('.cl-item').forEach(el => {
+    const type = el.getAttribute('data-cl-type');
+    const name = el.getAttribute('data-cl-name');
+    if (!type || !name) return;
+    const isChecked = !!checkState[getCheckKey(type, name)];
+    el.classList.toggle('checked', isChecked);
+    const cb = el.querySelector('input[type=checkbox]');
+    if (cb) cb.checked = isChecked;
+  });
+}
+
+
+let currentChecklistItems = { inst: [], cons: [] };
 
 function renderChecklist(title, items, type) {
   currentChecklistItems[type] = items;
@@ -1940,7 +2017,7 @@ function renderChecklist(title, items, type) {
     <div class="checklist-card">
       <div class="checklist-card-head">
         <span class="head-label">${title}</span>
-        <span class="counter">${count} / ${items.length}</span>
+        <span class="counter" data-cl-counter="${type}">${count} / ${items.length}</span>
       </div>
       ${items.length > 0 ? `
       <div class="checklist-quick-actions">
@@ -1952,7 +2029,10 @@ function renderChecklist(title, items, type) {
           const key = getCheckKey(type, it.name);
           const checked = !!checkState[key];
           return `
-            <label class="cl-item${checked?' checked':''}${it._added?' added':''}" onclick="toggleCheck(event,'${type}','${it.name.replace(/'/g,"\\'")}')">
+            <label class="cl-item${checked?' checked':''}${it._added?' added':''}"
+                   data-cl-type="${type}"
+                   data-cl-name="${it.name.replace(/"/g,'&quot;')}"
+                   onclick="toggleCheck(event,'${type}','${it.name.replace(/'/g,"\\'")}')">
               <input type="checkbox" ${checked?'checked':''} tabindex="-1"/>
               <div class="cl-item-text">
                 <span class="item-label">
@@ -1973,20 +2053,23 @@ function renderChecklist(title, items, type) {
 function selectAllChecklist(type, checked) {
   const items = currentChecklistItems[type] || [];
   items.forEach(it => { checkState[getCheckKey(type, it.name)] = checked; });
-  renderContent();
+  _updateCounts(currentChecklistItems.inst, currentChecklistItems.cons);
+  _updateChecklistBoxes(currentChecklistItems.inst, currentChecklistItems.cons);
 }
 
 function toggleCheck(event, type, name) {
   event.preventDefault();
   const key = getCheckKey(type, name);
   checkState[key] = !checkState[key];
-  renderContent();
+  _updateCounts(currentChecklistItems.inst, currentChecklistItems.cons);
+  _updateChecklistBoxes(currentChecklistItems.inst, currentChecklistItems.cons);
 }
 
 function toggleTray(idx) {
   const key = getTrayKey(idx);
   trayState[key] = !trayState[key];
-  renderContent();
+  _updateTraySlots();
+  _updateCounts(currentChecklistItems.inst, currentChecklistItems.cons);
 }
 
 function openImageLightbox(src, label) {
