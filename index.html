@@ -2365,7 +2365,7 @@ function NursePortal({
       style: {
         fontSize: 38
       }
-    }, sp.icon), /*#__PURE__*/React.createElement("div", {
+    }, (sp.iconUrl && sp.iconUrl.trim()) ? /*#__PURE__*/React.createElement("img", { src:sp.iconUrl, alt:"", style:{width:"1.3em",height:"1.3em",objectFit:"cover",borderRadius:4,verticalAlign:"middle"} }) : sp.icon), /*#__PURE__*/React.createElement("div", {
       style: {
         flex: 1
       }
@@ -2920,7 +2920,7 @@ function NursePortal({
       fontSize: 24,
       marginBottom: 5
     }
-  }, sp.icon), /*#__PURE__*/React.createElement("div", {
+  }, (sp.iconUrl && sp.iconUrl.trim()) ? /*#__PURE__*/React.createElement("img", { src:sp.iconUrl, alt:"", style:{width:"1.3em",height:"1.3em",objectFit:"cover",borderRadius:4,verticalAlign:"middle"} }) : sp.icon), /*#__PURE__*/React.createElement("div", {
     style: {
       fontWeight: 800,
       fontSize: 13
@@ -3036,7 +3036,8 @@ function EditModalComponent({
       nameAr: item?.nameAr || "",
       nameEn: item?.nameEn || "",
       icon: item?.icon || "🦷",
-      color: item?.color || "#38bdf8"
+      color: item?.color || "#38bdf8",
+      iconUrl: item?.iconUrl || ""
     };
     if (type === "tool") return {
       nameAr: item?.nameAr || "",
@@ -3114,6 +3115,26 @@ function EditModalComponent({
       e.target.value = "";
     });
   };
+
+  const handleIconFile = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "cmuqyx2d");
+    fetch("https://api.cloudinary.com/v1_1/dnlkxh3qi/image/upload", {
+      method: "POST",
+      body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.secure_url) set("iconUrl", data.secure_url);
+      else alert(t("فشل رفع الأيقونة", "Icon upload failed"));
+    })
+    .catch(() => alert(t("فشل رفع الأيقونة", "Icon upload failed")))
+    .finally(() => { setUploading(false); e.target.value = ""; });
+  };
   const save = () => {
     if (type === "spec") {
       item ? updSpec(item.id, form) : addSpec(form);
@@ -3183,7 +3204,49 @@ function EditModalComponent({
   }), /*#__PURE__*/React.createElement(F, { form, set,
     label: t2("الاسم بالإنجليزي", "Name (English)"),
     k: "nameEn"
-  })), (type === "spec" || type === "ipcmod") && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(F, { form, set,
+  })), type === "spec" && /*#__PURE__*/React.createElement(React.Fragment, null,
+    /*#__PURE__*/React.createElement("div", { style:{ marginBottom:12 } },
+      /*#__PURE__*/React.createElement("label", { style:S.lbl }, t2("أيقونة التخصص (صورة)","Specialty Icon (image)")),
+      /*#__PURE__*/React.createElement("div", { style:{ display:"flex", gap:10, alignItems:"flex-start", marginTop:6 } },
+        /*#__PURE__*/React.createElement("div", {
+          style:{ width:64, height:64, borderRadius:12, overflow:"hidden", background:"#f1f5f9",
+                  border:"2px dashed #e2e8f0", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }
+        },
+          (form.iconUrl && form.iconUrl.trim())
+            ? /*#__PURE__*/React.createElement("img", { src:form.iconUrl, alt:"", style:{width:"100%",height:"100%",objectFit:"cover"}, onError:e=>{ e.target.style.display="none"; } })
+            : /*#__PURE__*/React.createElement("span", { style:{fontSize:30, opacity:0.5} }, form.icon || "🦷")
+        ),
+        /*#__PURE__*/React.createElement("div", { style:{flex:1, display:"flex", flexDirection:"column", gap:8} },
+          /*#__PURE__*/React.createElement("button", {
+            type:"button", disabled:uploading,
+            onClick:() => document.getElementById("spec-icon-input").click(),
+            style:{ padding:"7px 14px", borderRadius:8, border:"1px solid #6366f1", background:"#eef2ff",
+                    color:"#4338ca", fontSize:12, cursor:uploading?"default":"pointer", fontWeight:800 }
+          }, uploading ? t2("⏳ جارٍ الرفع...","⏳ Uploading...") : t2("📸 رفع أيقونة","📸 Upload Icon")),
+          /*#__PURE__*/React.createElement("input", {
+            id:"spec-icon-input", type:"file", accept:"image/*",
+            style:{display:"none"}, onChange:handleIconFile
+          }),
+          form.iconUrl && /*#__PURE__*/React.createElement("button", {
+            type:"button", onClick:() => set("iconUrl",""),
+            style:{ padding:"4px 10px", borderRadius:6, border:"1px solid #fee2e2",
+                    background:"#fff5f5", color:"#ef4444", fontSize:11, cursor:"pointer", fontWeight:700, alignSelf:"flex-start" }
+          }, t2("🗑 حذف الأيقونة","🗑 Remove Icon")),
+          /*#__PURE__*/React.createElement("div", { style:{fontSize:11, color:"#94a3b8"} },
+            t2("تظهر بجانب اسم التخصص في كل صفحات التطبيق.","Shown next to the specialty name across all pages.")
+          )
+        )
+      )
+    ),
+    /*#__PURE__*/React.createElement(F, { form, set,
+      label: t2("إيموجي احتياطي (لو ما في صورة)","Fallback emoji (if no image)"),
+      k: "icon"
+    }),
+    /*#__PURE__*/React.createElement(F, { form, set,
+      label: t2("اللون hex مثل #38bdf8","Color hex e.g. #38bdf8"),
+      k: "color"
+    })
+  ), type === "ipcmod" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(F, { form, set,
     label: t2("الأيقونة (emoji)", "Icon (emoji)"),
     k: "icon"
   }), /*#__PURE__*/React.createElement(F, { form, set,
@@ -3997,14 +4060,18 @@ function AdminPortal({
   const [drillLoading, setDrillLoading] = useState(false);
   const dir = lang === "ar" ? "rtl" : "ltr";
   const addSpec = async f => {
-    const id = gid(),
-      item = {
-        ...f,
-        id,
-        tools: [],
-        procedures: []
-      };
-    await mut("addSpecialty", f, d => d.specialties.push(item));
+    const tempId = gid();
+    const item = { ...f, id: tempId, tools: [], procedures: [], doctors: [] };
+    const res = await mut("addSpecialty", f, d => d.specialties.push(item));
+    if (res && res.data && res.data.id) {
+      const realId = res.data.id;
+      setDb(d => {
+        const n = deep(d);
+        const s = n.specialties.find(x => x.id === tempId);
+        if (s) s.id = realId;
+        return n;
+      });
+    }
     toastFn(t("تم إضافة القسم", "Specialty added"));
   };
   const updSpec = async (id, f) => {
@@ -4036,9 +4103,28 @@ function AdminPortal({
     toastFn(t("تم الحذف", "Deleted"));
   };
   const addTool = async (spId, f) => {
-    await mut("addTool", { specialtyId: spId, ...f }, d => {});
+    const tempId = gid();
+    const item = { ...f, id: tempId, specialtyId: spId };
+    const res = await mut("addTool", { specialtyId: spId, ...f }, d => {
+      const s = d.specialties.find(x => x.id === spId);
+      if (s) { s.tools = s.tools || []; s.tools.push(item); }
+    });
+    if (res && res.data && res.data.id) {
+      const realId = res.data.id;
+      setDb(d => {
+        const n = deep(d);
+        const s = n.specialties.find(x => x.id === spId);
+        if (s) { const tl = (s.tools || []).find(t => t.id === tempId); if (tl) tl.id = realId; }
+        return n;
+      });
+      setAS(s => s?.id === spId ? {
+        ...s,
+        tools: (s.tools || []).map(tl => tl.id === tempId ? { ...tl, id: realId } : tl)
+      } : s);
+    } else if (GAS_OK() && token) {
+      await syncAll(token); // احتياط لو السيرفر ما رجّع id
+    }
     toastFn(t("تم إضافة الأداة ✅", "Tool added ✅"));
-    if (GAS_OK() && token) await syncAll(token);
   };
   const updTool = async (spId, id, f) => {
     const origNameEn = f._origNameEn || f.nameEn || "";
@@ -4065,22 +4151,24 @@ function AdminPortal({
     toastFn(t("تم الحذف", "Deleted"));
   };
   const addProc = async (spId, f) => {
-    const id = gid(),
-      item = {
-        ...f,
-        id,
-        specialtyId: spId
-      };
-    await mut("addProcedure", {
-      specialtyId: spId,
-      ...f
-    }, d => {
+    const tempId = gid();
+    const item = { ...f, id: tempId, specialtyId: spId };
+    const res = await mut("addProcedure", { specialtyId: spId, ...f }, d => {
       const s = d.specialties.find(x => x.id === spId);
       if (s) s.procedures.push(item);
     });
+    const realId = (res && res.data && res.data.id) ? res.data.id : tempId;
+    if (realId !== tempId) {
+      setDb(d => {
+        const n = deep(d);
+        const s = n.specialties.find(x => x.id === spId);
+        if (s) { const p = s.procedures.find(x => x.id === tempId); if (p) p.id = realId; }
+        return n;
+      });
+    }
     setAS(s => s?.id === spId ? {
       ...s,
-      procedures: [...s.procedures, item]
+      procedures: [...s.procedures.filter(p => p.id !== tempId), { ...item, id: realId }]
     } : s);
     toastFn(t("تم إضافة الإجراء", "Procedure added"));
   };
@@ -5114,7 +5202,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
       style: {
         fontSize: 30
       }
-    }, sp.icon), /*#__PURE__*/React.createElement("div", {
+    }, (sp.iconUrl && sp.iconUrl.trim()) ? /*#__PURE__*/React.createElement("img", { src:sp.iconUrl, alt:"", style:{width:"1.3em",height:"1.3em",objectFit:"cover",borderRadius:4,verticalAlign:"middle"} }) : sp.icon), /*#__PURE__*/React.createElement("div", {
       style: {
         flex: 1
       }
@@ -5614,7 +5702,7 @@ answer هو رقم الخيار الصحيح (0-3).`;
     style: {
       fontSize: 20
     }
-  }, sp.icon), /*#__PURE__*/React.createElement("div", {
+  }, (sp.iconUrl && sp.iconUrl.trim()) ? /*#__PURE__*/React.createElement("img", { src:sp.iconUrl, alt:"", style:{width:"1.3em",height:"1.3em",objectFit:"cover",borderRadius:4,verticalAlign:"middle"} }) : sp.icon), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1
     }
