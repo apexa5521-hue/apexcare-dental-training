@@ -23,12 +23,13 @@ const mustUUID=v=>{if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
 async function handler(req,res){
  if(req.method==="OPTIONS"){res.writeHead(204,{"Access-Control-Allow-Origin":cors||"null","Access-Control-Allow-Headers":"Authorization,Content-Type","Access-Control-Allow-Methods":"GET,POST,OPTIONS"});return res.end()}
  const url=new URL(req.url,"http://localhost");
- if(req.method==="GET"&&["/","/learning-achievements.js","/api-bridge.js"].includes(url.pathname)){const fp=url.pathname==="/"?path.join(__dirname,"../v2/index.html"):path.join(__dirname,"../v2",url.pathname.slice(1));return fs.readFile(fp,(err,bytes)=>{if(err)return send(res,404,{error:"NOT_FOUND"});res.writeHead(200,{"Content-Type":url.pathname.endsWith(".js")?"application/javascript; charset=utf-8":"text/html; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"});res.end(bytes)})}
+ if(req.method==="GET"&&["/","/demo","/live.js","/learning-achievements.js","/api-bridge.js","/interface-i18n.js"].includes(url.pathname)){const fp=url.pathname==="/"?path.join(__dirname,"../v2/live.html"):url.pathname==="/demo"?path.join(__dirname,"../v2/index.html"):path.join(__dirname,"../v2",url.pathname.slice(1));return fs.readFile(fp,(err,bytes)=>{if(err)return send(res,404,{error:"NOT_FOUND"});res.writeHead(200,{"Content-Type":url.pathname.endsWith(".js")?"application/javascript; charset=utf-8":"text/html; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"});res.end(bytes)})}
  if(url.pathname==="/health")return send(res,200,{ok:true,service:"QIB",status:"ready"});
  if(url.pathname==="/api/config"&&req.method==="GET")return send(res,200,{supabaseUrl:process.env.SUPABASE_URL,publishableKey:process.env.SUPABASE_PUBLISHABLE_KEY});
  if(!["GET","POST"].includes(req.method))return send(res,405,{error:"METHOD_NOT_ALLOWED"});
  const userId=await verifiedUser(req),body=req.method==="POST"?await parseBody(req):{},centerId=body.centerId||url.searchParams.get("centerId");
  if(req.method==="GET"&&url.pathname==="/api/my-centers"){const c=await pool.query("select c.id,c.name,m.role from qib.memberships m join qib.centers c on c.id=m.center_id where m.user_id=$1 order by c.name",[userId]);return send(res,200,{centers:c.rows})}
+ if(req.method==="POST"&&url.pathname==="/api/centers/create"){return transaction(async c=>{const owner=await c.query("select 1 from qib.platform_owners where user_id=$1",[userId]);if(!owner.rowCount)deny();const name=String(body.name||"").trim();if(name.length<3||name.length>100)throw Object.assign(Error("INVALID_CENTER_NAME"),{status:400});const x=await c.query("insert into qib.centers(name) values($1) returning id,name",[name]);await c.query("insert into qib.memberships(user_id,center_id,role,display_name) values($1,$2,'admin','Platform administrator')",[userId,x.rows[0].id]);send(res,200,{center:x.rows[0]})})}
  if(!centerId)throw Object.assign(Error("CENTER_REQUIRED"),{status:400});
  const result=await transaction(async c=>{
   const role=await member(c,userId,centerId);
@@ -41,12 +42,6 @@ async function handler(req,res){
    return {userId,role:role.role,centerId,specialties:specialties.rows,modules:modules.rows,assignments:assignments.rows,notifications:notifications.rows};
   }
 
-  if(req.method==="POST"&&url.pathname==="/api/centers/create"){
-   const owner=await c.query("select 1 from qib.platform_owners where user_id=$1",[userId]);if(!owner.rowCount)deny();
-   const name=String(body.name||"").trim();if(name.length<3||name.length>100)throw Object.assign(Error("INVALID_CENTER_NAME"),{status:400});
-   const newCenter=await c.query("insert into qib.centers(name) values($1) returning id,name",[name]);
-   await c.query("insert into qib.memberships(user_id,center_id,role,display_name) values($1,$2,'admin',$3)",[userId,newCenter.rows[0].id,"Platform administrator"]);return {center:newCenter.rows[0]};
-  }
   if(req.method==="POST"&&url.pathname==="/api/specialties/create"){
    if(role.role!=="admin")deny();const code=String(body.code||"").trim().toLowerCase(),label=String(body.label||"").trim();
    if(!/^[a-z][a-z0-9_]{2,39}$/.test(code)||label.length<3||label.length>80)throw Object.assign(Error("INVALID_SPECIALTY"),{status:400});
