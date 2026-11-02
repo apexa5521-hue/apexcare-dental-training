@@ -1,6 +1,7 @@
 "use strict";
 const http=require("node:http"),fs=require("node:fs"),path=require("node:path"),{randomUUID}=require("node:crypto");
 const {Pool}=require("pg");
+const {createClient}=require("@supabase/supabase-js");
 const required=["DATABASE_URL","SUPABASE_URL","SUPABASE_PUBLISHABLE_KEY"];
 if(require.main===module){for(const key of required)if(!process.env[key]){console.error("Missing "+key);process.exit(1)}}
 const pool=new Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.DB_SSL==="disable"?false:{rejectUnauthorized:true},max:10});
@@ -46,6 +47,21 @@ async function handler(req,res){
    if(role.role!=="admin")deny();const code=String(body.code||"").trim().toLowerCase(),label=String(body.label||"").trim();
    if(!/^[a-z][a-z0-9_]{2,39}$/.test(code)||label.length<3||label.length>80)throw Object.assign(Error("INVALID_SPECIALTY"),{status:400});
    const x=await c.query("insert into qib.specialties(code,label) values($1,$2) on conflict(code) do update set label=excluded.label returning id,code,label",[code,label]);return {specialty:x.rows[0]};
+  }
+
+  if(req.method==="POST"&&url.pathname==="/api/team/invite"){
+   if(role.role!=="admin")deny();
+   if(!process.env.SUPABASE_SECRET_KEY)throw Object.assign(Error("INVITATIONS_NOT_CONFIGURED"),{status:503});
+   const email=String(body.email||"").trim().toLowerCase(),displayName=String(body.displayName||"").trim(),targetRole=body.role||"nurse";
+   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||displayName.length<2||displayName.length>100||!["nurse","supervisor","admin"].includes(targetRole))throw Object.assign(Error("INVALID_INVITATION"),{status:400});
+   const sid=body.specialtyId?mustUUID(body.specialtyId):null;
+   const client=createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SECRET_KEY,{auth:{autoRefreshToken:false,persistSession:false,detectSessionInUrl:false}});
+   const invited=await client.auth.admin.inviteUserByEmail(email,{data:{display_name:displayName}});
+   if(invited.error||!invited.data?.user?.id)throw Object.assign(Error("INVITATION_FAILED"),{status:409});
+   const uid=invited.data.user.id;
+   await c.query("insert into qib.memberships(user_id,center_id,role,display_name) values($1,$2,$3,$4) on conflict(user_id,center_id) do update set role=excluded.role,display_name=excluded.display_name",[uid,centerId,targetRole,displayName]);
+   if(sid)await c.query("insert into qib.assignments(user_id,center_id,specialty_id) values($1,$2,$3) on conflict do nothing",[uid,centerId,sid]);
+   return {invited:true,userId:uid};
   }
   if(req.method==="POST"&&url.pathname==="/api/team/enroll"){
    if(role.role!=="admin")deny();const target=mustUUID(body.userId),displayName=String(body.displayName||"").trim(),targetRole=body.role;
