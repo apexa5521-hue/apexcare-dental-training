@@ -40,6 +40,86 @@ async function handler(req,res){
     c.query("select id,kind,body,read_at,created_at from qib.notifications where user_id=$1 and center_id=$2 order by created_at desc limit 25",[userId,centerId])]);
    return {userId,role:role.role,centerId,specialties:specialties.rows,modules:modules.rows,assignments:assignments.rows,notifications:notifications.rows};
   }
+
+  if(req.method==="POST"&&url.pathname==="/api/centers/create"){
+   const owner=await c.query("select 1 from qib.platform_owners where user_id=$1",[userId]);if(!owner.rowCount)deny();
+   const name=String(body.name||"").trim();if(name.length<3||name.length>100)throw Object.assign(Error("INVALID_CENTER_NAME"),{status:400});
+   const newCenter=await c.query("insert into qib.centers(name) values($1) returning id,name",[name]);
+   await c.query("insert into qib.memberships(user_id,center_id,role,display_name) values($1,$2,'admin',$3)",[userId,newCenter.rows[0].id,"Platform administrator"]);return {center:newCenter.rows[0]};
+  }
+  if(req.method==="POST"&&url.pathname==="/api/specialties/create"){
+   if(role.role!=="admin")deny();const code=String(body.code||"").trim().toLowerCase(),label=String(body.label||"").trim();
+   if(!/^[a-z][a-z0-9_]{2,39}$/.test(code)||label.length<3||label.length>80)throw Object.assign(Error("INVALID_SPECIALTY"),{status:400});
+   const x=await c.query("insert into qib.specialties(code,label) values($1,$2) on conflict(code) do update set label=excluded.label returning id,code,label",[code,label]);return {specialty:x.rows[0]};
+  }
+  if(req.method==="POST"&&url.pathname==="/api/team/enroll"){
+   if(role.role!=="admin")deny();const target=mustUUID(body.userId),displayName=String(body.displayName||"").trim(),targetRole=body.role;
+   if(!["nurse","supervisor","admin"].includes(targetRole)||displayName.length<2||displayName.length>100)throw Object.assign(Error("INVALID_ENROLLMENT"),{status:400});
+   await c.query("insert into qib.memberships(user_id,center_id,role,display_name) values($1,$2,$3,$4) on conflict(user_id,center_id) do update set role=excluded.role,display_name=excluded.display_name",[target,centerId,targetRole,displayName]);
+   return {enrolled:true};
+  }
+  if(req.method==="GET"&&url.pathname==="/api/modules"){
+   const rows=await c.query("select id,slug,specialty_id,translations,status,version from qib.modules where center_id=$1 or (center_id is null and status='published') order by slug",[centerId]);
+   return {modules:rows.rows.filter(x=>x.status==="published"||["supervisor","admin"].includes(role.role))};
+  }
+  if(req.method==="POST"&&url.pathname==="/api/modules/save"){
+   if(role.role!=="admin")deny();
+   const slug=String(body.slug||"").trim(),translations=body.translations;
+   if(!/^[a-z0-9_-]{3,80}$/.test(slug)||typeof translations!=="object"||!translations?.en?.title||JSON.stringify(translations).length>30000)throw Object.assign(Error("INVALID_MODULE"),{status:400});
+   const specialty=mustUUID(body.specialtyId);
+   const existing=await c.query("select * from qib.modules where center_id=$1 and slug=$2 for update",[centerId,slug]);
+   if(existing.rowCount){
+    const m=existing.rows[0],version=m.version+1;
+    await c.query("insert into qib.content_revisions(module_id,editor_id,version,snapshot) values($1,$2,$3,$4)",[m.id,userId,m.version,JSON.stringify(m)]);
+    await c.query("update qib.modules set translations=$2,version=$3,status='draft',updated_at=now() where id=$1",[m.id,JSON.stringify(translations),version]);return {id:m.id,version,status:"draft"};
+   }
+   const x=await c.query("insert into qib.modules(center_id,specialty_id,slug,translations) values($1,$2,$3,$4) returning id,version,status",[centerId,specialty,slug,JSON.stringify(translations)]);
+   return x.rows[0];
+  }
+  if(req.method==="POST"&&url.pathname==="/api/modules/publish"){
+   if(role.role!=="admin")deny();const id=mustUUID(body.moduleId);
+   const r=await c.query("update qib.modules set status='published',updated_at=now() where id=$1 and center_id=$2 returning id,version",[id,centerId]);if(!r.rowCount)deny();
+   return {published:true,module:r.rows[0]};
+  }
+  if(req.method==="POST"&&url.pathname==="/api/modules/complete"){
+   const moduleId=mustUUID(body.moduleId);
+   const valid=await c.query("select specialty_id from qib.modules where id=$1 and status='published' and (center_id=$2 or center_id is null)",[moduleId,centerId]);if(!valid.rowCount)deny();
+   const assignment=await c.query("select 1 from qib.assignments where user_id=$1 and center_id=$2 and specialty_id=$3",[userId,centerId,valid.rows[0].specialty_id]);if(!assignment.rowCount)deny();
+   await c.query("insert into qib.module_progress(user_id,center_id,module_id) values($1,$2,$3) on conflict do nothing",[userId,centerId,moduleId]);return {completed:true};
+  }
+  if(req.method==="GET"&&url.pathname==="/api/progress"){
+   const p=await c.query("select module_id,completed_at from qib.module_progress where center_id=$1 and user_id=$2",[centerId,userId]);
+   const cert=await c.query("select id,kind,specialty_id,issued_at,expires_at,revoked_at from qib.certificates where center_id=$1 and user_id=$2",[centerId,userId]);
+   return {completedModules:p.rows,certificates:cert.rows};
+  }
+  if(req.method==="GET"&&url.pathname==="/api/reports"){
+   if(!["supervisor","admin"].includes(role.role))deny();
+   const [counts,competencies,attempts]=await Promise.all([
+    c.query("select count(*)::int as learners from qib.memberships where center_id=$1 and role='nurse'",[centerId]),
+    c.query("select status,count(*)::int as count from qib.skill_observations where center_id=$1 group by status",[centerId]),
+    c.query("select count(*)::int as total,round(avg(score))::int as average from qib.attempts where center_id=$1 and status='submitted'",[centerId])]);
+   return {learners:counts.rows[0].learners,observations:competencies.rows,assessments:attempts.rows[0]};
+  }
+  if(req.method==="POST"&&url.pathname==="/api/certificates/issue"){
+   if(!["supervisor","admin"].includes(role.role))deny();
+   const target=mustUUID(body.userId),spec=mustUUID(body.specialtyId),kind=body.kind;
+   if(!["knowledge","competency"].includes(kind))throw Object.assign(Error("INVALID_CARD_TYPE"),{status:400});
+   const enroll=await c.query("select 1 from qib.assignments where user_id=$1 and center_id=$2 and specialty_id=$3",[target,centerId,spec]);if(!enroll.rowCount)deny();
+   const mod=await c.query("select m.id from qib.modules m where m.specialty_id=$1 and m.status='published' and (m.center_id=$2 or m.center_id is null)",[spec,centerId]);
+   if(!mod.rowCount)throw Object.assign(Error("NO_PUBLISHED_MODULES"),{status:409});
+   const completed=await c.query("select count(*)::int as n from qib.module_progress where user_id=$1 and center_id=$2 and module_id=any($3::uuid[])",[target,centerId,mod.rows.map(x=>x.id)]);
+   if(completed.rows[0].n!==mod.rowCount)throw Object.assign(Error("LEARNING_INCOMPLETE"),{status:409});
+   const exams=await c.query("select 1 from qib.attempts a join qib.assessments x on x.id=a.assessment_id where a.user_id=$1 and a.center_id=$2 and x.specialty_id=$3 and a.status='submitted' and a.score>=75 limit 1",[target,centerId,spec]);
+   if(!exams.rowCount)throw Object.assign(Error("ASSESSMENT_REQUIRED"),{status:409});
+   if(kind==="competency"){
+    const skills=await c.query("select id from qib.skill_definitions where specialty_id=$1",[spec]);if(!skills.rowCount)throw Object.assign(Error("SKILL_DEFINITIONS_REQUIRED"),{status:409});
+    const observed=await c.query("select distinct on (skill_id) skill_id,status from qib.skill_observations where center_id=$1 and user_id=$2 and skill_id=any($3::uuid[]) order by skill_id,observed_at desc",[centerId,target,skills.rows.map(x=>x.id)]);
+    if(observed.rowCount!==skills.rowCount||observed.rows.some(x=>x.status!=="competent"))throw Object.assign(Error("PRACTICAL_OBSERVATION_REQUIRED"),{status:409});
+   }
+   const evidence={completedModules:completed.rows[0].n,passedAssessment:true,practicalApproved:kind==="competency"};
+   const cert=await c.query("insert into qib.certificates(center_id,user_id,specialty_id,kind,issued_by,evidence) values($1,$2,$3,$4,$5,$6) returning id,issued_at",[centerId,target,spec,kind,userId,JSON.stringify(evidence)]);
+   return {certificate:{...cert.rows[0],kind,verifiedByServer:true}};
+  }
   if(req.method==="GET"&&url.pathname==="/api/learners"){
    if(!["supervisor","admin"].includes(role.role))deny();
    const r=await c.query("select m.user_id,m.display_name,m.role,a.specialty_id from qib.memberships m left join qib.assignments a on a.center_id=m.center_id and a.user_id=m.user_id where m.center_id=$1 order by display_name",[centerId]);return {learners:r.rows};
