@@ -16,6 +16,7 @@ Render Blueprint: `render.yaml`. Set env vars in Render dashboard, never commit 
 - DATABASE_URL: QIB project's dedicated Postgres connection string (with valid CA/TLS settings; see note below)
 - SUPABASE_URL: QIB project Auth URL
 - SUPABASE_PUBLISHABLE_KEY: public key used server-side for Auth verification request
+- SUPABASE_SECRET_KEY: private server-only key used for authorized employee invitations
 - CORS_ORIGIN: exact deployed frontend origin
 - PORT: Render provides this
 
@@ -26,8 +27,19 @@ Center IDs and staff identities are authorized by the server on EVERY operation.
 ## Known gates before real staff rollout
 - Get a dedicated database, Render workspace and domain; set up verified TLS certificate chain for pg and secret rotation.
 - A browser-only app cannot guarantee visibility events were received. Implement heartbeat timeout and interrupted-session reconciliation before supervised exams.
-- The browser preview at `v2/index.html` is NOT yet wired to this API. Its sessionStorage demo is deliberately separated from live data.
+- The server-connected QIB UI is `v2/live.html`, served at Render `/`. The original demonstrator is `/demo`.
 - Add cross-center isolation E2E, authorized onboarding, content revision publishing, private image upload, secure card signing/revocation, comprehensive translated lessons, staging and migration tests.
 - Generate and commit an npm lockfile in a network-enabled build environment. `npm install --omit=dev` is bootstrap only; switch to `npm ci --omit=dev` after committing lockfile.
 - Testing mockups does not certify clinical accuracy; all dermatology/IPC content must be reviewed by a credentialed clinical lead.
 - Never merge this branch to main or set up automatic production deployment without explicit acceptance tests.
+
+## Operational setup
+1. Create a dedicated QIB Supabase project and apply `deploy/schema.sql` there only.
+2. Register a platform owner via Supabase Auth and insert that verified UUID into `qib.platform_owners` with secure SQL access.
+3. Configure Render environment variables and deploy `render.yaml` to an approved workspace. The app entrypoint is `/`, the design-only demo is `/demo`, health check `/health`.
+4. On first successful login, the verified platform owner can create a center. Center admins can invite staff and assign specialties.
+5. Clinical reviewers must publish approved translated training content and verified English questions before assigning official assessments.
+6. Test enrollment, center isolation, interruption handling, server scores and certificate evidence in staging. Production deployment requires explicit approval; existing GAS/Sheets records remain intact.
+
+## Limitations
+The new authenticated app is wired to QIB API routes, but no dedicated QIB Supabase project or Render deployment has yet been configured. No legacy records have been migrated. Clinical content approvals, certificate QR verification and secure private image uploads are not deployed. CI unit tests alone do not prove readiness for real clinical use.
