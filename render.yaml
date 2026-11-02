@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: qib-v2-api
+    runtime: node
+    plan: starter
+    rootDir: api
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeployTrigger: 'off'
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: DB_SSL
+        value: require
