@@ -25,8 +25,50 @@
   };
   picker.addEventListener("change",()=>apply().catch(e=>{error.textContent=e.message}));
   const status=el("div","Connected");status.id="qib-live-status";status.style.cssText="position:fixed;bottom:10px;right:14px;z-index:900;background:#264239;color:#dffced;border:1px solid #4c7662;padding:9px 13px;border-radius:10px;font:12px system-ui";
-  document.body.append(status);await apply();box.remove();
+  document.body.append(status);await apply();box.remove();await setupLiveAssessments();
  }
+
+ let activeAttempt=null,heartbeatTimer=null;
+ async function setupLiveAssessments(){
+  const area=document.getElementById("assessment");
+  const demo=area.querySelector(".panel");demo.querySelectorAll("#startAttempt,#pauseAttempt,#resumeAttempt").forEach(x=>x.remove());
+  const info=document.getElementById("examText");info.textContent="Official assessment sessions are handled securely by the connected service.";
+  const official=el("div");official.className="panel section";
+  const h=el("h2","Assigned Assessments"),list=el("div"),questions=el("div"),message=el("p");
+  message.setAttribute("role","status");message.style.color="#b8eddc";official.append(h,list,questions,message);area.append(official);
+  async function event(kind){
+   if(!activeAttempt)return;
+   const id=activeAttempt;activeAttempt=null;clearInterval(heartbeatTimer);
+   document.getElementById("attemptStatus").textContent="Assessment Paused";
+   questions.replaceChildren(el("p","Your assessment session has been paused. Please contact your supervisor to review and resume your attempt."));
+   try{await api("/api/exams/event",{method:"POST",keepalive:true,body:JSON.stringify({centerId:document.getElementById("center").value,attemptId:id,eventKey:crypto.randomUUID(),kind})})}catch(e){message.textContent="Session interrupted. Your supervisor can review the attempt. Reconnect before continuing."}
+  }
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")event("visibility_hidden")});
+  window.addEventListener("pagehide",()=>{if(activeAttempt)event("pagehide")});
+  async function begin(assessment){
+   try{
+    const a=await api("/api/exams/start",{method:"POST",body:JSON.stringify({centerId:document.getElementById("center").value,assessmentId:assessment.id})});
+    document.getElementById("attemptStatus").textContent=a.status;
+    questions.replaceChildren();
+    if(a.status!=="active"){message.textContent="This session is "+a.status.replace("_"," ")+". Contact your supervisor for review.";return}
+    activeAttempt=a.attemptId;message.textContent="Answer each question in English. Leaving the page pauses the assessment for review.";
+    for(const q of a.questions){
+     const panel=el("fieldset");panel.style.cssText="border:1px solid #3f545f;border-radius:12px;padding:16px;margin:13px 0";
+     const legend=el("legend",q.prompt_en);panel.append(legend);
+     q.options_en.forEach((opt,i)=>{const label=el("label");label.style.cssText="display:block;padding:9px";const radio=el("input");radio.type="radio";radio.name="q_"+q.id;radio.checked=a.answers?.[q.id]===i;radio.onchange=async()=>{try{await api("/api/exams/answer",{method:"POST",body:JSON.stringify({centerId:document.getElementById("center").value,attemptId:a.attemptId,questionId:q.id,choice:i})});message.textContent="Answer saved"}catch(e){message.textContent=e.message;if(e.message==="ATTEMPT_NOT_ACTIVE")event("connection_interrupted")}};label.append(radio,document.createTextNode(" "+opt));panel.append(label)});
+     questions.append(panel);
+    }
+    const finish=el("button","Submit Assessment");finish.className="btn";finish.onclick=async()=>{try{const result=await api("/api/exams/submit",{method:"POST",body:JSON.stringify({centerId:document.getElementById("center").value,attemptId:a.attemptId})});activeAttempt=null;clearInterval(heartbeatTimer);questions.replaceChildren();message.textContent="Assessment submitted · Score "+result.score+"%";document.getElementById("attemptStatus").textContent="Submitted"}catch(e){message.textContent=e.message}};
+    questions.append(finish);
+    heartbeatTimer=setInterval(async()=>{if(!activeAttempt)return;try{const p=await api("/api/exams/heartbeat",{method:"POST",body:JSON.stringify({centerId:document.getElementById("center").value,attemptId:a.attemptId})});if(p.status!=="active")event("connection_interrupted")}catch{event("connection_interrupted")}},10000);
+   }catch(e){message.textContent=e.message}
+  }
+  async function refresh(){
+   try{const data=await api("/api/exams?centerId="+encodeURIComponent(document.getElementById("center").value));list.replaceChildren(...data.assessments.map(a=>{const b=el("button",a.title+" · "+a.minutes+" min");b.className="btn secondary";b.style.margin="5px";b.onclick=()=>begin(a);return b}));if(!data.assessments.length)list.append(el("p","No active assessments assigned to your account."))}catch(e){message.textContent=e.message}
+  }
+  await refresh();
+ }
+
  form.addEventListener("submit",async e=>{
   e.preventDefault();submit.disabled=true;error.textContent="";
   try{
