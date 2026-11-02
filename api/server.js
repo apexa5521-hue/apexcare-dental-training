@@ -30,7 +30,10 @@ async function handler(req,res){
  if(!["GET","POST"].includes(req.method))return send(res,405,{error:"METHOD_NOT_ALLOWED"});
  const userId=await verifiedUser(req),body=req.method==="POST"?await parseBody(req):{},centerId=body.centerId||url.searchParams.get("centerId");
  if(req.method==="GET"&&url.pathname==="/api/my-centers"){const c=await pool.query("select c.id,c.name,m.role from qib.memberships m join qib.centers c on c.id=m.center_id where m.user_id=$1 order by c.name",[userId]);return send(res,200,{centers:c.rows})}
- if(req.method==="POST"&&url.pathname==="/api/centers/create"){return transaction(async c=>{const owner=await c.query("select 1 from qib.platform_owners where user_id=$1",[userId]);if(!owner.rowCount)deny();const name=String(body.name||"").trim();if(name.length<3||name.length>100)throw Object.assign(Error("INVALID_CENTER_NAME"),{status:400});const x=await c.query("insert into qib.centers(name) values($1) returning id,name",[name]);await c.query("insert into qib.memberships(user_id,center_id,role,display_name) values($1,$2,'admin','Platform administrator')",[userId,x.rows[0].id]);send(res,200,{center:x.rows[0]})})}
+ if(req.method==="POST"&&url.pathname==="/api/centers/create"){
+  const center=await transaction(async c=>{const owner=await c.query("select 1 from qib.platform_owners where user_id=$1",[userId]);if(!owner.rowCount)deny();const name=String(body.name||"").trim();if(name.length<3||name.length>100)throw Object.assign(Error("INVALID_CENTER_NAME"),{status:400});const x=await c.query("insert into qib.centers(name) values($1) returning id,name",[name]);await c.query("insert into qib.memberships(user_id,center_id,role,display_name) values($1,$2,'admin','Platform administrator')",[userId,x.rows[0].id]);return x.rows[0]});
+  return send(res,200,{center});
+ }
  if(!centerId)throw Object.assign(Error("CENTER_REQUIRED"),{status:400});
  const result=await transaction(async c=>{
   const role=await member(c,userId,centerId);
