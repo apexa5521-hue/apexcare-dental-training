@@ -1,0 +1,28 @@
+name: QIB v2 validation
+on:
+  push:
+    branches: [feature/qib-platform-v2-security-ux]
+  pull_request:
+    paths: ['src/**','test/**','preview/**','.github/workflows/qib-v2-ci.yml']
+permissions:
+  contents: read
+jobs:
+  security-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: |
+          node --check src/secure-exam.js
+          node --check test/secure-exam.test.js
+      - name: Server exam state machine tests
+        run: node --test test/secure-exam.test.js
+      - name: Detect unsafe accidental content
+        shell: bash
+        run: |
+          if grep -RInE 'ADMIN_PW[[:space:]]*=|const SS_ID[[:space:]]*=' src preview test; then
+            echo "Do not publish embedded admin passwords or spreadsheet IDs"; exit 1
+          fi
