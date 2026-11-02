@@ -22,6 +22,10 @@ jobs:
           node --check test/tenant-access.test.js
           node --check v2/learning-achievements.js
           node --check test/learning-achievements.test.js
+          node --check v2/interface-i18n.js
+          node --check test/interface-i18n.test.js
+          node --check v2/api-bridge.js
+          node --check api/server.js
       - name: Server exam state machine tests
         run: node --test test/*.test.js
       - name: Detect unsafe accidental content
