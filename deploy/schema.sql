@@ -3,11 +3,12 @@ begin;
 create schema if not exists qib;
 revoke all on schema qib from public, anon, authenticated;
 create extension if not exists pgcrypto;
-create table if not exists qib.centers(id uuid primary key default gen_random_uuid(), name text not null, branding jsonb not null default '{}', created_at timestamptz default now());
+create table if not exists qib.platform_owners(user_id uuid primary key);\ncreate table if not exists qib.centers(id uuid primary key default gen_random_uuid(), name text not null, branding jsonb not null default '{}', created_at timestamptz default now());
 create table if not exists qib.specialties(id uuid primary key default gen_random_uuid(), code text unique not null, label text not null);
 create table if not exists qib.memberships(user_id uuid not null, center_id uuid references qib.centers(id), role text not null check(role in ('nurse','supervisor','admin')), display_name text not null, primary key(user_id,center_id));
 create table if not exists qib.assignments(user_id uuid not null, center_id uuid not null, specialty_id uuid references qib.specialties(id), primary key(user_id,center_id,specialty_id),foreign key(user_id,center_id) references qib.memberships(user_id,center_id));
 create table if not exists qib.modules(id uuid primary key default gen_random_uuid(),center_id uuid references qib.centers(id),specialty_id uuid references qib.specialties(id),slug text not null,translations jsonb not null default '{}',status text not null default 'draft' check(status in ('draft','review','published','archived')),version integer not null default 1,updated_at timestamptz default now(),unique(center_id,slug));
+create table if not exists qib.module_progress(user_id uuid not null,center_id uuid references qib.centers(id),module_id uuid references qib.modules(id),completed_at timestamptz not null default now(),primary key(user_id,center_id,module_id));
 create table if not exists qib.media(id uuid primary key default gen_random_uuid(),center_id uuid not null references qib.centers(id),module_id uuid references qib.modules(id),storage_path text not null,mime_type text not null,alt_text jsonb not null default '{}',status text not null default 'draft');
 create table if not exists qib.assessments(id uuid primary key default gen_random_uuid(),center_id uuid not null references qib.centers(id),specialty_id uuid references qib.specialties(id),title text not null,status text not null default 'draft',starts_at timestamptz,ends_at timestamptz,minutes integer not null default 30 check(minutes between 1 and 240));
 create table if not exists qib.questions(id uuid primary key default gen_random_uuid(),assessment_id uuid not null references qib.assessments(id),prompt_en text not null,options_en jsonb not null,answer_index integer not null check(answer_index>=0));
@@ -22,5 +23,7 @@ create table if not exists qib.notifications(id uuid primary key default gen_ran
 -- No schema grants to anon/authenticated: access is ONLY through authenticated Render API.
 -- RLS as defense in depth. Render DB credential is privileged: API MUST enforce tenant checks.
 do $$ declare t text; begin for t in select tablename from pg_tables where schemaname='qib' loop execute format('alter table qib.%I enable row level security',t); end loop; end $$;
+-- Bootstrap one platform owner using their verified Supabase Auth UUID, after review:
+-- insert into qib.platform_owners(user_id) values ('<verified-auth-user-uuid>');
 insert into qib.specialties(code,label) values('dental','Dental Nursing'),('dermatology','Dermatology Nursing') on conflict(code) do nothing;
 commit;
