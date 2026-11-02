@@ -24,9 +24,8 @@
    window.QIBLive={api,centerId:()=>picker.value,userId:d.userId,role:d.role,bootstrap:d};
   };
   picker.addEventListener("change",()=>apply().catch(e=>{error.textContent=e.message}));
-  await apply();box.remove();
   const status=el("div","Connected");status.id="qib-live-status";status.style.cssText="position:fixed;bottom:10px;right:14px;z-index:900;background:#264239;color:#dffced;border:1px solid #4c7662;padding:9px 13px;border-radius:10px;font:12px system-ui";
-  document.body.append(status);status.textContent="Connected · "+window.QIBLive.role;
+  document.body.append(status);await apply();box.remove();
  }
  form.addEventListener("submit",async e=>{
   e.preventDefault();submit.disabled=true;error.textContent="";
