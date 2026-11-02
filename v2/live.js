@@ -34,7 +34,13 @@
  function fill(select,items){const prev=select.value;select.replaceChildren(...items.map(o=>{const op=el("option",o.name);op.value=o.id;return op}));if(items.some(o=>o.id===prev))select.value=prev}
  async function init(){
   const data=await request("/api/my-centers");state.centers=data.centers||[];
-  if(!state.centers.length)throw Error("Your account is not assigned to a center. Contact the QIB administrator.");
+  if(!state.centers.length){
+   const name=prompt("No assigned centers found. If you are the authorized platform owner, enter a new QIB center name. Otherwise select Cancel and contact your administrator.");
+   if(!name)throw Error("No assigned center. Contact your administrator.");
+   await request("/api/centers/create",{method:"POST",body:JSON.stringify({name:name.trim()})});
+   state.centers=(await request("/api/my-centers")).centers||[];
+   if(!state.centers.length)throw Error("Center setup could not be completed.");
+  }
   fill($("center"),state.centers);state.center=$("center").value;await changeCenter();$("login").hidden=true;
  }
  async function changeCenter(){
