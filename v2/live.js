@@ -43,7 +43,7 @@
   const [p,exams]=await Promise.all([request("/api/progress?centerId="+encodeURIComponent(state.center)),request("/api/exams?centerId="+encodeURIComponent(state.center))]);
   state.completed=new Set((p.completedModules||[]).map(x=>x.module_id));state.certificates=p.certificates||[];state.exams=exams.assessments||[];
   setText("connection",state.centers.find(c=>c.id===state.center)?.name+" · "+state.role);
-  renderDashboard();renderModules();renderAchievements();fill($("assignSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("moduleSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));updateLanguage();displayPage("home");
+  renderDashboard();renderModules();renderAchievements();fill($("assignSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("moduleSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("inviteSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));updateLanguage();displayPage("home");
  }
  function renderDashboard(){
   const completed=state.modules.filter(m=>state.completed.has(m.id)).length,total=state.modules.length;
@@ -107,6 +107,7 @@
  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&state.attempt)lockExam("visibility_hidden")});
  window.addEventListener("pagehide",()=>{if(state.attempt)lockExam("pagehide")});
  async function loadTeam(){
+  $("inviteArea").hidden=state.role!=="admin";$("assignmentForm").hidden=state.role!=="admin";
   const data=await request("/api/learners?centerId="+encodeURIComponent(state.center)),list=$("teamList");
   list.replaceChildren(...data.learners.map(x=>{const row=el("div",undefined,"row");row.append(el("span",x.display_name),el("span",x.role,"pill"));return row}));
   const users=new Map(data.learners.map(x=>[x.user_id,x.display_name]));fill($("assignUser"),[...users].map(([id,name])=>({id,name})));
@@ -120,6 +121,7 @@
   [["Nursing staff",data.learners],["Submitted assessments",data.assessments.total],["Average score",data.assessments.average??"—"]].forEach(([label,value])=>{const card=el("div",undefined,"card");card.append(el("span",label,"over"),el("div",value,"metric"));root.append(card)});
   $("reviewQueue").replaceChildren(el("p","Clinical assessment review requires an authorized supervisor and a documented reason.","muted"))
  }
+ $("inviteForm").onsubmit=async e=>{e.preventDefault();try{const result=await post("/api/team/invite",{email:$("inviteEmail").value,displayName:$("inviteName").value,role:$("inviteRole").value,specialtyId:$("inviteSpecialty").value});$("inviteForm").reset();await loadTeam();alert("Invitation sent to "+result.userId)}catch(ex){showError(ex)}};
  $("assignmentForm").onsubmit=async e=>{e.preventDefault();try{await post("/api/assign",{userId:$("assignUser").value,specialtyId:$("assignSpecialty").value});await loadTeam();alert("Specialty assigned")}catch(ex){showError(ex)}};
  $("moduleForm").onsubmit=async e=>{e.preventDefault();const tr={};for(const lang of ["en","ar","ur","id"]){const title=$("title"+lang[0].toUpperCase()+lang.slice(1)).value,body=$("body"+lang[0].toUpperCase()+lang.slice(1)).value;if(title||body)tr[lang]={title,body}};
  try{await post("/api/modules/save",{specialtyId:$("moduleSpecialty").value,slug:$("moduleSlug").value,translations:tr});await loadStudio();alert("Draft saved for review")}catch(ex){showError(ex)}};
