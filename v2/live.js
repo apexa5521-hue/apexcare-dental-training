@@ -68,7 +68,7 @@
   })
  }
  function openLesson(m){
-  const t=translation(m),body=$("modalBody");body.replaceChildren(el("span","QIB LEARNING","over"),el("h2",t.title||m.slug));
+  const t=translation(m),body=$("modalBody");body.replaceChildren(el("span","NSE LEARNING","over"),el("h2",t.title||m.slug));
   const p=el("p",t.body||t.description||"No detailed lesson has been entered yet.");p.style.whiteSpace="pre-wrap";body.append(p);
   const note=el("p",help[$("language").value],"subtle"),btn=el("button",state.completed.has(m.id)?"Completed":"Mark lesson complete","btn");btn.disabled=state.completed.has(m.id);
   btn.onclick=async()=>{try{await post("/api/modules/complete",{moduleId:m.id});state.completed.add(m.id);btn.disabled=true;btn.textContent="Completed";renderDashboard();renderModules()}catch(e){showError(e)}};
