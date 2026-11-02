@@ -25,6 +25,7 @@ async function handler(req,res){
  const url=new URL(req.url,"http://localhost");
  if(req.method==="GET"&&["/","/learning-achievements.js","/api-bridge.js"].includes(url.pathname)){const fp=url.pathname==="/"?path.join(__dirname,"../v2/index.html"):path.join(__dirname,"../v2",url.pathname.slice(1));return fs.readFile(fp,(err,bytes)=>{if(err)return send(res,404,{error:"NOT_FOUND"});res.writeHead(200,{"Content-Type":url.pathname.endsWith(".js")?"application/javascript; charset=utf-8":"text/html; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"});res.end(bytes)})}
  if(url.pathname==="/health")return send(res,200,{ok:true,service:"QIB",status:"ready"});
+ if(url.pathname==="/api/config"&&req.method==="GET")return send(res,200,{supabaseUrl:process.env.SUPABASE_URL,publishableKey:process.env.SUPABASE_PUBLISHABLE_KEY});
  if(!["GET","POST"].includes(req.method))return send(res,405,{error:"METHOD_NOT_ALLOWED"});
  const userId=await verifiedUser(req),body=req.method==="POST"?await parseBody(req):{},centerId=body.centerId||url.searchParams.get("centerId");
  if(req.method==="GET"&&url.pathname==="/api/my-centers"){const c=await pool.query("select c.id,c.name,m.role from qib.memberships m join qib.centers c on c.id=m.center_id where m.user_id=$1 order by c.name",[userId]);return send(res,200,{centers:c.rows})}
