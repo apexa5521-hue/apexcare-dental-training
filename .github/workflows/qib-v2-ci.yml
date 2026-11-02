@@ -3,7 +3,7 @@ on:
   push:
     branches: [feature/qib-platform-v2-security-ux]
   pull_request:
-    paths: ['src/**','test/**','preview/**','.github/workflows/qib-v2-ci.yml']
+    paths: ['src/**','test/**','preview/**','v2/**','.github/workflows/qib-v2-ci.yml']
 permissions:
   contents: read
 jobs:
@@ -18,8 +18,10 @@ jobs:
         run: |
           node --check src/secure-exam.js
           node --check test/secure-exam.test.js
+          node --check src/tenant-access.js
+          node --check test/tenant-access.test.js
       - name: Server exam state machine tests
-        run: node --test test/secure-exam.test.js
+        run: node --test test/*.test.js
       - name: Detect unsafe accidental content
         shell: bash
         run: |
