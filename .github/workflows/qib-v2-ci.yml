@@ -20,6 +20,8 @@ jobs:
           node --check test/secure-exam.test.js
           node --check src/tenant-access.js
           node --check test/tenant-access.test.js
+          node --check v2/learning-achievements.js
+          node --check test/learning-achievements.test.js
       - name: Server exam state machine tests
         run: node --test test/*.test.js
       - name: Detect unsafe accidental content
