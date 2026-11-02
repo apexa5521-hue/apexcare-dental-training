@@ -50,9 +50,20 @@ async function handler(req,res){
    const exists=await c.query("select 1 from qib.memberships where user_id=$1 and center_id=$2",[target,centerId]);if(!exists.rowCount)deny();
    await c.query("insert into qib.assignments(user_id,center_id,specialty_id) values($1,$2,$3) on conflict do nothing",[target,centerId,specialty]);return {ok:true};
   }
+  if(req.method==="GET"&&url.pathname==="/api/exams"){
+   const r=await c.query("select a.id,a.title,a.minutes,a.starts_at,a.ends_at,a.specialty_id from qib.assessments a where a.center_id=$1 and a.status='published' and (a.starts_at is null or a.starts_at<=now()) and (a.ends_at is null or a.ends_at>=now()) and (a.specialty_id is null or exists(select 1 from qib.assignments s where s.center_id=$1 and s.user_id=$2 and s.specialty_id=a.specialty_id)) order by a.starts_at nulls first",[centerId,userId]);return {assessments:r.rows};
+  }
+  if(req.method==="POST"&&url.pathname==="/api/exams/heartbeat"){
+   const id=mustUUID(body.attemptId);
+   const r=await c.query("select id,status,deadline_at,heartbeat_at from qib.attempts where id=$1 and center_id=$2 and user_id=$3 for update",[id,centerId,userId]);if(!r.rowCount)deny();const a=r.rows[0];
+   if(a.status!=="active")return {status:a.status};
+   if(new Date(a.deadline_at)<=new Date() || Date.now()-new Date(a.heartbeat_at).getTime()>45000){await c.query("update qib.attempts set status='paused_review' where id=$1",[id]);await c.query("insert into qib.attempt_events(attempt_id,event_key,kind,actor_id) values($1,$2,'connection_interrupted',$3)",[id,randomUUID(),userId]);return {status:'paused_review'}}
+   await c.query("update qib.attempts set heartbeat_at=now() where id=$1",[id]);return {status:'active'};
+  }
   if(req.method==="POST"&&url.pathname==="/api/exams/start"){
    const assessmentId=mustUUID(body.assessmentId);
    const a=await c.query("select * from qib.assessments where id=$1 and center_id=$2 and status='published' and (starts_at is null or starts_at<=now()) and (ends_at is null or ends_at>=now())",[assessmentId,centerId]);if(!a.rowCount)deny();
+   if(a.rows[0].specialty_id){const assign=await c.query("select 1 from qib.assignments where center_id=$1 and user_id=$2 and specialty_id=$3",[centerId,userId,a.rows[0].specialty_id]);if(!assign.rowCount)deny()}
    const q=await c.query("select id,prompt_en,options_en,answer_index from qib.questions where assessment_id=$1",[assessmentId]);if(!q.rowCount)throw Object.assign(Error("NO_QUESTIONS"),{status:409});
    await c.query("insert into qib.attempts(assessment_id,center_id,user_id,deadline_at,question_snapshot) values($1,$2,$3,least(now()+($4||' minutes')::interval,coalesce($5::timestamptz,now()+($4||' minutes')::interval)),$6) on conflict(assessment_id,user_id) do nothing",[assessmentId,centerId,userId,a.rows[0].minutes,a.rows[0].ends_at,JSON.stringify(q.rows)]);
    const r=await c.query("select id,status,deadline_at,question_snapshot,answers from qib.attempts where assessment_id=$1 and user_id=$2 for update",[assessmentId,userId]);const attempt=r.rows[0];if(attempt.status==="active"&&new Date(attempt.deadline_at)<=new Date()){await c.query("update qib.attempts set status='paused_review' where id=$1",[attempt.id]);attempt.status="paused_review"}
