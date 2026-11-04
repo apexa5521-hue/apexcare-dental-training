@@ -31,6 +31,18 @@ create table if not exists qib.legacy_history_archive (
 );
 alter table qib.legacy_history_archive enable row level security;
 revoke all on qib.legacy_history_archive from public,anon,authenticated;
+create table if not exists qib.legacy_identity_map(
+ center_id uuid not null references qib.centers(id),
+ legacy_username text not null,
+ user_id uuid not null,
+ mapped_by uuid not null,
+ mapped_at timestamptz not null default now(),
+ primary key(center_id,legacy_username),
+ unique(center_id,user_id)
+);
+alter table qib.legacy_identity_map enable row level security;
+revoke all on qib.legacy_identity_map from public,anon,authenticated;
+create index if not exists nse_archive_results_username on qib.legacy_history_archive((payload->>'username')) where source_name in ('AssessmentResults','NurseProgress','DrillProgress');
 create table if not exists qib.assessment_reviews (
  id uuid primary key default gen_random_uuid(),
  assessment_id uuid not null references qib.assessments(id),
