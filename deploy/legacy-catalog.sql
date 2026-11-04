@@ -20,6 +20,17 @@ create table if not exists qib.migration_runs (
  actor_label text not null default 'operator',
  notes text
 );
+-- Restricted archive preserves historical training data without importing legacy passwords.
+create table if not exists qib.legacy_history_archive (
+ source_name text not null check(source_name in ('Users','AssessmentResults','NurseProgress','DrillProgress','Logs')),
+ legacy_key text not null,
+ payload jsonb not null,
+ content_hash text not null,
+ imported_at timestamptz not null default now(),
+ primary key(source_name,legacy_key)
+);
+alter table qib.legacy_history_archive enable row level security;
+revoke all on qib.legacy_history_archive from public,anon,authenticated;
 create table if not exists qib.assessment_reviews (
  id uuid primary key default gen_random_uuid(),
  assessment_id uuid not null references qib.assessments(id),
