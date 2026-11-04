@@ -20,6 +20,15 @@ create table if not exists qib.migration_runs (
  actor_label text not null default 'operator',
  notes text
 );
+create table if not exists qib.assessment_reviews (
+ id uuid primary key default gen_random_uuid(),
+ assessment_id uuid not null references qib.assessments(id),
+ reviewer_id uuid not null,
+ note text not null,
+ reviewed_at timestamptz not null default now()
+);
+alter table qib.assessment_reviews enable row level security;
+revoke all on qib.assessment_reviews from public,anon,authenticated;
 alter table qib.legacy_catalog enable row level security;
 alter table qib.migration_runs enable row level security;
 revoke all on qib.legacy_catalog,qib.migration_runs from public,anon,authenticated;
