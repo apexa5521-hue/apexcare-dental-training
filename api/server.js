@@ -77,6 +77,13 @@ async function handler(req,res){
    const by={specialties:[],tools:[],procedures:[],ipcModules:[],ipcSteps:[]};
    const mapping={Specialties:'specialties',Tools:'tools',Procedures:'procedures',IPC_Modules:'ipcModules',IPC_Steps:'ipcSteps'};
    for(const x of r.rows)by[mapping[x.source_name]].push(x.payload);
+   if(role.role==="nurse"){
+    const assigned=await c.query("select s.code from qib.assignments a join qib.specialties s on s.id=a.specialty_id where a.user_id=$1 and a.center_id=$2",[userId,centerId]);
+    const allowed=new Set(assigned.rows.map(x=>x.code));
+    by.specialties=by.specialties.filter(x=>allowed.has(String(x.id)));
+    by.tools=by.tools.filter(x=>allowed.has(String(x.specialtyId)));
+    by.procedures=by.procedures.filter(x=>allowed.has(String(x.specialtyId)));
+   }
    return {catalog:by,source:'verified-import',counts:Object.fromEntries(Object.entries(by).map(([k,v])=>[k,v.length]))};
   }
   if(req.method==="GET"&&url.pathname==="/api/modules"){
