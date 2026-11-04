@@ -6,6 +6,8 @@ const {buildSpecialtyQuestions}=require("./build-specialty-exam.js");
 const required=["SUPABASE_URL","SUPABASE_PUBLISHABLE_KEY",...(process.env.DATABASE_URL?["DATABASE_URL"]:["PGHOST","PGUSER","PGPASSWORD"])];
 if(require.main===module){for(const key of required)if(!process.env[key]){console.error("Missing "+key);process.exit(1)}}
 const pool=new Pool({...(process.env.DATABASE_URL?{connectionString:process.env.DATABASE_URL}:{}),ssl:process.env.DB_SSL==="disable"?false:{rejectUnauthorized:true,...(process.env.DB_SSL_CA?{ca:process.env.DB_SSL_CA}:{})},max:5,connectionTimeoutMillis:10000,statement_timeout:15000});
+pool.on('error',e=>console.error('NSE_DB_POOL',e.code||'DATABASE_ERROR'));
+let lastReadinessErrorAt=0;
 const cors=process.env.CORS_ORIGIN||"";
 function send(res,status,body){res.writeHead(status,{"Content-Type":"application/json; charset=utf-8",...(cors?{"Access-Control-Allow-Origin":cors,"Vary":"Origin"}:{})});res.end(JSON.stringify(body))}
 function deny(code=403){const e=Error(code===401?"UNAUTHENTICATED":"FORBIDDEN");e.status=code;throw e}
@@ -28,7 +30,7 @@ async function handler(req,res){
  if(req.method==="GET"&&["/","/demo","/live.js","/live-theme.css","/learning-achievements.js","/api-bridge.js","/interface-i18n.js"].includes(url.pathname)){const fp=url.pathname==="/"?path.join(__dirname,"../v2/live.html"):url.pathname==="/demo"?path.join(__dirname,"../v2/index.html"):path.join(__dirname,"../v2",url.pathname.slice(1));return fs.readFile(fp,(err,bytes)=>{if(err)return send(res,404,{error:"NOT_FOUND"});res.writeHead(200,{"Content-Type":url.pathname.endsWith(".js")?"application/javascript; charset=utf-8":url.pathname.endsWith(".css")?"text/css; charset=utf-8":"text/html; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"});res.end(bytes)})}
  if(url.pathname==="/health"){
   try{await pool.query('select 1 from qib.specialties limit 1');return send(res,200,{ok:true,service:"NSE",status:"ready"})}
-  catch{return send(res,503,{ok:false,service:"NSE",status:"database_unavailable"})}
+  catch(e){if(Date.now()-lastReadinessErrorAt>30000){console.error('NSE_DB_READINESS',e.code||e.name||'DATABASE_ERROR');lastReadinessErrorAt=Date.now()}return send(res,503,{ok:false,service:"NSE",status:"database_unavailable"})}
  }
  if(url.pathname==="/api/config"&&req.method==="GET")return send(res,200,{supabaseUrl:process.env.SUPABASE_URL,publishableKey:process.env.SUPABASE_PUBLISHABLE_KEY});
  if(!["GET","POST"].includes(req.method))return send(res,405,{error:"METHOD_NOT_ALLOWED"});
