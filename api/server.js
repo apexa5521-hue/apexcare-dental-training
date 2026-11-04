@@ -116,6 +116,29 @@ async function handler(req,res){
    const assignment=await c.query("select 1 from qib.assignments where user_id=$1 and center_id=$2 and specialty_id=$3",[userId,centerId,valid.rows[0].specialty_id]);if(!assignment.rowCount)deny();
    await c.query("insert into qib.module_progress(user_id,center_id,module_id) values($1,$2,$3) on conflict do nothing",[userId,centerId,moduleId]);return {completed:true};
   }
+  if(req.method==="GET"&&url.pathname==="/api/legacy-history"){
+   let target=userId;if(url.searchParams.get("userId")){if(!["supervisor","admin"].includes(role.role))deny();target=mustUUID(url.searchParams.get("userId"))}
+   const mapping=await c.query("select legacy_username from qib.legacy_identity_map where center_id=$1 and user_id=$2",[centerId,target]);
+   if(!mapping.rowCount)return {linked:false,assessments:[],training:[]};
+   const username=mapping.rows[0].legacy_username;
+   const records=await c.query("select source_name,payload from qib.legacy_history_archive where source_name=any($1::text[]) and payload->>'username'=$2 order by imported_at desc limit 1000",[['AssessmentResults','NurseProgress','DrillProgress'],username]);
+   const assessments=records.rows.filter(x=>x.source_name==="AssessmentResults").map(x=>{
+    const p=x.payload;return {assessmentId:p.assessmentId,date:p.date,score:p.score,level:p.level,type:p.type,finishedAt:p.finishedAt};
+   });
+   const training=records.rows.filter(x=>x.source_name!=="AssessmentResults").map(x=>{
+    const p=x.payload;return {kind:x.source_name,date:p.date||p.updatedAt||p.createdAt,total:p.total,correct:p.correct,specIndex:p.specIndex};
+   });
+   return {linked:true,assessments,training,source:"legacy-import",privateAnswersExcluded:true};
+  }
+  if(req.method==="POST"&&url.pathname==="/api/legacy-history/link"){
+   if(role.role!=="admin")deny();
+   const target=mustUUID(body.userId),legacy=String(body.legacyUsername||"").trim();
+   if(!legacy||legacy.length>160||body.confirmIdentity!==true)throw Object.assign(Error("IDENTITY_VERIFICATION_REQUIRED"),{status:400});
+   const enrolled=await c.query("select 1 from qib.memberships where center_id=$1 and user_id=$2",[centerId,target]);if(!enrolled.rowCount)deny();
+   const historical=await c.query("select 1 from qib.legacy_history_archive where payload->>'username'=$1 limit 1",[legacy]);if(!historical.rowCount)throw Object.assign(Error("LEGACY_USER_NOT_FOUND"),{status:404});
+   await c.query("insert into qib.legacy_identity_map(center_id,legacy_username,user_id,mapped_by) values($1,$2,$3,$4)",[centerId,legacy,target,userId]);
+   return {linked:true};
+  }
   if(req.method==="GET"&&url.pathname==="/api/progress"){
    const p=await c.query("select module_id,completed_at from qib.module_progress where center_id=$1 and user_id=$2",[centerId,userId]);
    const cert=await c.query("select id,kind,specialty_id,issued_at,expires_at,revoked_at from qib.certificates where center_id=$1 and user_id=$2",[centerId,userId]);
