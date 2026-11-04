@@ -39,9 +39,9 @@ function buildSpecialtyQuestions({tools=[],procedures=[],bank=[],specialtyId,cou
   const required=new Set([...parseArray(p.toolIds),...parseArray(p.consumableIds)].map(String));
   const selected=subset.filter(t=>required.has(String(t.id))&&clean(t.nameEn));
   const wrong=uniqueNames.filter(n=>!selected.some(t=>clean(t.nameEn)===n));
-  for(const item of selected){
+  for(const item of selected.slice(0,1)){
    const q=makeQuestion("Which item is included in the documented preparation checklist for "+name+"?",item.nameEn,wrong);
-   if(q){q.prompt_en+=" ["+clean(item.id)+"]";add(q)}
+   if(q)add(q)
   }
  }
  return {questions:shuffled(candidates).slice(0,count).map(({prompt_en,options_en,answer_index,origin})=>({prompt_en,options_en,answer_index,origin})),available:candidates.length,fromBank:candidates.filter(x=>x.origin==="existing_question_bank").length,draft:true};
