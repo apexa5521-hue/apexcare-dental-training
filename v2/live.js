@@ -3,8 +3,8 @@
  const $=id=>document.getElementById(id);
  const el=(tag,txt,cls)=>{const v=document.createElement(tag);if(txt!==undefined)v.textContent=txt;if(cls)v.className=cls;return v};
  const state={token:null,auth:null,centers:[],center:null,user:null,specialties:[],modules:[],assignments:[],completed:new Set(),certificates:[],exams:[],attempt:null,heartbeat:null,role:null,catalog:null,selectedProcedure:null};
- const nav=[["home","Overview"],["learning","Learning library"],["catalog","Clinical skills"],["assessments","Clinical Assessments"],["achievements","My achievements"],["team","Nursing team"],["studio","Content studio"],["reports","Insights & reports"]];
- const titles={ar:["نظرة عامة","المكتبة التعليمية","المهارات السريرية","التقييمات السريرية","إنجازاتي","فريق التمريض","محرر المحتوى","التقارير"],ur:["جائزہ","تعلیمی لائبریری","کلینیکل مہارتیں","طبی جائزے","میری کامیابیاں","نرسنگ ٹیم","مواد میں ترمیم","رپورٹس"],id:["Ringkasan","Pustaka pembelajaran","Keterampilan klinis","Penilaian klinis","Pencapaian saya","Tim keperawatan","Editor konten","Laporan"]};
+ const nav=[["home","Overview"],["learning","Learning library"],["catalog","Clinical skills"],["ipc","Infection control"],["assessments","Clinical Assessments"],["achievements","My achievements"],["team","Nursing team"],["studio","Content studio"],["reports","Insights & reports"]];
+ const titles={ar:["نظرة عامة","المكتبة التعليمية","المهارات السريرية","مكافحة العدوى","التقييمات السريرية","إنجازاتي","فريق التمريض","محرر المحتوى","التقارير"],ur:["جائزہ","تعلیمی لائبریری","کلینیکل مہارتیں","انفیکشن کنٹرول","طبی جائزے","میری کامیابیاں","نرسنگ ٹیم","مواد میں ترمیم","رپورٹس"],id:["Ringkasan","Pustaka pembelajaran","Keterampilan klinis","Pencegahan infeksi","Penilaian klinis","Pencapaian saya","Tim keperawatan","Editor konten","Laporan"]};
  const help={en:"Learn in your preferred language. Official exams and clinical practice are in English only.",ar:"تعلّمي بلغتك المفضلة. الاختبارات الرسمية والتدريبات السريرية باللغة الإنجليزية فقط.",ur:"اپنی پسندیدہ زبان میں سیکھیں۔ رسمی امتحانات اور طبی مشق صرف انگریزی میں ہیں۔",id:"Belajar dalam bahasa pilihan Anda. Ujian resmi dan latihan klinis hanya dalam bahasa Inggris."};
  const setText=(id,v)=>{$(id).textContent=String(v)};
  const err=(e)=>e?.message||"Request failed";
@@ -21,6 +21,7 @@
   document.querySelectorAll("#nav button").forEach(v=>v.classList.toggle("selected",v.dataset.page===id));
   const index=nav.findIndex(n=>n[0]===id),l=$("language").value;setText("heading",titles[l]?.[index]||nav[index][1]);setText("breadcrumb","WORKSPACE / "+id.toUpperCase());
   if(id==="catalog")loadCatalog().catch(showError);
+  if(id==="ipc")loadIPC().catch(showError);
   if(id==="assessments")loadExams().catch(showError);
   if(id==="team")loadTeam().catch(showError);
   if(id==="studio")loadStudio().catch(showError);
@@ -112,6 +113,27 @@
    select.replaceChildren(...cat.specialties.map(x=>{const o=el("option",translated(x).name);o.value=x.id;return o}));
    if(cat.specialties.some(x=>x.id===previous))select.value=previous;
    renderCatalog();
+ }
+ async function loadIPC(){
+   if(!state.catalog){const x=await request("/api/catalog?centerId="+encodeURIComponent(state.center));state.catalog=x.catalog}
+   const data=state.catalog,root=$("ipcModules");root.replaceChildren();
+   for(const m of data.ipcModules){
+    const card=el("div",undefined,"card"),t=translated(m);card.append(el("span","IPC Learning","pill"),el("h3",t.name));
+    const btn=el("button","Study steps","btn sub");
+    btn.onclick=()=>{
+     const panel=$("ipcDetail");panel.hidden=false;panel.replaceChildren(el("h2",t.name));
+     const steps=data.ipcSteps.filter(s=>String(s.moduleId)===String(m.id));
+     if(!steps.length)panel.append(el("p","Learning steps have not been imported yet.","muted"));
+     steps.forEach((step,i)=>{
+      const lang=$("language").value,cap=lang[0].toUpperCase()+lang.slice(1);
+      const row=el("div",undefined,"row");row.append(el("span",String(i+1).padStart(2,"0"),"pill"),el("span",String(step["text"+cap]||step.textEn||step.textAr||"")));
+      panel.append(row)
+     });
+     panel.scrollIntoView({behavior:"smooth",block:"start"});
+    };
+    card.append(btn);root.append(card);
+   }
+   if(!data.ipcModules.length)root.append(el("p","No infection control modules imported yet.","muted"));
  }
  function renderCatalog(){
    if(!state.catalog)return;const cat=state.catalog,sp=$("catalogSpecialty").value,search=$("catalogSearch").value.toLowerCase().trim();
