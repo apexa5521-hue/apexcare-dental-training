@@ -230,9 +230,22 @@
   data.assessments.forEach(x=>{
    const row=el("div",undefined,"row"),copy=el("div");copy.append(el("strong",x.title),el("p",x.specialty+" · "+x.question_count+" questions · "+x.status,"small"));row.append(copy);
    if(x.status==="draft"){
-    const b=el("button","Approve & publish","btn sub");b.onclick=async()=>{
-     const note=prompt("Enter the clinical review note (reviewer, content checked, version and approval):");
-     if(!note)return;try{await post("/api/exams/publish",{assessmentId:x.id,reviewerNote:note});await loadDraftExams();await loadExams()}catch(e){showError(e)}
+    const b=el("button","Review questions","btn sub");b.onclick=async()=>{
+     try{
+      const data=await request("/api/exams/draft-questions?centerId="+encodeURIComponent(state.center)+"&assessmentId="+encodeURIComponent(x.id));
+      const panel=$("modalBody");panel.replaceChildren(el("h2",x.title),el("p","Review every question and its correct answer before publishing.","muted"));
+      data.questions.forEach((q,i)=>{
+       const item=el("div",undefined,"question");item.append(el("strong",(i+1)+". "+q.prompt_en));
+       q.options_en.forEach((opt,j)=>item.append(el("p",(j===q.answer_index?"✓ ":"")+" "+opt,j===q.answer_index?"good":"muted")));
+       panel.append(item);
+      });
+      const note=el("textarea");note.placeholder="Clinical review: reviewer name, items checked and approval rationale";note.className="input";note.style.cssText="width:100%;min-height:100px";
+      const publish=el("button","Approve & publish","btn");publish.onclick=async()=>{
+       if(note.value.trim().length<12){alert("A clinical review rationale is required.");return}
+       try{await post("/api/exams/publish",{assessmentId:x.id,reviewerNote:note.value});$("modal").close();await loadDraftExams();await loadExams()}catch(e){showError(e)}
+      };
+      panel.append(note,publish);$("modal").showModal();
+     }catch(e){showError(e)}
     };row.append(b)
    }root.append(row);
   });
