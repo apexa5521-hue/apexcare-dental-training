@@ -75,11 +75,30 @@
   btn.onclick=async()=>{try{await post("/api/modules/complete",{moduleId:m.id});state.completed.add(m.id);btn.disabled=true;btn.textContent="Completed";renderDashboard();renderModules()}catch(e){showError(e)}};
   body.append(note,btn);$("modal").showModal()
  }
- function renderAchievements(){
+ async function renderAchievements(){
   const c=$("certificates"),o=$("observations");c.replaceChildren();o.replaceChildren();
   if(!state.certificates.length)c.append(el("p","Verified Knowledge and Competency Cards will appear after center approval.","muted"));
   state.certificates.forEach(x=>{const card=el("div",undefined,"card");card.append(el("span",x.kind==="knowledge"?"Knowledge Card":"Competency Card","pill"),el("h3",state.specialties.find(s=>s.id===x.specialty_id)?.label||"Clinical Competence"),el("p","Issued "+new Date(x.issued_at).toLocaleDateString(),"small"));if(x.revoked_at)card.append(el("p","Revoked","error"));c.append(card)});
-  o.append(el("h2","Observed competencies"));request("/api/achievements?centerId="+encodeURIComponent(state.center)).then(data=>{o.append(...(data.observations||[]).map(x=>{const row=el("div",undefined,"row");row.append(el("span","Skill observation"),el("span",x.status,"pill"));return row}));if(!data.observations?.length)o.append(el("p","No completed observations recorded yet.","muted"))}).catch(showError);
+  o.append(el("h2","Observed competencies"));
+  try{
+   const data=await request("/api/achievements?centerId="+encodeURIComponent(state.center));
+   const finished=state.completed.size,passed=(data.assessments||[]).filter(x=>x.score>=75).length,practical=(data.observations||[]).filter(x=>x.status==="competent").length,issued=state.certificates.filter(x=>!x.revoked_at).length;
+   const achievements=[
+     ["Learning Explorer",finished>0,finished+" modules completed"],
+     ["Clinical Knowledge",passed>0,passed+" English assessments passed"],
+     ["Observed Competent",practical>0,practical+" clinical observations approved"],
+     ["Achievement Card",issued>0,issued+" verified cards issued"]
+   ];
+   const achieved=achievements.filter(x=>x[1]).length;
+   $("journeyBar").style.width=Math.round(achieved/achievements.length*100)+"%";
+   setText("journeyScore",achieved+" / "+achievements.length+" milestones achieved");
+   setText("journeyMessage",achieved===achievements.length?"Your verified learning journey is progressing strongly.":achieved===0?"Your development starts with the first module. Small steps build clinical confidence.":"Great progress. Continue your next learning or assessment milestone.");
+   const milestones=$("achievementMilestones");milestones.replaceChildren();
+   achievements.forEach(([name,done,detail])=>{const card=el("div",undefined,"card");card.append(el("span",done?"Achieved":"In progress",done?"pill":"small"),el("h3",name),el("p",detail,"muted"));milestones.append(card)});
+   o.append(...(data.observations||[]).map(x=>{const row=el("div",undefined,"row");row.append(el("span","Skill observation"),el("span",x.status,"pill"));return row}));
+   if(!data.observations?.length)o.append(el("p","No completed observations recorded yet.","muted"));
+  }catch(e){showError(e)}
+
  }
  function translated(r){
   const l=$("language").value,cap=l[0].toUpperCase()+l.slice(1);
