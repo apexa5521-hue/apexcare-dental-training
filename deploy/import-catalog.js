@@ -39,6 +39,9 @@ async function importCatalog(client,raw,{dryRun=true}={}){
  if(dryRun)return {...prepared,records:undefined,dryRun:true};
  await client.query("begin");
  try{
+  for(const r of prepared.records.filter(x=>x.source==="Specialties")){
+   const label=String(r.payload.nameEn||r.payload.nameAr||r.id);await client.query("insert into qib.specialties(code,label) values($1,$2) on conflict(code) do update set label=excluded.label",[r.id,label]);
+  }
   for(const r of prepared.records){
    await client.query("insert into qib.legacy_catalog(source_name,legacy_id,specialty_legacy_id,payload,content_hash) values($1,$2,$3,$4,$5) on conflict(source_name,legacy_id) do update set specialty_legacy_id=excluded.specialty_legacy_id,payload=excluded.payload,content_hash=excluded.content_hash,imported_at=now()",[r.source,r.id,r.specialtyId,JSON.stringify(r.payload),r.hash]);
   }
