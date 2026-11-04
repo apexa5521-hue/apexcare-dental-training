@@ -130,6 +130,13 @@ async function handler(req,res){
    });
    return {linked:true,assessments,training,source:"legacy-import",privateAnswersExcluded:true};
   }
+  if(req.method==="GET"&&url.pathname==="/api/legacy-history/unlinked"){
+   if(role.role!=="admin")deny();
+   const rows=await c.query("select distinct payload->>'username' as username from qib.legacy_history_archive where source_name=any($1::text[]) and nullif(payload->>'username','') is not null order by username limit 3000",[['Users','AssessmentResults','NurseProgress','DrillProgress']]);
+   const linked=await c.query("select legacy_username from qib.legacy_identity_map where center_id=$1",[centerId]);
+   const used=new Set(linked.rows.map(x=>x.legacy_username));
+   return {unlinked:rows.rows.map(x=>x.username).filter(x=>!used.has(x))};
+  }
   if(req.method==="POST"&&url.pathname==="/api/legacy-history/link"){
    if(role.role!=="admin")deny();
    const target=mustUUID(body.userId),legacy=String(body.legacyUsername||"").trim();
