@@ -180,6 +180,13 @@ async function handler(req,res){
     const x=await c.query("select a.id,a.title,a.status,a.minutes,s.label as specialty,(select count(*)::int from qib.questions q where q.assessment_id=a.id) as question_count from qib.assessments a left join qib.specialties s on s.id=a.specialty_id where a.center_id=$1 order by a.title",[centerId]);
     return {assessments:x.rows};
   }
+  if(req.method==="GET"&&url.pathname==="/api/exams/draft-questions"){
+   if(role.role!=="admin")deny();
+   const id=mustUUID(url.searchParams.get("assessmentId"));
+   const exam=await c.query("select id,title,status from qib.assessments where id=$1 and center_id=$2",[id,centerId]);if(!exam.rowCount)deny();
+   const questions=await c.query("select id,prompt_en,options_en,answer_index from qib.questions where assessment_id=$1 order by id",[id]);
+   return {assessment:exam.rows[0],questions:questions.rows,requiresClinicalReview:true};
+  }
   if(req.method==="POST"&&url.pathname==="/api/exams/publish"){
     if(role.role!=="admin")deny();
     const id=mustUUID(body.assessmentId),reviewerNote=String(body.reviewerNote||"").trim();
