@@ -15,7 +15,11 @@ function parseBody(req){return new Promise((resolve,reject)=>{let data="";req.on
 async function verifiedUser(req){
  const token=(req.headers.authorization||"").match(/^Bearer (.+)$/)?.[1];if(!token)deny(401);
  const resp=await fetch(process.env.SUPABASE_URL.replace(/\/$/,"")+"/auth/v1/user",{headers:{apikey:process.env.SUPABASE_PUBLISHABLE_KEY,authorization:"Bearer "+token}});
- if(!resp.ok)deny(401);const u=await resp.json();if(!u.id)deny(401);return u.id;
+ if(!resp.ok)deny(401);const u=await resp.json();if(!u.id)deny(401);
+ let sessionId;try{sessionId=JSON.parse(Buffer.from(token.split('.')[1],'base64url').toString('utf8')).session_id}catch{deny(401)}
+ if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(sessionId)))deny(401);
+ const session=await pool.query('select 1 from auth.sessions where id=$1 and user_id=$2',[sessionId,u.id]);if(!session.rows.length)deny(401);
+ return u.id;
 }
 async function member(client,userId,centerId,roles){
  if(!/^[0-9a-f-]{36}$/i.test(String(centerId)))deny();
@@ -27,6 +31,9 @@ const mustUUID=v=>{if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
 async function handler(req,res){
  if(req.method==="OPTIONS"){res.writeHead(204,{"Access-Control-Allow-Origin":cors||"null","Access-Control-Allow-Headers":"Authorization,Content-Type","Access-Control-Allow-Methods":"GET,POST,OPTIONS"});return res.end()}
  const url=new URL(req.url,"http://localhost");
+ if(req.method==='GET'&&url.pathname==='/supabase-client.js'){
+  return fs.readFile(path.join(__dirname,'node_modules/@supabase/supabase-js/dist/umd/supabase.js'),(e,bytes)=>{if(e)return send(res,503,{error:'AUTH_CLIENT_UNAVAILABLE'});res.writeHead(200,{'Content-Type':'application/javascript; charset=utf-8','Cache-Control':'public, max-age=3600','X-Content-Type-Options':'nosniff'});res.end(bytes)});
+ }
  if(req.method==="GET"&&["/","/demo","/live.js","/live-theme.css","/learning-achievements.js","/api-bridge.js","/interface-i18n.js"].includes(url.pathname)){const fp=url.pathname==="/"?path.join(__dirname,"../v2/live.html"):url.pathname==="/demo"?path.join(__dirname,"../v2/index.html"):path.join(__dirname,"../v2",url.pathname.slice(1));return fs.readFile(fp,(err,bytes)=>{if(err)return send(res,404,{error:"NOT_FOUND"});res.writeHead(200,{"Content-Type":url.pathname.endsWith(".js")?"application/javascript; charset=utf-8":url.pathname.endsWith(".css")?"text/css; charset=utf-8":"text/html; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"});res.end(bytes)})}
  if(url.pathname==="/health"){
   try{await pool.query('select 1 from qib.specialties limit 1');return send(res,200,{ok:true,service:"NSE",status:"ready"})}
@@ -35,7 +42,7 @@ async function handler(req,res){
  if(url.pathname==="/api/config"&&req.method==="GET")return send(res,200,{supabaseUrl:process.env.SUPABASE_URL,publishableKey:process.env.SUPABASE_PUBLISHABLE_KEY});
  if(!["GET","POST"].includes(req.method))return send(res,405,{error:"METHOD_NOT_ALLOWED"});
  const userId=await verifiedUser(req),body=req.method==="POST"?await parseBody(req):{},centerId=body.centerId||url.searchParams.get("centerId");
- if(req.method==="GET"&&url.pathname==="/api/my-centers"){const c=await pool.query("select c.id,c.name,m.role from qib.memberships m join qib.centers c on c.id=m.center_id where m.user_id=$1 order by c.name",[userId]);return send(res,200,{centers:c.rows})}
+ if(req.method==="GET"&&url.pathname==="/api/my-centers"){const c=await pool.query("select c.id,c.name,m.role from qib.memberships m join qib.centers c on c.id=m.center_id where m.user_id=$1 order by c.name",[userId]);const owner=await pool.query('select 1 from qib.platform_owners where user_id=$1',[userId]);return send(res,200,{centers:c.rows,platformOwner:!!owner.rowCount})}
  if(req.method==="POST"&&url.pathname==="/api/centers/create"){
   const center=await transaction(async c=>{const owner=await c.query("select 1 from qib.platform_owners where user_id=$1",[userId]);if(!owner.rowCount)deny();const name=String(body.name||"").trim();if(name.length<3||name.length>100)throw Object.assign(Error("INVALID_CENTER_NAME"),{status:400});const x=await c.query("insert into qib.centers(name) values($1) returning id,name",[name]);await c.query("insert into qib.memberships(user_id,center_id,role,display_name) values($1,$2,'admin','Platform administrator')",[userId,x.rows[0].id]);return x.rows[0]});
   return send(res,200,{center});

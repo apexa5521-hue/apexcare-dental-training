@@ -6,14 +6,17 @@ const apiRequire=createRequire(path.resolve(__dirname,'../api/package.json'));
 const {PGlite}=apiRequire('@electric-sql/pglite');
 const {server,pool}=require('../api/server');
 const ids={center:'10000000-0000-0000-0000-000000000001',other:'10000000-0000-0000-0000-000000000002',nurse:'20000000-0000-0000-0000-000000000001',supervisor:'20000000-0000-0000-0000-000000000002',exam:'30000000-0000-0000-0000-000000000001',reviewExam:'30000000-0000-0000-0000-000000000002'};
+const sessions={nurse:'40000000-0000-0000-0000-000000000001',supervisor:'40000000-0000-0000-0000-000000000002'};
+const tokens=Object.fromEntries(Object.entries(sessions).map(([name,id])=>[name,'test.'+Buffer.from(JSON.stringify({session_id:id})).toString('base64url')+'.signature']));
 let db,base,specialty,nativeFetch=global.fetch;
 async function call(route,{token='nurse',body,center=ids.center}={}){
  const url=base+route+(body?'':(route.includes('?')?'&':'?')+'centerId='+center);
- const response=await nativeFetch(url,{method:body?'POST':'GET',headers:{...(token?{Authorization:'Bearer '+token}:{}),'Content-Type':'application/json'},...(body?{body:JSON.stringify({centerId:center,...body})}:{})});
+ const response=await nativeFetch(url,{method:body?'POST':'GET',headers:{...(token?{Authorization:'Bearer '+(tokens[token]||token)}:{}),'Content-Type':'application/json'},...(body?{body:JSON.stringify({centerId:center,...body})}:{})});
  return {status:response.status,body:await response.json()};
 }
 before(async()=>{
- db=new PGlite();await db.exec('create role anon;create role authenticated;');
+ db=new PGlite();await db.exec('create role anon;create role authenticated;create schema auth;create table auth.sessions(id uuid primary key,user_id uuid not null);');
+ await db.query('insert into auth.sessions(id,user_id) values($1,$2),($3,$4)',[sessions.nurse,ids.nurse,sessions.supervisor,ids.supervisor]);
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/schema.sql'),'utf8').replace('create extension if not exists pgcrypto;',''));
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/legacy-catalog.sql'),'utf8'));
  const query=async(sql,args)=>{const r=await db.query(sql,args);return {...r,rowCount:r.rows.length||r.affectedRows||0}};
@@ -23,7 +26,7 @@ before(async()=>{
  global.fetch=async(url,options)=>{
   if(String(url).startsWith('https://nse-auth.test/')){
    const token=options.headers.authorization;
-   const id=token==='Bearer nurse'?ids.nurse:token==='Bearer supervisor'?ids.supervisor:null;
+   const id=token==='Bearer '+tokens.nurse?ids.nurse:token==='Bearer '+tokens.supervisor?ids.supervisor:null;
    return new Response(JSON.stringify(id?{id}:{}),{status:id?200:401});
   }
   return nativeFetch(url,options);
@@ -50,6 +53,11 @@ test('actual API rejects unauthenticated and cross-center access',async()=>{
  assert.equal((await call('/api/bootstrap',{center:ids.other})).status,403);
  assert.equal((await call('/api/reports')).status,403);
  assert.equal((await call('/api/reports',{token:'supervisor'})).status,200);
+});
+test('browser auth client and public config expose no server secret',async()=>{
+ const script=await nativeFetch(base+'/supabase-client.js');assert.equal(script.status,200);assert.match(script.headers.get('content-type'),/javascript/);assert((await script.text()).includes('createClient'));
+ const config=await call('/api/config',{token:null});assert.deepEqual(Object.keys(config.body).sort(),['publishableKey','supabaseUrl']);
+ const centers=await call('/api/my-centers');assert.equal(centers.body.platformOwner,false);assert.equal(centers.body.centers.length,1);
 });
 test('actual assessment routes redact answer keys and calculate score from stored answers',async()=>{
  const start=await call('/api/exams/start',{body:{assessmentId:ids.exam}});assert.equal(start.status,200);
@@ -84,4 +92,9 @@ test('owner import executes with original IDs, extra source fields and quarantin
  assert.equal(history.rows.length,2);assert(history.rows.every(x=>x.payload.password===undefined));
  const receipt=await db.query('select source_counts,imported_counts from qib.migration_runs');assert.deepEqual(receipt.rows[0].source_counts,receipt.rows[0].imported_counts);
  const issue=await db.query('select missing_id from qib.migration_issues');assert.equal(issue.rows[0].missing_id,'missing-source-id');
+});
+
+test('revoked Supabase session cannot reuse an unexpired token',async()=>{
+ await db.query('delete from auth.sessions where id=$1',[sessions.nurse]);
+ assert.equal((await call('/api/bootstrap')).status,401);
 });

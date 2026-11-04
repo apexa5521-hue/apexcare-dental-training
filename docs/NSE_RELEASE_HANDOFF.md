@@ -2,7 +2,7 @@
 
 ## Current verified state — Work continuation
 
-This is a continuation of the existing development branch and PR #1. **Not released and not ready for staff acceptance.** No merge to `main`.
+This is a continuation of the existing development branch and PR #1. **Live staging deployment; not ready for staff acceptance.** No merge to `main`.
 
 - Dedicated Supabase project **NSE-Staging**, ref `btehppfdtnajzmxtdhzk`, organization **Electronic System QIB** (`urvtectymucevnafswah`), Singapore. Confirmed healthy through the signed-in second account. No changes to Masar or the existing sterilization project.
 - Second Render workspace verified in browser: **Apexa5551's workspace**, `tea-dbiu3aetlv9c73bnilt0`. The connectors remain attached to the first accounts; do not use those connector contexts for NSE mutations.
@@ -37,12 +37,18 @@ This is a continuation of the existing development branch and PR #1. **Not relea
 - Added light/day theme and improved dark contrast, focus controls and mobile styles in `v2/live-theme.css`. Full live browser QA is still pending.
 - Fixed stale assessment connection checks, missing heartbeat selection at restart, heartbeat reset on supervisor resume, attempted center-switch state drift, global specialty mutation authorization and owner-only legacy mapping. Global legacy identity uniqueness prevents linking one historical identity to multiple centers.
 - `/health` now verifies database readiness. PG environment variables are supported as an alternative to a connection URL so the user can enter an existing database password directly without exposing it in chat. TLS verification remains enabled.
-- Added pinned lockfile and PostgreSQL-backed tests against the actual API routes, plus execution of generated migration SQL with synthetic data. **46 automated tests passed locally.** These do not replace signed-in Supabase/Render end-to-end acceptance.
-- Render form prepared for `nse-staging`, public Git repository, development branch, Node, Singapore, Free plan, repository-root build `npm ci --prefix api --omit=dev`, start `node api/server.js`. Non-secret project and pooler variables are filled. **PGPASSWORD is intentionally empty and the service has not been created/deployed.** User must enter the existing NSE database password securely in the browser. Do not read it back.
+- Added pinned lockfile and PostgreSQL-backed tests against the actual API routes, plus execution of generated migration SQL with synthetic data. **48 automated tests passed locally.** These do not replace signed-in Supabase/Render end-to-end acceptance.
+- Render service **nse-staging**, `srv-dbll3bh5efls73e348lg`, is deployed at **https://nse-staging.onrender.com/** on the existing development branch. Free plan, Singapore, manual deploys, repository-root build `npm ci --prefix api --omit=dev`, start `node api/server.js`, readiness path `/health`.
+- Initial deployment correctly refused the untrusted database certificate (`SELF_SIGNED_CERT_IN_CHAIN`). Added the official Supabase Root 2021 CA from the project's Database Settings as `DB_SSL_CA`, preserving `rejectUnauthorized: true`. The corrected deployment `dep-dbll7bvajb4s739cu25g` reached **Live**, and external `/health` returned `200` with `status: ready`.
+- External unauthenticated probes to `/api/catalog`, `/api/exams`, `/api/my-centers` returned **401**; `/api/config` returned only the project URL and publishable key. No staff data or question bank exposed.
+- Pinned Node to `22.x` to match CI rather than letting the unbounded old range select a new major runtime.
+- Added the pinned Supabase browser SDK served by the application, automatic session refresh/restore, invitation/recovery password setup and proper sign-out. The API also checks verified JWT `session_id` against `auth.sessions`, preventing a revoked session from reusing its access token. These latest changes need deployment and signed-in acceptance.
+- The dedicated project has no application Auth users yet. The next user handoff is **creation of their own initial application account**, entering the new email/password themselves. After user confirmation, verify the resulting UUID and bootstrap only that confirmed identity as platform owner; never promote an inferred staff identity.
+
 
 ## Remaining acceptance gates
 
-1. Finish the Render secret entry and deploy the tested branch. Verify the live deploy, TLS database connection, `/health`, sign-in, refresh/recovery/invitation callbacks and the configured auth redirects.
+1. Deploy the latest session-handling changes, then verify sign-in, refresh/recovery/invitation callbacks and auth redirects with the confirmed initial owner. TLS database connectivity and unauthenticated live checks have passed; authenticated acceptance has not.
 2. Establish the owner's application Auth identity, bootstrap authorized centers, then reconcile staff identities, centers, specialties and roles from verified information. Existing source users have no email/center columns; do not invent those mappings or reuse their passwords.
 3. Complete four-language interface/content coverage and clinical translation review. Build out and verify the remaining practical evaluation, training plan, notification, simulation, certificate verification/revocation and content review workflows; some base tables exist but are not yet complete end-to-end products.
 4. Review source integrity issues with the owner and clinical reviewer. Preserve missing IDs until an explicit, documented repair is approved in NSE. Do not modify the legacy source.

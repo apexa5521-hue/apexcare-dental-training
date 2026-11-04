@@ -3,6 +3,7 @@
  const $=id=>document.getElementById(id);
  const el=(tag,txt,cls)=>{const v=document.createElement(tag);if(txt!==undefined)v.textContent=txt;if(cls)v.className=cls;return v};
  const state={token:null,auth:null,centers:[],center:null,user:null,specialties:[],modules:[],assignments:[],completed:new Set(),certificates:[],exams:[],attempt:null,heartbeat:null,role:null,catalog:null,selectedProcedure:null};
+ const workspace=document.querySelector(".layout");workspace.inert=true;
  const nav=[["home","Overview"],["learning","Learning library"],["catalog","Clinical skills"],["ipc","Infection control"],["assessments","Clinical Assessments"],["achievements","My achievements"],["team","Nursing team"],["studio","Content studio"],["reports","Insights & reports"]];
  const titles={ar:["نظرة عامة","المكتبة التعليمية","المهارات السريرية","مكافحة العدوى","التقييمات السريرية","إنجازاتي","فريق التمريض","محرر المحتوى","التقارير"],ur:["جائزہ","تعلیمی لائبریری","کلینیکل مہارتیں","انفیکشن کنٹرول","طبی جائزے","میری کامیابیاں","نرسنگ ٹیم","مواد میں ترمیم","رپورٹس"],id:["Ringkasan","Pustaka pembelajaran","Keterampilan klinis","Pencegahan infeksi","Penilaian klinis","Pencapaian saya","Tim keperawatan","Editor konten","Laporan"]};
  const help={en:"Learn in your preferred language. Official exams and clinical practice are in English only.",ar:"تعلّمي بلغتك المفضلة. الاختبارات الرسمية والتدريبات السريرية باللغة الإنجليزية فقط.",ur:"اپنی پسندیدہ زبان میں سیکھیں۔ رسمی امتحانات اور طبی مشق صرف انگریزی میں ہیں۔",id:"Belajar dalam bahasa pilihan Anda. Ujian resmi dan latihan klinis hanya dalam bahasa Inggris."};
@@ -40,13 +41,14 @@
  async function init(){
   const data=await request("/api/my-centers");state.centers=data.centers||[];
   if(!state.centers.length){
+   if(!data.platformOwner)throw Error("Your account is awaiting center assignment. Contact your administrator.");
    const name=prompt("No assigned centers found. If you are the authorized platform owner, enter a new NSE center name. Otherwise select Cancel and contact your administrator.");
    if(!name)throw Error("No assigned center. Contact your administrator.");
    await request("/api/centers/create",{method:"POST",body:JSON.stringify({name:name.trim()})});
    state.centers=(await request("/api/my-centers")).centers||[];
    if(!state.centers.length)throw Error("Center setup could not be completed.");
   }
-  fill($("center"),state.centers);state.center=$("center").value;await changeCenter();$("login").hidden=true;
+  fill($("center"),state.centers);state.center=$("center").value;await changeCenter();$("login").hidden=true;workspace.inert=false;
  }
  async function changeCenter(){
   state.center=$("center").value;const data=await request("/api/bootstrap?centerId="+encodeURIComponent(state.center));
@@ -274,8 +276,47 @@
  $("assignmentForm").onsubmit=async e=>{e.preventDefault();try{await post("/api/assign",{userId:$("assignUser").value,specialtyId:$("assignSpecialty").value});await loadTeam();alert("Specialty assigned")}catch(ex){showError(ex)}};
  $("moduleForm").onsubmit=async e=>{e.preventDefault();const tr={};for(const lang of ["en","ar","ur","id"]){const title=$("title"+lang[0].toUpperCase()+lang.slice(1)).value,body=$("body"+lang[0].toUpperCase()+lang.slice(1)).value;if(title||body)tr[lang]={title,body}};
  try{await post("/api/modules/save",{specialtyId:$("moduleSpecialty").value,slug:$("moduleSlug").value,translations:tr});await loadStudio();alert("Draft saved for review")}catch(ex){showError(ex)}};
- $("loginForm").onsubmit=async e=>{e.preventDefault();setText("loginError","");try{state.auth=state.auth||await fetch("/api/config").then(r=>r.json());const r=await fetch(state.auth.supabaseUrl.replace(/\/$/,"")+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"Content-Type":"application/json",apikey:state.auth.publishableKey},body:JSON.stringify({email:$("email").value,password:$("password").value})});const data=await r.json();if(!r.ok||!data.access_token)throw Error("Invalid account or password");state.token=data.access_token;$("password").value="";await init()}catch(ex){setText("loginError",err(ex))}};
+ let clientReady,workspaceOpening;
+ let passwordSetupRequired=['invite','recovery'].includes(new URLSearchParams(location.hash.slice(1)).get('type'));
+ function openWorkspace(){
+  if(workspaceOpening)return workspaceOpening;
+  workspaceOpening=init().catch(e=>{setText("loginError",err(e));$("login").hidden=false}).finally(()=>{workspaceOpening=null});
+  return workspaceOpening;
+ }
+ function showPasswordSetup(){
+  $("login").hidden=false;$("loginForm").hidden=true;$("passwordSetupForm").hidden=false;
+ }
+ async function authClient(){
+  if(clientReady)return clientReady;
+  clientReady=(async()=>{
+   const response=await fetch('/api/config');if(!response.ok)throw Error('Sign-in service unavailable');
+   state.auth=await response.json();
+   state.client=supabase.createClient(state.auth.supabaseUrl,state.auth.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+   state.client.auth.onAuthStateChange((event,session)=>{
+    state.token=session?.access_token||null;
+    if(!session){clearInterval(state.heartbeat);state.attempt=null;state.center=null;state.user=null;workspace.inert=true;$("login").hidden=false;return}
+    if(event==='PASSWORD_RECOVERY')passwordSetupRequired=true;
+    if(passwordSetupRequired){showPasswordSetup();return}
+    if((event==='INITIAL_SESSION'||event==='SIGNED_IN')&&!state.center)setTimeout(()=>openWorkspace(),0);
+   });
+   return state.client;
+  })();
+  return clientReady;
+ }
+ $("loginForm").onsubmit=async e=>{
+  e.preventDefault();setText("loginError","");const button=$("loginForm").querySelector('button[type="submit"]');button.disabled=true;
+  try{const client=await authClient();const {data,error}=await client.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});$("password").value='';if(error||!data.session)throw Error('Invalid account or password');state.token=data.session.access_token;await openWorkspace()}
+  catch(e){setText('loginError',err(e))}finally{button.disabled=false}
+ };
+ $("passwordSetupForm").onsubmit=async e=>{
+  e.preventDefault();setText('passwordSetupError','');const button=$("passwordSetupForm").querySelector('button[type="submit"]');
+  if($("newPassword").value!==$("confirmPassword").value){setText('passwordSetupError','The passwords do not match.');return}
+  button.disabled=true;
+  try{const client=await authClient();const {error}=await client.auth.updateUser({password:$("newPassword").value});if(error)throw Error('Password could not be updated. Check the account requirements.');$("newPassword").value='';$("confirmPassword").value='';passwordSetupRequired=false;$("passwordSetupForm").hidden=true;$("loginForm").hidden=false;await openWorkspace()}
+  catch(e){setText('passwordSetupError',err(e))}finally{button.disabled=false}
+ };
+ authClient().catch(e=>setText('loginError',err(e)));
  $("center").onchange=()=>{if(state.attempt){$("center").value=state.center;showError(Error("Complete or review active assessment before switching centers."));return}changeCenter().catch(showError)};
- $("language").onchange=updateLanguage;$("closeModal").onclick=()=>$("modal").close();$("logout").onclick=()=>{if(state.attempt)lockExam("pagehide");state.token=null;location.reload()};
+ $("language").onchange=updateLanguage;$("closeModal").onclick=()=>$("modal").close();$("logout").onclick=async()=>{if(state.attempt)lockExam("pagehide");try{const client=await authClient();await client.auth.signOut({scope:"local"})}catch{}state.token=null;location.reload()};
  document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>displayPage(b.dataset.go));
 })();
