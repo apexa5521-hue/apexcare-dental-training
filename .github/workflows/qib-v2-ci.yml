@@ -1,9 +1,9 @@
-name: QIB v2 validation
+name: NSE v2 validation
 on:
   push:
     branches: [feature/qib-platform-v2-security-ux]
   pull_request:
-    paths: ['src/**','test/**','preview/**','v2/**','.github/workflows/qib-v2-ci.yml']
+    paths: ['src/**','test/**','preview/**','v2/**','api/**','deploy/**','.github/workflows/qib-v2-ci.yml']
 permissions:
   contents: read
 jobs:
@@ -26,6 +26,11 @@ jobs:
           node --check test/interface-i18n.test.js
           node --check v2/api-bridge.js
           node --check api/server.js
+          node --check v2/live.js
+          node --check deploy/import-catalog.js
+          node --check deploy/import-history.js
+          node --check test/catalog-migration.test.js
+          node --check test/history-migration.test.js
       - name: Server exam state machine tests
         run: node --test test/*.test.js
       - name: Detect unsafe accidental content
