@@ -2,9 +2,9 @@
 (()=>{
  const $=id=>document.getElementById(id);
  const el=(tag,txt,cls)=>{const v=document.createElement(tag);if(txt!==undefined)v.textContent=txt;if(cls)v.className=cls;return v};
- const state={token:null,auth:null,centers:[],center:null,user:null,specialties:[],modules:[],assignments:[],completed:new Set(),certificates:[],exams:[],attempt:null,heartbeat:null,role:null};
- const nav=[["home","Overview"],["learning","Learning library"],["assessments","Clinical Assessments"],["achievements","My achievements"],["team","Nursing team"],["studio","Content studio"],["reports","Insights & reports"]];
- const titles={ar:["نظرة عامة","المكتبة التعليمية","التقييمات السريرية","إنجازاتي","فريق التمريض","محرر المحتوى","التقارير"],ur:["جائزہ","تعلیمی لائبریری","طبی جائزے","میری کامیابیاں","نرسنگ ٹیم","مواد میں ترمیم","رپورٹس"],id:["Ringkasan","Pustaka pembelajaran","Penilaian klinis","Pencapaian saya","Tim keperawatan","Editor konten","Laporan"]};
+ const state={token:null,auth:null,centers:[],center:null,user:null,specialties:[],modules:[],assignments:[],completed:new Set(),certificates:[],exams:[],attempt:null,heartbeat:null,role:null,catalog:null,selectedProcedure:null};
+ const nav=[["home","Overview"],["learning","Learning library"],["catalog","Clinical skills"],["assessments","Clinical Assessments"],["achievements","My achievements"],["team","Nursing team"],["studio","Content studio"],["reports","Insights & reports"]];
+ const titles={ar:["نظرة عامة","المكتبة التعليمية","المهارات السريرية","التقييمات السريرية","إنجازاتي","فريق التمريض","محرر المحتوى","التقارير"],ur:["جائزہ","تعلیمی لائبریری","کلینیکل مہارتیں","طبی جائزے","میری کامیابیاں","نرسنگ ٹیم","مواد میں ترمیم","رپورٹس"],id:["Ringkasan","Pustaka pembelajaran","Keterampilan klinis","Penilaian klinis","Pencapaian saya","Tim keperawatan","Editor konten","Laporan"]};
  const help={en:"Learn in your preferred language. Official exams and clinical practice are in English only.",ar:"تعلّمي بلغتك المفضلة. الاختبارات الرسمية والتدريبات السريرية باللغة الإنجليزية فقط.",ur:"اپنی پسندیدہ زبان میں سیکھیں۔ رسمی امتحانات اور طبی مشق صرف انگریزی میں ہیں۔",id:"Belajar dalam bahasa pilihan Anda. Ujian resmi dan latihan klinis hanya dalam bahasa Inggris."};
  const setText=(id,v)=>{$(id).textContent=String(v)};
  const err=(e)=>e?.message||"Request failed";
@@ -20,6 +20,7 @@
   document.querySelectorAll(".view").forEach(v=>v.hidden=v.dataset.page!==id);
   document.querySelectorAll("#nav button").forEach(v=>v.classList.toggle("selected",v.dataset.page===id));
   const index=nav.findIndex(n=>n[0]===id),l=$("language").value;setText("heading",titles[l]?.[index]||nav[index][1]);setText("breadcrumb","WORKSPACE / "+id.toUpperCase());
+  if(id==="catalog")loadCatalog().catch(showError);
   if(id==="assessments")loadExams().catch(showError);
   if(id==="team")loadTeam().catch(showError);
   if(id==="studio")loadStudio().catch(showError);
@@ -45,7 +46,7 @@
  }
  async function changeCenter(){
   state.center=$("center").value;const data=await request("/api/bootstrap?centerId="+encodeURIComponent(state.center));
-  state.user=data.userId;state.role=data.role;state.specialties=data.specialties||[];state.assignments=data.assignments||[];state.modules=data.modules||[];
+  state.catalog=null;state.selectedProcedure=null;state.user=data.userId;state.role=data.role;state.specialties=data.specialties||[];state.assignments=data.assignments||[];state.modules=data.modules||[];
   const [p,exams]=await Promise.all([request("/api/progress?centerId="+encodeURIComponent(state.center)),request("/api/exams?centerId="+encodeURIComponent(state.center))]);
   state.completed=new Set((p.completedModules||[]).map(x=>x.module_id));state.certificates=p.certificates||[];state.exams=exams.assessments||[];
   setText("connection",state.centers.find(c=>c.id===state.center)?.name+" · "+state.role);
@@ -80,6 +81,59 @@
   state.certificates.forEach(x=>{const card=el("div",undefined,"card");card.append(el("span",x.kind==="knowledge"?"Knowledge Card":"Competency Card","pill"),el("h3",state.specialties.find(s=>s.id===x.specialty_id)?.label||"Clinical Competence"),el("p","Issued "+new Date(x.issued_at).toLocaleDateString(),"small"));if(x.revoked_at)card.append(el("p","Revoked","error"));c.append(card)});
   o.append(el("h2","Observed competencies"));request("/api/achievements?centerId="+encodeURIComponent(state.center)).then(data=>{o.append(...(data.observations||[]).map(x=>{const row=el("div",undefined,"row");row.append(el("span","Skill observation"),el("span",x.status,"pill"));return row}));if(!data.observations?.length)o.append(el("p","No completed observations recorded yet.","muted"))}).catch(showError);
  }
+ function translated(r){
+  const l=$("language").value,cap=l[0].toUpperCase()+l.slice(1);
+  return {name:r["name"+cap]||r.nameEn||r.nameAr||r.title||"Unnamed",use:r["use"+cap]||r.useEn||r.useAr||""};
+ }
+ async function loadCatalog(){
+   if(!state.catalog){const data=await request("/api/catalog?centerId="+encodeURIComponent(state.center));state.catalog=data.catalog;}
+   const cat=state.catalog,select=$("catalogSpecialty");
+   setText("catalogSpecialties",cat.specialties.length);setText("catalogTools",cat.tools.length);setText("catalogProcedures",cat.procedures.length);
+   const previous=select.value;
+   select.replaceChildren(...cat.specialties.map(x=>{const o=el("option",translated(x).name);o.value=x.id;return o}));
+   if(cat.specialties.some(x=>x.id===previous))select.value=previous;
+   renderCatalog();
+ }
+ function renderCatalog(){
+   if(!state.catalog)return;const cat=state.catalog,sp=$("catalogSpecialty").value,search=$("catalogSearch").value.toLowerCase().trim();
+   const procs=cat.procedures.filter(x=>x.specialtyId===sp);
+   const tools=cat.tools.filter(x=>x.specialtyId===sp);
+   const list=$("catalogProceduresList");list.replaceChildren();
+   procs.filter(p=>translated(p).name.toLowerCase().includes(search)).forEach(p=>{
+      const b=el("button",translated(p).name,"btn sub");b.style.textAlign="start";b.onclick=()=>{state.selectedProcedure=p;renderProcedure()};list.append(b);
+   });
+   if(!list.childElementCount)list.append(el("p","No procedures found.","small"));
+   const toolList=$("catalogToolList");toolList.replaceChildren();
+   tools.filter(t=>translated(t).name.toLowerCase().includes(search)).forEach(t=>{
+      const card=el("div",undefined,"skill-row");
+      if(t.imageUrl&&/^https:\/\//i.test(t.imageUrl)){const img=el("img");img.src=t.imageUrl;img.loading="lazy";img.alt=translated(t).name;card.append(img)}
+      const block=el("div");block.append(el("strong",translated(t).name),el("small",translated(t).use));card.append(block);toolList.append(card)
+   });
+   if(!toolList.childElementCount)toolList.append(el("p","No tools found.","small"));
+   if(!state.selectedProcedure||state.selectedProcedure.specialtyId!==sp)state.selectedProcedure=procs[0]||null;
+   renderProcedure();
+ }
+ function asIds(v){if(Array.isArray(v))return v.map(String);if(typeof v==="string"){try{const x=JSON.parse(v);return Array.isArray(x)?x.map(String):[]}catch{return []}}return []}
+ function renderProcedure(){
+  const p=state.selectedProcedure,root=$("procedureChecklist");root.replaceChildren();
+  if(!p){setText("procedureHeading","Procedure preparation");setText("procedureDetail","Choose a procedure.");return}
+  setText("procedureHeading",translated(p).name);
+  const tools=state.catalog.tools,tid=asIds(p.toolIds),cid=asIds(p.consumableIds),all=[...new Set([...tid,...cid])];
+  setText("procedureDetail",all.length+" curated items · Practice checklist only; not an official exam result.");
+  const checked=new Set();
+  const progress=el("p","0 / "+all.length+" checked","good");
+  root.append(progress);
+  all.forEach(id=>{
+    const item=tools.find(t=>String(t.id)===id);if(!item)return;
+    const label=el("label",undefined,"skill-row"),cb=el("input");cb.type="checkbox";cb.className="skill-checkbox";
+    cb.onchange=()=>{if(cb.checked)checked.add(id);else checked.delete(id);progress.textContent=checked.size+" / "+all.length+" checked"+(all.length&&checked.size===all.length?" · Great work!":"")};
+    const text=el("div");text.append(el("strong",translated(item).name),el("small",(cid.includes(id)?"Consumable · ":"Instrument · ")+translated(item).use));
+    label.append(cb,text);root.append(label);
+  });
+  if(!all.length)root.append(el("p","No curated tools assigned to this procedure yet.","muted"));
+ }
+ $("catalogSpecialty").onchange=()=>{state.selectedProcedure=null;renderCatalog()};
+ $("catalogSearch").oninput=renderCatalog;
  async function loadExams(){
   const data=await request("/api/exams?centerId="+encodeURIComponent(state.center));state.exams=data.assessments||[];
   $("exams").replaceChildren(...state.exams.map(a=>{const b=el("button",a.title+" · "+a.minutes+" min","btn sub");b.style.margin="5px";b.onclick=()=>beginExam(a);return b}));
