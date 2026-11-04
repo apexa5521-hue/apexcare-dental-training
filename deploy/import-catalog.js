@@ -1,11 +1,11 @@
 "use strict";
 const fs=require("node:fs"),crypto=require("node:crypto");
-const SOURCES=["Specialties","Tools","Procedures","IPC_Modules","IPC_Steps","Quizzes","AssessmentBank","AssessmentConfig"];
+const SOURCES=["Specialties","Tools","Procedures","IPC_Modules","IPC_Steps","Quizzes","AssessmentBank","AssessmentConfig","Doctors","DoctorPrefs"];
 const PRIVATE=["Users","AssessmentResults","NurseProgress","DrillProgress","Logs"];
 const digest=x=>crypto.createHash("sha256").update(JSON.stringify(x)).digest("hex");
-function normalizedRows(raw){
+function normalizedRows(raw,{allowUnresolved=false}={}){
  if(!raw||typeof raw!=="object"||Array.isArray(raw))throw Error("Expected JSON object with named sheet arrays");
- const out=[],counts={},ids=new Map();
+ const out=[],counts={},ids=new Map(),issues=[];
  for(const source of SOURCES){
   const rows=raw[source]||[];if(!Array.isArray(rows))throw Error(source+" must be an array");
   counts[source]=rows.length;const seen=new Set();
@@ -13,10 +13,11 @@ function normalizedRows(raw){
    const row=rows[i];if(!row||typeof row!=="object"||Array.isArray(row))throw Error(source+" row "+i+" invalid");
    const id=String(row.id??"").trim();if(!id)throw Error(source+" row "+i+" is missing an id");
    if(seen.has(id))throw Error(source+" has duplicate id "+id);seen.add(id);
-   const speciality=String(row.specialtyId??"").trim()||null;
+   const speciality=String(row.specialtyId??(source==='Quizzes'?row.groupId:"")??"").trim()||null;
    const payload=structuredClone(row);
    if(source==="Procedures"){
     for(const field of ["toolIds","consumableIds"]){
+     if(payload[field]==="")payload[field]=[];
      if(typeof payload[field]==="string"){try{payload[field]=JSON.parse(payload[field])}catch{throw Error("Invalid "+field+" on procedure "+id)}}
      if(payload[field]!=null&&!Array.isArray(payload[field]))throw Error("Invalid "+field+" type on procedure "+id);
     }
@@ -27,12 +28,20 @@ function normalizedRows(raw){
  }
  const toolIds=ids.get("Tools"),procedures=out.filter(r=>r.source==="Procedures");
  for(const p of procedures)for(const k of ["toolIds","consumableIds"])for(const id of p.payload[k]||[]){
-  if(!toolIds.has(String(id)))throw Error("Procedure "+p.id+" references missing tool "+id);
+  if(!toolIds.has(String(id))){
+   if(!allowUnresolved)throw Error("Procedure "+p.id+" references missing tool "+id);
+   issues.push({source:'Procedures',legacyId:p.id,field:k,missingId:String(id)});
+  }
  }
  for(const r of out.filter(x=>x.specialtyId&&["Tools","Procedures","AssessmentBank"].includes(x.source))){
   if(!ids.get("Specialties").has(r.specialtyId))throw Error(r.source+" "+r.id+" references missing specialty "+r.specialtyId);
  }
- return {records:out,counts,fingerprint:digest(out.map(x=>[x.source,x.id,x.hash]))};
+ for(const r of out.filter(x=>x.source==='IPC_Steps'))if(!ids.get('IPC_Modules').has(String(r.payload.moduleId)))throw Error('Missing IPC module '+r.payload.moduleId);
+ for(const r of out.filter(x=>x.source==='DoctorPrefs')){
+  if(!ids.get('Procedures').has(String(r.payload.procedureId)))issues.push({source:r.source,legacyId:r.id,field:'procedureId',missingId:String(r.payload.procedureId)});
+  if(!ids.get('Doctors').has(String(r.payload.doctorId)))issues.push({source:r.source,legacyId:r.id,field:'doctorId',missingId:String(r.payload.doctorId)});
+ }
+ return {records:out,counts,issues,fingerprint:digest(out.map(x=>[x.source,x.id,x.hash]))};
 }
 async function importCatalog(client,raw,{dryRun=true}={}){
  const prepared=normalizedRows(raw);

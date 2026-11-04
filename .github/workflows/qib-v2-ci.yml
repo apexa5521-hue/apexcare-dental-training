@@ -33,6 +33,8 @@ jobs:
           node --check deploy/import-history.js
           node --check test/catalog-migration.test.js
           node --check test/history-migration.test.js
+      - name: Install pinned API and database test dependencies
+        run: npm ci --prefix api
       - name: Server exam state machine tests
         run: node --test test/*.test.js
       - name: Detect unsafe accidental content

@@ -1,6 +1,6 @@
 "use strict";
 const fs=require("node:fs"),crypto=require("node:crypto");
-const TYPES=["Users","AssessmentResults","NurseProgress","DrillProgress","Logs"];
+const TYPES=["Users","AssessmentResults","NurseProgress","DrillProgress","Logs","Mastery"];
 const hash=v=>crypto.createHash("sha256").update(JSON.stringify(v)).digest("hex");
 function prepareHistory(json){
  if(!json||typeof json!=="object")throw Error("Invalid export");
@@ -8,8 +8,9 @@ function prepareHistory(json){
   const list=json[name]||[];if(!Array.isArray(list))throw Error("Invalid "+name);
   counts[name]=list.length;
   for(let i=0;i<list.length;i++){
-   const x=structuredClone(list[i]),key=String(x.id||x.username||x.ts||x.createdAt||i).trim()+"#"+i;
+   const x=structuredClone(list[i]);
    if(!x||typeof x!=="object"||Array.isArray(x))throw Error(name+" invalid row "+i);
+   const key=String(x.id||x.username||x.ts||x.createdAt||i).trim()+"#"+i;
    if(name==="Users"){delete x.password;delete x.token;delete x.passwordHash;delete x.password_hash;}
    rows.push({name,key,payload:x,hash:hash(x)});
   }

@@ -1,11 +1,12 @@
 services:
   - type: web
-    name: qib-v2-api
+    name: nse-staging
     runtime: node
-    plan: starter
-    rootDir: api
-    buildCommand: npm install --omit=dev
-    startCommand: npm start
+    plan: free
+    region: singapore
+    branch: feature/qib-platform-v2-security-ux
+    buildCommand: npm ci --prefix api --omit=dev
+    startCommand: node api/server.js
     healthCheckPath: /health
     autoDeployTrigger: 'off'
     envVars:

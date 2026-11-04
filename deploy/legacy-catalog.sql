@@ -2,7 +2,7 @@
 -- Preserve all source IDs, arrays, translations and media references.
 begin;
 create table if not exists qib.legacy_catalog (
- source_name text not null check(source_name in ('Specialties','Tools','Procedures','IPC_Modules','IPC_Steps','Quizzes','AssessmentBank','AssessmentConfig')),
+ source_name text not null check(source_name in ('Specialties','Tools','Procedures','IPC_Modules','IPC_Steps','Quizzes','AssessmentBank','AssessmentConfig','Doctors','DoctorPrefs')),
  legacy_id text not null,
  specialty_legacy_id text,
  payload jsonb not null,
@@ -11,6 +11,12 @@ create table if not exists qib.legacy_catalog (
  primary key(source_name,legacy_id)
 );
 create index if not exists nse_legacy_catalog_by_specialty on qib.legacy_catalog(specialty_legacy_id,source_name);
+create table if not exists qib.migration_issues(
+ source_name text not null,legacy_id text not null,field text not null,missing_id text not null,
+ resolved_at timestamptz,primary key(source_name,legacy_id,field,missing_id)
+);
+alter table qib.migration_issues enable row level security;
+revoke all on qib.migration_issues from public,anon,authenticated;
 create table if not exists qib.migration_runs (
  id uuid primary key default gen_random_uuid(),
  source_fingerprint text not null,
@@ -22,7 +28,7 @@ create table if not exists qib.migration_runs (
 );
 -- Restricted archive preserves historical training data without importing legacy passwords.
 create table if not exists qib.legacy_history_archive (
- source_name text not null check(source_name in ('Users','AssessmentResults','NurseProgress','DrillProgress','Logs')),
+ source_name text not null check(source_name in ('Users','AssessmentResults','NurseProgress','DrillProgress','Logs','Mastery')),
  legacy_key text not null,
  payload jsonb not null,
  content_hash text not null,
@@ -40,6 +46,7 @@ create table if not exists qib.legacy_identity_map(
  primary key(center_id,legacy_username),
  unique(center_id,user_id)
 );
+create unique index if not exists nse_legacy_identity_single_center on qib.legacy_identity_map(legacy_username);
 alter table qib.legacy_identity_map enable row level security;
 revoke all on qib.legacy_identity_map from public,anon,authenticated;
 create index if not exists nse_archive_results_username on qib.legacy_history_archive((payload->>'username')) where source_name in ('AssessmentResults','NurseProgress','DrillProgress');

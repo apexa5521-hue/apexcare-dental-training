@@ -10,6 +10,8 @@
  const err=(e)=>e?.message||"Request failed";
  const allowed=()=>state.role==="admin"?nav:state.role==="supervisor"?nav.filter(n=>n[0]!=="studio"):nav.filter(n=>!["team","studio","reports"].includes(n[0]));
  let sessionEnd=false;
+ function updateThemeLabel(){const dark=document.documentElement.dataset.theme==='dark';$("themeToggle").textContent=dark?'Light mode':'Dark mode';$("themeToggle").setAttribute('aria-pressed',String(dark));}
+ $("themeToggle").onclick=()=>{document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('nse-theme',document.documentElement.dataset.theme)}catch{}updateThemeLabel()};updateThemeLabel();
  async function request(route,options={}){
   const r=await fetch(route,{...options,headers:{"Authorization":"Bearer "+state.token,"Content-Type":"application/json",...(options.headers||{})}});
   const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"API_ERROR");return d;
@@ -17,6 +19,7 @@
  const post=(route,body,opts={})=>request(route,{method:"POST",body:JSON.stringify({...body,centerId:state.center}),...opts});
  function displayPage(id){
   if(!allowed().some(n=>n[0]===id))return;
+  if(state.attempt&&id!=="assessments")lockExam("visibility_hidden");
   document.querySelectorAll(".view").forEach(v=>v.hidden=v.dataset.page!==id);
   document.querySelectorAll("#nav button").forEach(v=>v.classList.toggle("selected",v.dataset.page===id));
   const index=nav.findIndex(n=>n[0]===id),l=$("language").value;setText("heading",titles[l]?.[index]||nav[index][1]);setText("breadcrumb","WORKSPACE / "+id.toUpperCase());
@@ -114,7 +117,7 @@
   return {name:r["name"+cap]||r.nameEn||r.nameAr||r.title||"Unnamed",use:r["use"+cap]||r.useEn||r.useAr||""};
  }
  async function loadCatalog(){
-   if(!state.catalog){const data=await request("/api/catalog?centerId="+encodeURIComponent(state.center));state.catalog=data.catalog;}
+   if(!state.catalog){const data=await request("/api/catalog?centerId="+encodeURIComponent(state.center));state.catalog=data.catalog;state.catalog.integrityIssues=data.integrityIssues||[];}
    const cat=state.catalog,select=$("catalogSpecialty");
    setText("catalogSpecialties",cat.specialties.length);setText("catalogTools",cat.tools.length);setText("catalogProcedures",cat.procedures.length);
    const previous=select.value;
@@ -123,7 +126,7 @@
    renderCatalog();
  }
  async function loadIPC(){
-   if(!state.catalog){const x=await request("/api/catalog?centerId="+encodeURIComponent(state.center));state.catalog=x.catalog}
+   if(!state.catalog){const x=await request("/api/catalog?centerId="+encodeURIComponent(state.center));state.catalog=x.catalog;state.catalog.integrityIssues=x.integrityIssues||[]}
    const data=state.catalog,root=$("ipcModules");root.replaceChildren();
    for(const m of data.ipcModules){
     const card=el("div",undefined,"card"),t=translated(m);card.append(el("span","IPC Learning","pill"),el("h3",t.name));
@@ -173,7 +176,7 @@
   const progress=el("p","0 / "+all.length+" checked","good");
   root.append(progress);
   all.forEach(id=>{
-    const item=tools.find(t=>String(t.id)===id);if(!item)return;
+    const item=tools.find(t=>String(t.id)===id);if(!item){root.append(el('p','Source item '+id+' is missing. This procedure needs clinical review before use.','warning'));return;}
     const label=el("label",undefined,"skill-row"),cb=el("input");cb.type="checkbox";cb.className="skill-checkbox";
     cb.onchange=()=>{if(cb.checked)checked.add(id);else checked.delete(id);progress.textContent=checked.size+" / "+all.length+" checked"+(all.length&&checked.size===all.length?" · Great work!":"")};
     const text=el("div");text.append(el("strong",translated(item).name),el("small",(cid.includes(id)?"Consumable · ":"Instrument · ")+translated(item).use));
@@ -272,7 +275,7 @@
  $("moduleForm").onsubmit=async e=>{e.preventDefault();const tr={};for(const lang of ["en","ar","ur","id"]){const title=$("title"+lang[0].toUpperCase()+lang.slice(1)).value,body=$("body"+lang[0].toUpperCase()+lang.slice(1)).value;if(title||body)tr[lang]={title,body}};
  try{await post("/api/modules/save",{specialtyId:$("moduleSpecialty").value,slug:$("moduleSlug").value,translations:tr});await loadStudio();alert("Draft saved for review")}catch(ex){showError(ex)}};
  $("loginForm").onsubmit=async e=>{e.preventDefault();setText("loginError","");try{state.auth=state.auth||await fetch("/api/config").then(r=>r.json());const r=await fetch(state.auth.supabaseUrl.replace(/\/$/,"")+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"Content-Type":"application/json",apikey:state.auth.publishableKey},body:JSON.stringify({email:$("email").value,password:$("password").value})});const data=await r.json();if(!r.ok||!data.access_token)throw Error("Invalid account or password");state.token=data.access_token;$("password").value="";await init()}catch(ex){setText("loginError",err(ex))}};
- $("center").onchange=()=>{if(state.attempt){showError(Error("Complete or review active assessment before switching centers."));return}changeCenter().catch(showError)};
+ $("center").onchange=()=>{if(state.attempt){$("center").value=state.center;showError(Error("Complete or review active assessment before switching centers."));return}changeCenter().catch(showError)};
  $("language").onchange=updateLanguage;$("closeModal").onclick=()=>$("modal").close();$("logout").onclick=()=>{if(state.attempt)lockExam("pagehide");state.token=null;location.reload()};
  document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>displayPage(b.dataset.go));
 })();
