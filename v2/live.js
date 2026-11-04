@@ -99,7 +99,15 @@
    o.append(...(data.observations||[]).map(x=>{const row=el("div",undefined,"row");row.append(el("span","Skill observation"),el("span",x.status,"pill"));return row}));
    if(!data.observations?.length)o.append(el("p","No completed observations recorded yet.","muted"));
   }catch(e){showError(e)}
-
+  try{
+   const archive=await request("/api/legacy-history?centerId="+encodeURIComponent(state.center)),root=$("previousHistory");
+   root.replaceChildren(el("h2","Previous learning history"));
+   if(!archive.linked)root.append(el("p","Historic learning records have not been linked to your account yet.","muted"));
+   else{
+    root.append(el("p",archive.assessments.length+" archived assessments · "+archive.training.length+" past training records","small"));
+    archive.assessments.slice(0,12).forEach(x=>{const row=el("div",undefined,"row");row.append(el("span",String(x.type||"Assessment")+" · "+String(x.date||"Previous result")),el("strong",x.score==null?"—":x.score+"%"));root.append(row)});
+   }
+  }catch(e){showError(e)}
  }
  function translated(r){
   const l=$("language").value,cap=l[0].toUpperCase()+l.slice(1);
@@ -208,10 +216,10 @@
  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&state.attempt)lockExam("visibility_hidden")});
  window.addEventListener("pagehide",()=>{if(state.attempt)lockExam("pagehide")});
  async function loadTeam(){
-  $("inviteArea").hidden=state.role!=="admin";$("assignmentForm").hidden=state.role!=="admin";
+  $("inviteArea").hidden=state.role!=="admin";$("legacyLinkArea").hidden=state.role!=="admin";$("assignmentForm").hidden=state.role!=="admin";
   const data=await request("/api/learners?centerId="+encodeURIComponent(state.center)),list=$("teamList");
   list.replaceChildren(...data.learners.map(x=>{const row=el("div",undefined,"row");row.append(el("span",x.display_name),el("span",x.role,"pill"));return row}));
-  const users=new Map(data.learners.map(x=>[x.user_id,x.display_name]));fill($("assignUser"),[...users].map(([id,name])=>({id,name})));
+  const users=new Map(data.learners.map(x=>[x.user_id,x.display_name]));fill($("assignUser"),[...users].map(([id,name])=>({id,name})));fill($("legacyTarget"),[...users].map(([id,name])=>({id,name})));if(state.role==="admin"){const historic=await request("/api/legacy-history/unlinked?centerId="+encodeURIComponent(state.center));fill($("legacyUsername"),historic.unlinked.map(name=>({id:name,name})))}
  }
  async function loadStudio(){
   await loadDraftExams();
@@ -254,6 +262,11 @@
  $("draftExamForm").onsubmit=async e=>{e.preventDefault();try{
    const x=await post("/api/exams/draft-from-specialty",{specialtyId:$("draftExamSpecialty").value,title:$("draftExamTitle").value,questionCount:Number($("draftExamCount").value),minutes:Number($("draftExamMinutes").value)});
    await loadDraftExams();alert(x.questions+" English questions prepared as draft. Clinical review is required before publishing.");
+  }catch(ex){showError(ex)}};
+ $("legacyLinkForm").onsubmit=async e=>{e.preventDefault();try{
+   if(!$("legacyVerified").checked)throw Error("Verify employee identity first.");
+   await post("/api/legacy-history/link",{userId:$("legacyTarget").value,legacyUsername:$("legacyUsername").value,confirmIdentity:true});
+   $("legacyVerified").checked=false;await loadTeam();alert("Previous training records securely linked.");
   }catch(ex){showError(ex)}};
  $("assignmentForm").onsubmit=async e=>{e.preventDefault();try{await post("/api/assign",{userId:$("assignUser").value,specialtyId:$("assignSpecialty").value});await loadTeam();alert("Specialty assigned")}catch(ex){showError(ex)}};
  $("moduleForm").onsubmit=async e=>{e.preventDefault();const tr={};for(const lang of ["en","ar","ur","id"]){const title=$("title"+lang[0].toUpperCase()+lang.slice(1)).value,body=$("body"+lang[0].toUpperCase()+lang.slice(1)).value;if(title||body)tr[lang]={title,body}};
