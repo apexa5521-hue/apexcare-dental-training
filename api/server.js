@@ -2,6 +2,7 @@
 const http=require("node:http"),fs=require("node:fs"),path=require("node:path"),{randomUUID}=require("node:crypto");
 const {Pool}=require("pg");
 const {createClient}=require("@supabase/supabase-js");
+const {buildSpecialtyQuestions}=require("./build-specialty-exam.js");
 const required=["DATABASE_URL","SUPABASE_URL","SUPABASE_PUBLISHABLE_KEY"];
 if(require.main===module){for(const key of required)if(!process.env[key]){console.error("Missing "+key);process.exit(1)}}
 const pool=new Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.DB_SSL==="disable"?false:{rejectUnauthorized:true},max:10});
@@ -163,17 +164,14 @@ async function handler(req,res){
    const specialtyId=mustUUID(body.specialtyId),title=String(body.title||"").trim(),count=Number(body.questionCount||20);
    if(title.length<5||title.length>160||!Number.isInteger(count)||count<1||count>100)throw Object.assign(Error("INVALID_ASSESSMENT_REQUEST"),{status:400});
    const sp=await c.query("select id,code from qib.specialties where id=$1",[specialtyId]);if(!sp.rowCount)deny();
-   const bank=await c.query("select payload from qib.legacy_catalog where source_name='AssessmentBank' and specialty_legacy_id=$1",[sp.rows[0].code]);
-   const valid=bank.rows.map(x=>x.payload).filter(q=>{
-      try{const opts=typeof q.optionsEn==="string"?JSON.parse(q.optionsEn):q.optionsEn;
-      return String(q.questionEn||"").trim()&&Array.isArray(opts)&&opts.length>=2&&opts.length<=8&&opts.every(x=>typeof x==="string"&&x.trim())&&Number.isInteger(Number(q.answer))&&Number(q.answer)>=0&&Number(q.answer)<opts.length&&String(q.active).toLowerCase()!=="false"}catch{return false}
-   });
-   if(valid.length<count)throw Object.assign(Error("INSUFFICIENT_REVIEWED_ENGLISH_QUESTIONS_"+valid.length),{status:409});
-   const shuffled=[...valid];for(let i=shuffled.length-1;i>0;i--){const j=require("node:crypto").randomInt(i+1);[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]}
-   const exam=await c.query("insert into qib.assessments(center_id,specialty_id,title,status,minutes) values($1,$2,$3,'draft',$4) returning id,title,status",[centerId,specialtyId,title,Number(body.minutes)||30]);
-   for(const q of shuffled.slice(0,count)){
-     const opts=typeof q.optionsEn==="string"?JSON.parse(q.optionsEn):q.optionsEn;
-     await c.query("insert into qib.questions(assessment_id,prompt_en,options_en,answer_index) values($1,$2,$3,$4)",[exam.rows[0].id,String(q.questionEn),JSON.stringify(opts),Number(q.answer)]);
+   const rows=await c.query("select source_name,payload from qib.legacy_catalog where specialty_legacy_id=$1 and source_name=any($2::text[])",[sp.rows[0].code,['AssessmentBank','Tools','Procedures']]);
+   const get=name=>rows.rows.filter(x=>x.source_name===name).map(x=>x.payload);
+   const draft=buildSpecialtyQuestions({tools:get('Tools'),procedures:get('Procedures'),bank:get('AssessmentBank'),specialtyId:sp.rows[0].code,count});
+   if(draft.questions.length<count)throw Object.assign(Error("INSUFFICIENT_ENGLISH_QUESTIONS_"+draft.available),{status:409});
+   const minutes=Number(body.minutes)||30;if(minutes<1||minutes>240)throw Object.assign(Error("INVALID_EXAM_DURATION"),{status:400});
+   const exam=await c.query("insert into qib.assessments(center_id,specialty_id,title,status,minutes) values($1,$2,$3,'draft',$4) returning id,title,status",[centerId,specialtyId,title,minutes]);
+   for(const q of draft.questions){
+     await c.query("insert into qib.questions(assessment_id,prompt_en,options_en,answer_index) values($1,$2,$3,$4)",[exam.rows[0].id,q.prompt_en,JSON.stringify(q.options_en),q.answer_index]);
    }
    return {assessment:exam.rows[0],questions:count,status:"draft",requiresClinicalReview:true};
   }
