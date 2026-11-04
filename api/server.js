@@ -151,6 +151,39 @@ async function handler(req,res){
    const exists=await c.query("select 1 from qib.memberships where user_id=$1 and center_id=$2",[target,centerId]);if(!exists.rowCount)deny();
    await c.query("insert into qib.assignments(user_id,center_id,specialty_id) values($1,$2,$3) on conflict do nothing",[target,centerId,specialty]);return {ok:true};
   }
+  if(req.method==="POST"&&url.pathname==="/api/exams/draft-from-specialty"){
+   if(role.role!=="admin")deny();
+   const specialtyId=mustUUID(body.specialtyId),title=String(body.title||"").trim(),count=Number(body.questionCount||20);
+   if(title.length<5||title.length>160||!Number.isInteger(count)||count<1||count>100)throw Object.assign(Error("INVALID_ASSESSMENT_REQUEST"),{status:400});
+   const sp=await c.query("select id,code from qib.specialties where id=$1",[specialtyId]);if(!sp.rowCount)deny();
+   const bank=await c.query("select payload from qib.legacy_catalog where source_name='AssessmentBank' and specialty_legacy_id=$1",[sp.rows[0].code]);
+   const valid=bank.rows.map(x=>x.payload).filter(q=>{
+      try{const opts=typeof q.optionsEn==="string"?JSON.parse(q.optionsEn):q.optionsEn;
+      return String(q.questionEn||"").trim()&&Array.isArray(opts)&&opts.length>=2&&opts.length<=8&&opts.every(x=>typeof x==="string"&&x.trim())&&Number.isInteger(Number(q.answer))&&Number(q.answer)>=0&&Number(q.answer)<opts.length&&String(q.active).toLowerCase()!=="false"}catch{return false}
+   });
+   if(valid.length<count)throw Object.assign(Error("INSUFFICIENT_REVIEWED_ENGLISH_QUESTIONS_"+valid.length),{status:409});
+   const shuffled=[...valid];for(let i=shuffled.length-1;i>0;i--){const j=require("node:crypto").randomInt(i+1);[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]}
+   const exam=await c.query("insert into qib.assessments(center_id,specialty_id,title,status,minutes) values($1,$2,$3,'draft',$4) returning id,title,status",[centerId,specialtyId,title,Number(body.minutes)||30]);
+   for(const q of shuffled.slice(0,count)){
+     const opts=typeof q.optionsEn==="string"?JSON.parse(q.optionsEn):q.optionsEn;
+     await c.query("insert into qib.questions(assessment_id,prompt_en,options_en,answer_index) values($1,$2,$3,$4)",[exam.rows[0].id,String(q.questionEn),JSON.stringify(opts),Number(q.answer)]);
+   }
+   return {assessment:exam.rows[0],questions:count,status:"draft",requiresClinicalReview:true};
+  }
+  if(req.method==="GET"&&url.pathname==="/api/exams/drafts"){
+    if(role.role!=="admin")deny();
+    const x=await c.query("select a.id,a.title,a.status,a.minutes,s.label as specialty,(select count(*)::int from qib.questions q where q.assessment_id=a.id) as question_count from qib.assessments a left join qib.specialties s on s.id=a.specialty_id where a.center_id=$1 order by a.title",[centerId]);
+    return {assessments:x.rows};
+  }
+  if(req.method==="POST"&&url.pathname==="/api/exams/publish"){
+    if(role.role!=="admin")deny();
+    const id=mustUUID(body.assessmentId),reviewerNote=String(body.reviewerNote||"").trim();
+    if(reviewerNote.length<12)throw Object.assign(Error("CLINICAL_REVIEW_NOTE_REQUIRED"),{status:400});
+    const x=await c.query("update qib.assessments set status='published' where id=$1 and center_id=$2 and status='draft' and exists(select 1 from qib.questions where assessment_id=$1) returning id",[id,centerId]);
+    if(!x.rowCount)deny();
+    await c.query("insert into qib.assessment_reviews(assessment_id,reviewer_id,note) values($1,$2,$3)",[id,userId,reviewerNote]);
+    return {published:true,id};
+  }
   if(req.method==="GET"&&url.pathname==="/api/exams"){
    const r=await c.query("select a.id,a.title,a.minutes,a.starts_at,a.ends_at,a.specialty_id from qib.assessments a where a.center_id=$1 and a.status='published' and (a.starts_at is null or a.starts_at<=now()) and (a.ends_at is null or a.ends_at>=now()) and (a.specialty_id is null or exists(select 1 from qib.assignments s where s.center_id=$1 and s.user_id=$2 and s.specialty_id=a.specialty_id)) order by a.starts_at nulls first",[centerId,userId]);return {assessments:r.rows};
   }
