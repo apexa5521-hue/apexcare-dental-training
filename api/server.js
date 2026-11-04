@@ -72,6 +72,13 @@ async function handler(req,res){
    await c.query("insert into qib.memberships(user_id,center_id,role,display_name) values($1,$2,$3,$4) on conflict(user_id,center_id) do update set role=excluded.role,display_name=excluded.display_name",[target,centerId,targetRole,displayName]);
    return {enrolled:true};
   }
+  if(req.method==="GET"&&url.pathname==="/api/catalog"){
+   const r=await c.query("select source_name,legacy_id,specialty_legacy_id,payload from qib.legacy_catalog where source_name=any($1::text[]) order by source_name,legacy_id",[['Specialties','Tools','Procedures','IPC_Modules','IPC_Steps']]);
+   const by={specialties:[],tools:[],procedures:[],ipcModules:[],ipcSteps:[]};
+   const mapping={Specialties:'specialties',Tools:'tools',Procedures:'procedures',IPC_Modules:'ipcModules',IPC_Steps:'ipcSteps'};
+   for(const x of r.rows)by[mapping[x.source_name]].push(x.payload);
+   return {catalog:by,source:'verified-import',counts:Object.fromEntries(Object.entries(by).map(([k,v])=>[k,v.length]))};
+  }
   if(req.method==="GET"&&url.pathname==="/api/modules"){
    const rows=await c.query("select id,slug,specialty_id,translations,status,version from qib.modules where center_id=$1 or (center_id is null and status='published') order by slug",[centerId]);
    return {modules:rows.rows.filter(x=>x.status==="published"||["supervisor","admin"].includes(role.role))};
