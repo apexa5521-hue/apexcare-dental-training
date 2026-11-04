@@ -50,7 +50,7 @@
   const [p,exams]=await Promise.all([request("/api/progress?centerId="+encodeURIComponent(state.center)),request("/api/exams?centerId="+encodeURIComponent(state.center))]);
   state.completed=new Set((p.completedModules||[]).map(x=>x.module_id));state.certificates=p.certificates||[];state.exams=exams.assessments||[];
   setText("connection",state.centers.find(c=>c.id===state.center)?.name+" · "+state.role);
-  renderDashboard();renderModules();renderAchievements();fill($("assignSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("moduleSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("inviteSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));updateLanguage();displayPage("home");
+  renderDashboard();renderModules();renderAchievements();fill($("assignSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("moduleSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("draftExamSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("inviteSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));updateLanguage();displayPage("home");
  }
  function renderDashboard(){
   const completed=state.modules.filter(m=>state.completed.has(m.id)).length,total=state.modules.length;
@@ -173,6 +173,7 @@
   const users=new Map(data.learners.map(x=>[x.user_id,x.display_name]));fill($("assignUser"),[...users].map(([id,name])=>({id,name})));
  }
  async function loadStudio(){
+  await loadDraftExams();
   const data=await request("/api/modules?centerId="+encodeURIComponent(state.center)),root=$("manageModules");root.replaceChildren(el("h3","Drafts and published modules"));
   data.modules.forEach(m=>{const row=el("div",undefined,"row");row.append(el("span",m.translations?.en?.title||m.slug),el("span",m.status,"pill"));if(m.status!=="published"){const b=el("button","Publish after review","btn sub");b.onclick=async()=>{if(!confirm("Confirm clinical review is complete?"))return;try{await post("/api/modules/publish",{moduleId:m.id});await loadStudio();await changeCenter()}catch(e){showError(e)}};row.append(b)}root.append(row)})
  }
@@ -182,6 +183,24 @@
   $("reviewQueue").replaceChildren(el("p","Clinical assessment review requires an authorized supervisor and a documented reason.","muted"))
  }
  $("inviteForm").onsubmit=async e=>{e.preventDefault();try{const result=await post("/api/team/invite",{email:$("inviteEmail").value,displayName:$("inviteName").value,role:$("inviteRole").value,specialtyId:$("inviteSpecialty").value});$("inviteForm").reset();await loadTeam();alert("Invitation sent to "+result.userId)}catch(ex){showError(ex)}};
+ async function loadDraftExams(){
+  const root=$("draftExamList");root.replaceChildren();
+  const data=await request("/api/exams/drafts?centerId="+encodeURIComponent(state.center));
+  data.assessments.forEach(x=>{
+   const row=el("div",undefined,"row"),copy=el("div");copy.append(el("strong",x.title),el("p",x.specialty+" · "+x.question_count+" questions · "+x.status,"small"));row.append(copy);
+   if(x.status==="draft"){
+    const b=el("button","Approve & publish","btn sub");b.onclick=async()=>{
+     const note=prompt("Enter the clinical review note (reviewer, content checked, version and approval):");
+     if(!note)return;try{await post("/api/exams/publish",{assessmentId:x.id,reviewerNote:note});await loadDraftExams();await loadExams()}catch(e){showError(e)}
+    };row.append(b)
+   }root.append(row);
+  });
+  if(!data.assessments.length)root.append(el("p","No specialty exams drafted yet.","muted"));
+ }
+ $("draftExamForm").onsubmit=async e=>{e.preventDefault();try{
+   const x=await post("/api/exams/draft-from-specialty",{specialtyId:$("draftExamSpecialty").value,title:$("draftExamTitle").value,questionCount:Number($("draftExamCount").value),minutes:Number($("draftExamMinutes").value)});
+   await loadDraftExams();alert(x.questions+" English questions prepared as draft. Clinical review is required before publishing.");
+  }catch(ex){showError(ex)}};
  $("assignmentForm").onsubmit=async e=>{e.preventDefault();try{await post("/api/assign",{userId:$("assignUser").value,specialtyId:$("assignSpecialty").value});await loadTeam();alert("Specialty assigned")}catch(ex){showError(ex)}};
  $("moduleForm").onsubmit=async e=>{e.preventDefault();const tr={};for(const lang of ["en","ar","ur","id"]){const title=$("title"+lang[0].toUpperCase()+lang.slice(1)).value,body=$("body"+lang[0].toUpperCase()+lang.slice(1)).value;if(title||body)tr[lang]={title,body}};
  try{await post("/api/modules/save",{specialtyId:$("moduleSpecialty").value,slug:$("moduleSlug").value,translations:tr});await loadStudio();alert("Draft saved for review")}catch(ex){showError(ex)}};
