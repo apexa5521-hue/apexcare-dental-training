@@ -37,7 +37,7 @@
  async function init(){
   const data=await request("/api/my-centers");state.centers=data.centers||[];
   if(!state.centers.length){
-   const name=prompt("No assigned centers found. If you are the authorized platform owner, enter a new QIB center name. Otherwise select Cancel and contact your administrator.");
+   const name=prompt("No assigned centers found. If you are the authorized platform owner, enter a new NSE center name. Otherwise select Cancel and contact your administrator.");
    if(!name)throw Error("No assigned center. Contact your administrator.");
    await request("/api/centers/create",{method:"POST",body:JSON.stringify({name:name.trim()})});
    state.centers=(await request("/api/my-centers")).centers||[];
