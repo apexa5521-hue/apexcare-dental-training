@@ -26,6 +26,8 @@ jobs:
           node --check test/interface-i18n.test.js
           node --check v2/api-bridge.js
           node --check api/server.js
+          node --check api/build-specialty-exam.js
+          node --check test/specialty-exam.test.js
           node --check v2/live.js
           node --check deploy/import-catalog.js
           node --check deploy/import-history.js
