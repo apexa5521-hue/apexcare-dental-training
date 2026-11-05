@@ -116,3 +116,12 @@ The original training platform uses **Google Sheets through Google Apps Script**
 - Leaving an active official assessment through application navigation now asks for confirmation before the existing paused-review flow. Cancelling preserves the current page and navigation trail.
 - Preview lessons now have four clearly numbered steps, Previous/Next controls, a final sample-completion action and Back to library. No official result is awarded.
 - DOM interaction checks cover lesson step boundaries, Previous, library return and page history alongside bilingual/role/palette checks. Live browser acceptance remains pending deployment.
+
+## 2026-11-05 17:01 (Asia/Riyadh) — Design deployed and browser checked
+
+- Verified second Render workspace `Apexa5551's workspace`, existing dedicated `nse-staging` service and development branch before deploying.
+- Deploy `dep-dbm8o359el5s73925to0`, source `53c3aa43603a679106601ea09ec330199d8b07a0`, reached **Deploy succeeded | Live** in 33.9 seconds. Node 22.23.4, build reported zero vulnerabilities.
+- Browser reload restored the confirmed owner session and showed the redesigned operational UI, real empty published-module state and daily catalog exploration fallback.
+- Browser checked live library/back navigation and real source tool image enlargement; the Rubber Dam image loaded successfully (`naturalWidth=1475`).
+- Published `/preview` successfully rendered fictional nurse/admin views, Arabic/English switching and a four-step lesson. Next advanced Step 1 to Step 2; Back to library returned correctly. Light/dark appearance inspected on desktop.
+- These checks do not complete staff onboarding, four-language clinical content review, real nurse/supervisor acceptance, mobile/iPad acceptance, practical/certificate workflows or load testing. Staging only; no merge to main.
