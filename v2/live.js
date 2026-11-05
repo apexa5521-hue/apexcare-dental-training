@@ -35,7 +35,7 @@
  function updateLanguage(){
   const l=$("language").value;document.documentElement.lang=l;document.documentElement.dir=["ar","ur"].includes(l)?"rtl":"ltr";
   const items=allowed();$("nav").replaceChildren(...items.map(([id,label])=>{const index=nav.findIndex(n=>n[0]===id),b=el("button",titles[l]?.[index]||label);b.dataset.page=id;b.onclick=()=>displayPage(id);return b}));
-  setText("learningHeading",titles[l]?.[1]||"Learning library");setText("learningHelp",help[l]);renderModules();const active=Array.from(document.querySelectorAll(".view")).find(v=>!v.hidden)?.dataset.page||"home";displayPage(active);
+  renderJourney();setText("learningHeading",titles[l]?.[1]||"Learning library");setText("learningHelp",help[l]);renderModules();const active=Array.from(document.querySelectorAll(".view")).find(v=>!v.hidden)?.dataset.page||"home";displayPage(active);
  }
  function fill(select,items){const prev=select.value;select.replaceChildren(...items.map(o=>{const op=el("option",o.name);op.value=o.id;return op}));if(items.some(o=>o.id===prev))select.value=prev}
  async function init(){
@@ -58,7 +58,14 @@
   setText("connection",state.centers.find(c=>c.id===state.center)?.name+" · "+state.role);
   renderDashboard();renderModules();renderAchievements();fill($("assignSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("moduleSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("draftExamSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("inviteSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));updateLanguage();displayPage("home");
  }
- function renderDashboard(){
+ function renderJourney(){
+  const root=$("learningJourney"),ar=$("language").value==="ar";root.replaceChildren();const grid=el("div",undefined,"journey-grid"),path=el("article",undefined,"card"),aside=el("article",undefined,"card journey-aside");
+  path.append(el("span",ar?"خطوتك القادمة":"YOUR NEXT CHAPTER","over"),el("h2",ar?"رحلتك نحو الإتقان":"Your path to clinical confidence"));const list=el("div",undefined,"path-list");
+  const stages=[[ar?"تعلّمي الأساسيات":"Build your knowledge",state.modules.length?state.completed.size+" / "+state.modules.length+(ar?" دروس مكتملة":" lessons completed"):(ar?"الدروس بانتظار النشر":"Lessons awaiting publication"),"learning"],[ar?"تدرّبي على الأدوات والإجراءات":"Explore tools & procedures",ar?"تدريب تحضيري دون اعتماد كفاءة":"Preparation practice · no competency awarded","catalog"],["English Clinical Assessment",state.exams.length+" available assessments","assessments"],[ar?"التقييم العملي والإنجازات":"Supervised practice & achievements",ar?"الكفاءة تتطلب ملاحظة المشرفة":"Competency requires supervisor observation","achievements"]];
+  stages.forEach(([name,detail,page],i)=>{const row=el("div",undefined,"path-stop"+(i===0?" current":"")),b=el("button",String(i+1),"path-node");b.setAttribute("aria-label",name);b.onclick=()=>displayPage(page);const text=el("div");text.append(el("strong",name),el("small",detail));row.append(b,text);list.append(row)});path.append(list);
+  const img=el("img");img.src="/journey-art.svg";img.alt=ar?"رحلة المعرفة والتدريب والكفاءة":"Knowledge, practice and verified growth";aside.append(img,el("h2",ar?"كل خطوة تصنع فرقًا":"Small steps. Real growth."),el("p",ar?"تقدّمك يعكس التعلّم والتقييم الموثّق. لا يمنح الاختبار النظري وحده كفاءة سريرية.":"Your progress reflects documented learning and assessment. Clinical competency also requires supervised practical evaluation.","muted"));grid.append(path,aside);root.append(grid);
+ }
+ function renderDashboard(){renderJourney();
   const completed=state.modules.filter(m=>state.completed.has(m.id)).length,total=state.modules.length;
   setText("moduleCount",total);setText("completedCount",completed);setText("assessmentCount",state.exams.length);setText("certificateCount",state.certificates.filter(c=>!c.revoked_at).length);
   $("progressBar").style.width=(total?Math.round(completed/total*100):0)+"%";setText("progressText",completed+" / "+total+" modules completed");setText("nextStep",total===0?"Your center has not published learning modules yet.":completed===total?"Learning modules complete. Review your assessments and practical skills.":"Continue the next assigned module.");

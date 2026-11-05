@@ -91,3 +91,12 @@ The original training platform uses **Google Sheets through Google Apps Script**
 - React seed numbers never drive official live KPIs.
 - The badges are motivational; Knowledge/Competency cards are server-restricted learning records, not professional licensing.
 - Clinical supervisors must approve practical competency before issuance.
+
+## 2026-11-05 — Owner activation and growth interface
+
+- User created and confirmed their initial Auth identity; after explicit approval it was added to `qib.platform_owners`. Browser SQL verification returned `owner_enabled=true`. No passwords were retrieved.
+- Authenticated staging sign-in succeeded. Created the first independent staging center, `NSE — Training Center`, through the application's owner-only setup flow. Catalog browser check showed 8 specialties, 443 tools/consumables and 300 procedures.
+- Implemented the mint learning direction across the shared operational UI, a split sign-in screen, locally authored SVG journey illustration, navigation/KPI icons, responsive layout and dark palette. The live home journey derives module/exam counts from authenticated state and does not invent completions.
+- Added `/preview`: explicitly labeled fictional nurse/admin role preview with no Auth SDK, no API calls and disabled credential fields. Its example KPI values are not live performance data. This is a visual preview, not a substitute for real multi-role acceptance.
+- Existing 48 automated tests pass after the interface changes. Deployment and browser verification of this interface revision must be recorded after successful release.
+- Legacy staff usernames/history remain archived; no old passwords were migrated. Staff emails, centers and identities must still be reconciled and activated through verified Auth onboarding.
