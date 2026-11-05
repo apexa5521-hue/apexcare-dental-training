@@ -21,3 +21,4 @@
 
 /* Keep navigation and document scroll independent in RTL previews. */
 .layout>main,.layout>aside{min-width:0}.main{overflow-wrap:break-word}.nav button{flex-shrink:0}.preview-banner+.layout{min-height:calc(100dvh - 66px)}
+.week-strip{display:flex;gap:12px;flex-wrap:wrap}.day-dot,.avatar{display:grid;place-items:center;border-radius:50%;width:44px;height:44px;background:var(--nse-soft);color:var(--nse-green);font-weight:800}.day-dot.done{background:var(--nse-green);color:var(--nse-surface)}.staff-demo[hidden]{display:none}.preview-banner{z-index:110}#modalBody>img{max-width:100%;border-radius:18px;margin-block:15px}.grid .card .btn{margin-top:8px}
