@@ -100,3 +100,11 @@ The original training platform uses **Google Sheets through Google Apps Script**
 - Added `/preview`: explicitly labeled fictional nurse/admin role preview with no Auth SDK, no API calls and disabled credential fields. Its example KPI values are not live performance data. This is a visual preview, not a substitute for real multi-role acceptance.
 - Existing 48 automated tests pass after the interface changes. Deployment and browser verification of this interface revision must be recorded after successful release.
 - Legacy staff usernames/history remain archived; no old passwords were migrated. Staff emails, centers and identities must still be reconciled and activated through verified Auth onboarding.
+
+## Growth design follow-up
+
+- Added a real daily next-step card derived from published module state, falling back to ungraded catalog exploration; no fabricated live completions.
+- Added accessible tool-image enlargement using preserved source URLs. One source image was fetched successfully (200, image/webp); complete media availability still requires verification.
+- Added mint, sky and warm palettes with light/dark variants; palettes persist independently of authentication.
+- Expanded isolated bilingual previews with specialty covers, selectable specialty pathway examples, daily ungraded activity and six original catalog tool image references. All employee identities, goals, reports and result metrics in previews are fictional. Specialty illustrations are decorative, not clinical reference imagery.
+- Verified Arabic/English RTL/LTR switching across nine preview pages, nurse/admin role switching, daily sample completion, specialty selection, image modal and palette changes using DOM execution. The 48 existing API/security/migration tests also pass. Browser/device visual acceptance and deployment remain pending Render second-account sign-in.
