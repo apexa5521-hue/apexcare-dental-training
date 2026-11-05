@@ -18,9 +18,19 @@
   const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"API_ERROR");return d;
  }
  const post=(route,body,opts={})=>request(route,{method:"POST",body:JSON.stringify({...body,centerId:state.center}),...opts});
- function displayPage(id){
+ let activePage="home",pageTrail=[];
+ function renderPageNavigation(){
+  const ar=$("language").value==="ar";let bar=$("pageNavigation");if(!bar){bar=el("nav",undefined,"page-navigation");bar.id="pageNavigation";bar.setAttribute("aria-label","Page navigation");document.querySelector(".top").after(bar)}bar.replaceChildren();
+  const back=el("button",ar?"→ رجوع":"← Back","btn sub");back.disabled=!pageTrail.length;back.onclick=()=>{const previous=pageTrail.at(-1);if(previous)displayPage(previous,true)};
+  const home=el("button",ar?"المسار التعليمي":"Learning path","btn sub");home.onclick=()=>displayPage("home");const current=el("span",titles[$("language").value]?.[nav.findIndex(n=>n[0]===activePage)]||nav.find(n=>n[0]===activePage)?.[1],"small");bar.append(back,home,el("span","/","small"),current)
+ }
+ function displayPage(id,fromBack=false){
   if(!allowed().some(n=>n[0]===id))return;
-  if(state.attempt&&id!=="assessments")lockExam("visibility_hidden");
+  if(state.attempt&&id!=="assessments"){
+   if(!confirm($("language").value==="ar"?"مغادرة الاختبار ستوقف جلستك للمراجعة. هل تريدين المغادرة؟":"Leaving this assessment will pause your session for supervisor review. Leave assessment?"))return;
+   lockExam("visibility_hidden");
+  }
+  if(id!==activePage){if(fromBack)pageTrail.pop();else pageTrail.push(activePage);activePage=id}renderPageNavigation();
   document.querySelectorAll(".view").forEach(v=>v.hidden=v.dataset.page!==id);
   document.querySelectorAll("#nav button").forEach(v=>v.classList.toggle("selected",v.dataset.page===id));
   const index=nav.findIndex(n=>n[0]===id),l=$("language").value;setText("heading",titles[l]?.[index]||nav[index][1]);setText("breadcrumb","WORKSPACE / "+id.toUpperCase());
@@ -83,11 +93,12 @@
   })
  }
  function openLesson(m){
-  const t=translation(m),body=$("modalBody");body.replaceChildren(el("span","NSE LEARNING","over"),el("h2",t.title||m.slug));
-  const p=el("p",t.body||t.description||"No detailed lesson has been entered yet.");p.style.whiteSpace="pre-wrap";body.append(p);
-  const note=el("p",help[$("language").value],"subtle"),btn=el("button",state.completed.has(m.id)?"Completed":"Mark lesson complete","btn");btn.disabled=state.completed.has(m.id);
-  btn.onclick=async()=>{try{await post("/api/modules/complete",{moduleId:m.id});state.completed.add(m.id);btn.disabled=true;btn.textContent="Completed";renderDashboard();renderModules()}catch(e){showError(e)}};
-  body.append(note,btn);$("modal").showModal()
+  const t=translation(m),body=$("modalBody"),ar=$("language").value==="ar";body.replaceChildren(el("span","NSE LEARNING","over"),el("h2",t.title||m.slug));
+  const published=state.modules.filter(x=>x.status===undefined||x.status==="published"),index=published.findIndex(x=>x.id===m.id);body.append(el("p",(ar?"الدرس ":"Lesson ")+(index+1)+(ar?" من ":" of ")+published.length,"step-counter"));
+  const p=el("p",t.body||t.description||(ar?"لم يُضف محتوى تفصيلي بعد.":"No detailed lesson has been entered yet."));p.style.whiteSpace="pre-wrap";body.append(p);
+  const note=el("p",help[$("language").value],"subtle"),btn=el("button",state.completed.has(m.id)?(ar?"مكتمل":"Completed"):(ar?"تسجيل إكمال الدرس":"Mark lesson complete"),"btn");btn.disabled=state.completed.has(m.id);
+  btn.onclick=async()=>{btn.disabled=true;try{await post("/api/modules/complete",{moduleId:m.id});state.completed.add(m.id);btn.textContent=ar?"تم إكمال الدرس":"Lesson completed";renderDashboard();renderModules()}catch(e){btn.disabled=false;showError(e)}};
+  const controls=el("nav",undefined,"lesson-navigation");controls.setAttribute("aria-label","Lesson navigation");const previous=el("button",ar?"الدرس السابق":"Previous lesson","btn sub");previous.disabled=index<=0;previous.onclick=()=>openLesson(published[index-1]);const next=el("button",ar?"الدرس التالي":"Next lesson","btn sub");next.disabled=index<0||index>=published.length-1;next.onclick=()=>openLesson(published[index+1]);const library=el("button",ar?"العودة للمكتبة":"Back to library","btn sub");library.onclick=()=>{$("modal").close();displayPage("learning")};controls.append(previous,next,library);body.append(note,btn,controls);$("closeModal").textContent=ar?"إغلاق والعودة":"Close & return";if(!$("modal").open)$("modal").showModal()
  }
  async function renderAchievements(){
   const c=$("certificates"),o=$("observations");c.replaceChildren();o.replaceChildren();

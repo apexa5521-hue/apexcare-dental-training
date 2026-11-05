@@ -108,3 +108,11 @@ The original training platform uses **Google Sheets through Google Apps Script**
 - Added mint, sky and warm palettes with light/dark variants; palettes persist independently of authentication.
 - Expanded isolated bilingual previews with specialty covers, selectable specialty pathway examples, daily ungraded activity and six original catalog tool image references. All employee identities, goals, reports and result metrics in previews are fictional. Specialty illustrations are decorative, not clinical reference imagery.
 - Verified Arabic/English RTL/LTR switching across nine preview pages, nurse/admin role switching, daily sample completion, specialty selection, image modal and palette changes using DOM execution. The 48 existing API/security/migration tests also pass. Browser/device visual acceptance and deployment remain pending Render second-account sign-in.
+
+## Navigation clarity follow-up
+
+- Added page Back and Learning path navigation, with role restrictions retained.
+- Live lesson dialogs show the lesson number, previous/next lesson navigation and explicit Back to library. Opening the next lesson does not mark any lesson completed.
+- Leaving an active official assessment through application navigation now asks for confirmation before the existing paused-review flow. Cancelling preserves the current page and navigation trail.
+- Preview lessons now have four clearly numbered steps, Previous/Next controls, a final sample-completion action and Back to library. No official result is awarded.
+- DOM interaction checks cover lesson step boundaries, Previous, library return and page history alongside bilingual/role/palette checks. Live browser acceptance remains pending deployment.
