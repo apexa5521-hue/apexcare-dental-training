@@ -133,3 +133,10 @@ The original training platform uses **Google Sheets through Google Apps Script**
 - Added `/verify` page: demo references clearly identify fictional cards; actual persisted card UUIDs require authenticated owner/member access and are checked against server records. No staff identity is exposed publicly.
 - Added clickable verification references to the competency/knowledge demo and real card display. Demo codes: `DEMO-NSE-C-0024`, `DEMO-NSE-K-0024`. These are example references, not actual issued staff credentials.
 - 51 automated tests pass, including new cross-center plan/notification checks, independent observer requirements and card revocation. UI browser acceptance and deployment of these changes remain pending second Render account sign-in.
+
+## 2026-11-07 — Verification/development staging deployment
+
+- Dedicated second Render workspace and service reverified. Source `45901a6f4dc735d819f0cc9ed550fb60cedb1ac9` reached Live in deploy `dep-dbniiubm8hqs73can54g` (29.5s).
+- Browser opened `/competency-demo`, clicked the competency card verification link and verified `/verify?id=DEMO-NSE-C-0024`. Knowledge demo reference also matched the correct card kind.
+- Unknown reference was rejected; a synthetic non-demo UUID required sign-in and exposed no staff identity. No actual staff credential was created during these checks.
+- These browser checks validate the demo verification experience and anonymous guard. Real authenticated staff card issuance, onboarding and all multi-role development workflows still require acceptance with verified test identities.
