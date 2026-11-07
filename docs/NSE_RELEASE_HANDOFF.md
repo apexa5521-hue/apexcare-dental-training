@@ -125,3 +125,11 @@ The original training platform uses **Google Sheets through Google Apps Script**
 - Browser checked live library/back navigation and real source tool image enlargement; the Rubber Dam image loaded successfully (`naturalWidth=1475`).
 - Published `/preview` successfully rendered fictional nurse/admin views, Arabic/English switching and a four-step lesson. Next advanced Step 1 to Step 2; Back to library returned correctly. Light/dark appearance inspected on desktop.
 - These checks do not complete staff onboarding, four-language clinical content review, real nurse/supervisor acceptance, mobile/iPad acceptance, practical/certificate workflows or load testing. Staging only; no merge to main.
+
+## Development and verification implementation — pending deployment
+
+- Added server-backed personal/team learning plans, own-notification read tracking, weekly lesson activity, reviewed skill rubric creation, practical observation controls, paused assessment review list, certificate revocation and authenticated card verification.
+- Independent observer and meaningful evidence notes are required for practical observations; target specialty assignment is checked. Plans do not automatically create competency credentials.
+- Added `/verify` page: demo references clearly identify fictional cards; actual persisted card UUIDs require authenticated owner/member access and are checked against server records. No staff identity is exposed publicly.
+- Added clickable verification references to the competency/knowledge demo and real card display. Demo codes: `DEMO-NSE-C-0024`, `DEMO-NSE-K-0024`. These are example references, not actual issued staff credentials.
+- 51 automated tests pass, including new cross-center plan/notification checks, independent observer requirements and card revocation. UI browser acceptance and deployment of these changes remain pending second Render account sign-in.

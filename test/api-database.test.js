@@ -94,6 +94,32 @@ test('owner import executes with original IDs, extra source fields and quarantin
  const issue=await db.query('select missing_id from qib.migration_issues');assert.equal(issue.rows[0].missing_id,'missing-source-id');
 });
 
+test('personal plans persist, remain center scoped and require independent supervisor review',async()=>{
+ assert.equal((await call('/api/plans/create',{body:{userId:ids.nurse,specialtyId:specialty,steps:[{title:'Review instrument preparation',kind:'learning'}]}})).status,403);
+ const made=await call('/api/plans/create',{token:'supervisor',body:{userId:ids.nurse,specialtyId:specialty,steps:[{title:'Review instrument preparation',kind:'learning'},{title:'Observed practical review',kind:'supervisor_review'}]}});assert.equal(made.status,200);const planId=made.body.id;
+ assert.equal((await call('/api/plans/step',{center:ids.other,body:{planId,index:0}})).status,403);
+ assert.equal((await call('/api/plans/step',{body:{planId,index:0}})).body.steps[0].done,true);
+ assert.equal((await call('/api/plans/step',{body:{planId,index:1}})).status,403);
+ assert.equal((await call('/api/plans/step',{token:'supervisor',body:{planId,index:1}})).body.status,'completed');
+ const own=await call('/api/development');assert.equal(own.body.plans.length,1);assert.equal(own.body.notifications.length,2);
+ const notification=own.body.notifications[0];assert.equal((await call('/api/notifications/read',{token:'supervisor',body:{id:notification.id}})).status,403);assert.equal((await call('/api/notifications/read',{body:{id:notification.id}})).body.read,true);
+ assert.equal((await call('/api/development/team')).status,403);
+});
+test('practical evidence requires another observer, assigned specialty and meaningful notes',async()=>{
+ const skill=(await db.query("insert into qib.skill_definitions(specialty_id,name_en,rubric) values($1,'Synthetic practical skill','{}') returning id",[specialty])).rows[0].id;
+ assert.equal((await call('/api/observations',{token:'supervisor',body:{userId:ids.supervisor,skillId:skill,status:'competent',notes:'Observed practical evidence'}})).body.error,'INDEPENDENT_OBSERVER_REQUIRED');
+ assert.equal((await call('/api/observations',{token:'supervisor',body:{userId:ids.nurse,skillId:skill,status:'competent',notes:'short'}})).status,400);
+ assert.equal((await call('/api/observations',{token:'supervisor',body:{userId:ids.nurse,skillId:skill,status:'supervised',notes:'Observed practical evidence in a supervised session'}})).status,200);
+});
+test('certificate verification and revocation enforce ownership and reason',async()=>{
+ const id=(await db.query("insert into qib.certificates(center_id,user_id,specialty_id,kind,issued_by) values($1,$2,$3,'knowledge',$4) returning id",[ids.center,ids.nurse,specialty,ids.supervisor])).rows[0].id;
+ assert.equal((await call('/api/certificates/verify?id='+id)).body.valid,true);
+ assert.equal((await call('/api/certificates/revoke',{body:{id,reason:'Documented reason'}})).status,403);
+ assert.equal((await call('/api/certificates/revoke',{token:'supervisor',body:{id,reason:'short'}})).status,400);
+ assert.equal((await call('/api/certificates/revoke',{token:'supervisor',body:{id,reason:'Evidence needs a documented review'}})).body.revoked,true);
+ assert.equal((await call('/api/certificates/verify?id='+id)).body.valid,false);
+});
+
 test('revoked Supabase session cannot reuse an unexpired token',async()=>{
  await db.query('delete from auth.sessions where id=$1',[sessions.nurse]);
  assert.equal((await call('/api/bootstrap')).status,401);

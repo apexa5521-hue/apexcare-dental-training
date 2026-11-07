@@ -2,6 +2,7 @@
 const http=require("node:http"),fs=require("node:fs"),path=require("node:path"),{randomUUID}=require("node:crypto");
 const {Pool}=require("pg");
 const {createClient}=require("@supabase/supabase-js");
+const development=require("./development.js");
 const {buildSpecialtyQuestions}=require("./build-specialty-exam.js");
 const required=["SUPABASE_URL","SUPABASE_PUBLISHABLE_KEY",...(process.env.DATABASE_URL?["DATABASE_URL"]:["PGHOST","PGUSER","PGPASSWORD"])];
 if(require.main===module){for(const key of required)if(!process.env[key]){console.error("Missing "+key);process.exit(1)}}
@@ -34,7 +35,7 @@ async function handler(req,res){
  if(req.method==='GET'&&url.pathname==='/supabase-client.js'){
   return fs.readFile(path.join(__dirname,'node_modules/@supabase/supabase-js/dist/umd/supabase.js'),(e,bytes)=>{if(e)return send(res,503,{error:'AUTH_CLIENT_UNAVAILABLE'});res.writeHead(200,{'Content-Type':'application/javascript; charset=utf-8','Cache-Control':'public, max-age=3600','X-Content-Type-Options':'nosniff'});res.end(bytes)});
  }
- if(req.method==="GET"&&["/","/demo","/preview","/preview.js","/experience.js","/journey-art.svg","/live.js","/live-theme.css","/learning-achievements.js","/api-bridge.js","/interface-i18n.js"].includes(url.pathname)){const fp=url.pathname==="/"?path.join(__dirname,"../v2/live.html"):url.pathname==="/demo"?path.join(__dirname,"../v2/index.html"):url.pathname==="/preview"?path.join(__dirname,"../v2/preview.html"):path.join(__dirname,"../v2",url.pathname.slice(1));return fs.readFile(fp,(err,bytes)=>{if(err)return send(res,404,{error:"NOT_FOUND"});res.writeHead(200,{"Content-Type":url.pathname.endsWith(".js")?"application/javascript; charset=utf-8":url.pathname.endsWith(".css")?"text/css; charset=utf-8":url.pathname.endsWith(".svg")?"image/svg+xml":"text/html; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"});res.end(bytes)})}
+ if(req.method==="GET"&&["/","/verify","/verify.js","/competency-demo","/demo","/preview","/preview.js","/experience.js","/development.js","/journey-art.svg","/live.js","/live-theme.css","/learning-achievements.js","/api-bridge.js","/interface-i18n.js"].includes(url.pathname)){const fp=url.pathname==="/verify"?path.join(__dirname,"../v2/verify.html"):url.pathname==="/competency-demo"?path.join(__dirname,"../v2/NSE-Competency-Demo.html"):url.pathname==="/"?path.join(__dirname,"../v2/live.html"):url.pathname==="/demo"?path.join(__dirname,"../v2/index.html"):url.pathname==="/preview"?path.join(__dirname,"../v2/preview.html"):path.join(__dirname,"../v2",url.pathname.slice(1));return fs.readFile(fp,(err,bytes)=>{if(err)return send(res,404,{error:"NOT_FOUND"});res.writeHead(200,{"Content-Type":url.pathname.endsWith(".js")?"application/javascript; charset=utf-8":url.pathname.endsWith(".css")?"text/css; charset=utf-8":url.pathname.endsWith(".svg")?"image/svg+xml":"text/html; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"});res.end(bytes)})}
  if(url.pathname==="/health"){
   try{await pool.query('select 1 from qib.specialties limit 1');return send(res,200,{ok:true,service:"NSE",status:"ready"})}
   catch(e){if(Date.now()-lastReadinessErrorAt>30000){console.error('NSE_DB_READINESS',e.code||e.name||'DATABASE_ERROR');lastReadinessErrorAt=Date.now()}return send(res,503,{ok:false,service:"NSE",status:"database_unavailable"})}
@@ -50,6 +51,7 @@ async function handler(req,res){
  if(!centerId)throw Object.assign(Error("CENTER_REQUIRED"),{status:400});
  const result=await transaction(async c=>{
   const role=await member(c,userId,centerId);
+  const extension=await development({req,url,body,c,userId,centerId,role,mustUUID,deny});if(extension.handled)return extension.data;
   if(req.method==="GET"&&url.pathname==="/api/bootstrap"){
    const [specialties,modules,assignments,notifications]=await Promise.all([
     c.query("select id,code,label from qib.specialties order by label"),
@@ -301,7 +303,9 @@ async function handler(req,res){
   if(req.method==="POST"&&url.pathname==="/api/observations"){
    if(!["supervisor","admin"].includes(role.role))deny();const target=mustUUID(body.userId),skillId=mustUUID(body.skillId);
    if(!["needs_support","supervised","competent"].includes(body.status))throw Object.assign(Error("BAD_STATUS"),{status:400});
-   const m=await c.query("select 1 from qib.memberships where center_id=$1 and user_id=$2",[centerId,target]);if(!m.rowCount)deny();
+   if(target===userId)throw Object.assign(Error("INDEPENDENT_OBSERVER_REQUIRED"),{status:409});
+   const notes=String(body.notes||"").trim();if(notes.length<12)throw Object.assign(Error("OBSERVATION_NOTES_REQUIRED"),{status:400});
+   const m=await c.query("select 1 from qib.memberships m join qib.assignments a on a.user_id=m.user_id and a.center_id=m.center_id join qib.skill_definitions s on s.specialty_id=a.specialty_id where m.center_id=$1 and m.user_id=$2 and s.id=$3",[centerId,target,skillId]);if(!m.rowCount)deny();
    const x=await c.query("insert into qib.skill_observations(center_id,user_id,skill_id,observer_id,status,notes) values($1,$2,$3,$4,$5,$6) returning id",[centerId,target,skillId,userId,body.status,String(body.notes||"").slice(0,2000)]);return {id:x.rows[0].id};
   }
   throw Object.assign(Error("NOT_FOUND"),{status:404});

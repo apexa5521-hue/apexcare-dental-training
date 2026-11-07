@@ -24,6 +24,7 @@
   const back=el("button",ar?"→ رجوع":"← Back","btn sub");back.disabled=!pageTrail.length;back.onclick=()=>{const previous=pageTrail.at(-1);if(previous)displayPage(previous,true)};
   const home=el("button",ar?"المسار التعليمي":"Learning path","btn sub");home.onclick=()=>displayPage("home");const current=el("span",titles[$("language").value]?.[nav.findIndex(n=>n[0]===activePage)]||nav.find(n=>n[0]===activePage)?.[1],"small");bar.append(back,home,el("span","/","small"),current)
  }
+ const development=window.initDevelopment({request,post,context:()=>({center:state.center,role:state.role,user:state.user,specialties:state.specialties})});delete window.initDevelopment;
  function displayPage(id,fromBack=false){
   if(!allowed().some(n=>n[0]===id))return;
   if(state.attempt&&id!=="assessments"){
@@ -37,7 +38,8 @@
   if(id==="catalog")loadCatalog().catch(showError);
   if(id==="ipc")loadIPC().catch(showError);
   if(id==="assessments")loadExams().catch(showError);
-  if(id==="team")loadTeam().catch(showError);
+  if(id==="team"){loadTeam().catch(showError);development.manage()}
+  if(id==="home")development.refresh();
   if(id==="studio")loadStudio().catch(showError);
   if(id==="reports")loadReports().catch(showError);
  }
@@ -103,7 +105,7 @@
  async function renderAchievements(){
   const c=$("certificates"),o=$("observations");c.replaceChildren();o.replaceChildren();
   if(!state.certificates.length)c.append(el("p","Verified Knowledge and Competency Cards will appear after center approval.","muted"));
-  state.certificates.forEach(x=>{const card=el("div",undefined,"card");card.append(el("span",x.kind==="knowledge"?"Knowledge Card":"Competency Card","pill"),el("h3",state.specialties.find(s=>s.id===x.specialty_id)?.label||"Clinical Competence"),el("p","Issued "+new Date(x.issued_at).toLocaleDateString(),"small"));if(x.revoked_at)card.append(el("p","Revoked","error"));c.append(card)});
+  state.certificates.forEach(x=>{const card=el("div",undefined,"card");card.append(el("span",x.kind==="knowledge"?"Knowledge Card":"Competency Card","pill"),el("h3",state.specialties.find(s=>s.id===x.specialty_id)?.label||"Clinical Competence"),el("p","Issued "+new Date(x.issued_at).toLocaleDateString(),"small"));const verify=el("a","Verify card ↗","preview-link");verify.href="/verify?id="+encodeURIComponent(x.id);verify.target="_blank";verify.rel="noopener";card.append(verify);if(x.revoked_at)card.append(el("p","Revoked","error"));c.append(card)});
   o.append(el("h2","Observed competencies"));
   try{
    const data=await request("/api/achievements?centerId="+encodeURIComponent(state.center));
