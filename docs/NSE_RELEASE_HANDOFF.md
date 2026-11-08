@@ -177,3 +177,10 @@ The original training platform uses **Google Sheets through Google Apps Script**
 - 63 automated tests pass, including real API ownership/center checks, expired question rejection, snapshot stability on resume, retake grant consumption/history preservation and repeated schema upgrade. Syntax and whitespace checks pass.
 - This release does not implement document AI extraction, secure manual media upload, category-balanced question selection or complete specialty content. Those remain separate work; no clinical approval or staff distribution is claimed.
 - Deployment and browser acceptance of this revision are pending below.
+
+## 2026-11-08 — Exam workflow release deployed
+
+- Verified second Render workspace `Apexa5551's workspace`, service `srv-dbll3bh5efls73e348lg` and existing development branch. Deployed exact commit `59ed1354c0dfb2240a33a92b3786f09027cbf428`.
+- Deploy `dep-dbo6saec6qcc73cqt6qg` reached **Deploy succeeded | Live** in 29.5s (15:42 Riyadh). Runtime log confirmed the NSE exam upgrade completed, historical attempt counts/score totals were unchanged and API became ready. Build audit reported zero vulnerabilities.
+- Live site rendered its sign-in page successfully. The previous platform session expired; authenticated timing/retake/flag browser acceptance still needs the user to sign in. Local real-API/database tests passed; this does not substitute for nurse/supervisor browser acceptance.
+- Supabase dashboard also requested sign-in, but database upgrade used only the existing Render-held dedicated NSE connection. No credentials were retrieved, no other project was contacted or changed, and no merge to main occurred.
