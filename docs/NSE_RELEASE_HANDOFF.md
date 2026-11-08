@@ -219,3 +219,9 @@ The original training platform uses **Google Sheets through Google Apps Script**
 - Fixed a missing category/difficulty projection in new attempt snapshots so category-level support recommendations can use actual question metadata. Existing attempt snapshots are untouched.
 - Added admin-only readiness counts (published/unpublished lessons, incomplete translations, pending questions, unresolved source links, enrolled roles and boolean service configuration). UI counts do not imply clinical approval or complete acceptance.
 - 78 automated tests pass. Application cloud browser navigation remains impaired (existing blank tab and one fresh navigation timed out); Supabase SQL UI remains operational. Live AI configuration, verified staff onboarding, clinical/language approval, complete specialty content and authenticated/device acceptance are unresolved.
+
+## 2026-11-08 18:16 Riyadh — Readiness release and live draft counts verified
+
+- Commit `961f607f761f55ac1b4019933b84659461c55d4e` reached Live in deploy `dep-dbo947ou01pc73ej7lcg` (40.9 seconds). Verified intended second Render workspace/service, source SHA, successful schema/history guard and zero build audit vulnerabilities.
+- Dedicated Supabase SQL UI independently returned: Foundation lessons (draft) 6; Foundation translations 24; Foundation questions (draft) 6. Screenshot retained without showing question keys. These are real database drafts, not complete specialty curricula or approved materials.
+- Release remains staging. Full staff identity mappings, live AI credentials/model and clinical/language approval are unavailable; browser navigation failures still block authenticated role/device acceptance. No clinical credentials issued, old source modified or main merge performed.
