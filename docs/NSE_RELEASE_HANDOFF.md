@@ -159,3 +159,21 @@ The original training platform uses **Google Sheets through Google Apps Script**
 - Added owner-only preparation action to create center-local lesson/exam drafts without publishing. Repeated preparation does not duplicate or overwrite content. Both newly authored material and existing source IPC draft conversion remain distinct.
 - Added a standalone reviewer preview to inspect all four languages and the English question drafts. It contains no staff data.
 - 56 automated tests pass, including idempotent preparation and protection of question keys from nurse routes. This is a foundation batch, not complete specialty curricula or dermatology treatment protocols.
+
+## 2026-11-08 — Specialty assessment expansion, first implementation
+
+- Recorded the requested shared specialty content taxonomy and pending manual/AI media/document intake requirements in `docs/NSE_SPECIALTY_CONTENT_MODEL.md`.
+- New attempt creation now shuffles question and option order using Node cryptographic randomness and remaps private answer indexes. Existing snapshots remain unchanged on resume; historical attempts are not overwritten.
+- Added one-question navigation, Previous/Next, session-only flags, numbered question navigation, saved-answer indicators, whole-exam countdown and submission confirmation with unanswered/flagged counts.
+- 57 automated tests passed, including real API server grading with shuffled options and a new permutation/answer integrity test. JavaScript syntax checks passed. Browser acceptance and deployment remain pending.
+- Multiple authorized retakes, persistent flags, per-question server timing, document/AI extraction, secure manual media upload and balanced category sampling are not implemented by this change. Full content is not approved for staff distribution.
+
+## 2026-11-08 — Persisted flags, authorized retakes and question timing
+
+- Implemented authenticated center-scoped server workflows for persistent question flags, immutable per-question deadlines, timing configuration locked after first attempt, and independently approved retakes with a reason and availability/expiry window.
+- Retakes create new numbered attempts, consume a single-use authorization and retain all previous attempts/results. Active/paused attempts resume instead of creating duplicates. Snapshots guarantee changed question/option order versus the previous attempt when alternatives exist, with server answer-key remapping.
+- UI includes previous/next, numbered navigation, saved-answer markers, persisted flags, overall/question countdown and admin timing/retake controls. Per-question deadlines continue while navigating away; revisits cannot reset them. Official assessment text remains English-only.
+- Added repeat-safe `deploy/exam-workflows-upgrade.sql` and startup runner restricted to the exact dedicated NSE staging Supabase URL. Existing Render-held credentials are not exported. The runner verifies original attempt counts/score totals and fails closed for any other project.
+- 63 automated tests pass, including real API ownership/center checks, expired question rejection, snapshot stability on resume, retake grant consumption/history preservation and repeated schema upgrade. Syntax and whitespace checks pass.
+- This release does not implement document AI extraction, secure manual media upload, category-balanced question selection or complete specialty content. Those remain separate work; no clinical approval or staff distribution is claimed.
+- Deployment and browser acceptance of this revision are pending below.

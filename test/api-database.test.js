@@ -19,6 +19,7 @@ before(async()=>{
  await db.query('insert into auth.sessions(id,user_id) values($1,$2),($3,$4)',[sessions.nurse,ids.nurse,sessions.supervisor,ids.supervisor]);
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/schema.sql'),'utf8').replace('create extension if not exists pgcrypto;',''));
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/legacy-catalog.sql'),'utf8'));
+ await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/exam-workflows-upgrade.sql'),'utf8'));
  const query=async(sql,args)=>{const r=await db.query(sql,args);return {...r,rowCount:r.rows.length||r.affectedRows||0}};
  mock.method(pool,'query',query);
  mock.method(pool,'connect',async()=>({query,release(){}}));
@@ -65,7 +66,7 @@ test('actual assessment routes redact answer keys and calculate score from store
  assert.equal((await call('/api/exams/draft-questions?assessmentId='+ids.exam)).status,403);
  const attemptId=start.body.attemptId,questionId=start.body.questions[0].id;
  assert.equal((await call('/api/exams/answer',{center:ids.other,body:{attemptId,questionId,choice:1}})).status,403);
- assert.equal((await call('/api/exams/answer',{body:{attemptId,questionId,choice:1}})).status,200);
+ assert.equal((await call('/api/exams/answer',{body:{attemptId,questionId,choice:start.body.questions[0].options_en.indexOf('B')}})).status,200);
  const result=await call('/api/exams/submit',{body:{attemptId,score:0}});assert.equal(result.body.score,100);
  assert.equal((await call('/api/exams/submit',{body:{attemptId,score:1}})).body.score,100);
 });
@@ -163,6 +164,52 @@ test('foundation curriculum prepares once as private drafts and does not publish
  try{const r=await call('/api/modules/prepare-foundations',{token:'supervisor',body:{}});assert.equal(r.status,200);assert.equal(r.body.created,6);assert.equal(r.body.questionDraftsCreated,6);const again=await call('/api/modules/prepare-foundations',{token:'supervisor',body:{}});assert.equal(again.body.created,0);assert.equal(again.body.questionDraftsCreated,0);
  const modules=await db.query("select translations,status from qib.modules where slug like 'nse-foundation-%'");assert.equal(modules.rows.length,6);assert(modules.rows.every(m=>m.status==='draft'&&Object.keys(m.translations).length===4));assert(modules.rows.every(m=>!JSON.stringify(m.translations).includes('answer_index')));assert.equal((await call('/api/exams/draft-questions?assessmentId='+r.body.assessmentId)).status,403);
  }finally{await db.query('delete from qib.platform_owners where user_id=$1',[ids.supervisor]);await db.query("update qib.memberships set role='supervisor' where user_id=$1 and center_id=$2",[ids.supervisor,ids.center])}
+});
+
+test('flags persist on resume and reject foreign centers, invalid questions and finished attempts',async()=>{
+ const first=await call('/api/exams/start',{body:{assessmentId:ids.reviewExam}}),id=first.body.attemptId,qid=first.body.questions[0].id;
+ assert.equal((await call('/api/exams/flag',{center:ids.other,body:{attemptId:id,questionId:qid,flagged:true}})).status,403);
+ assert.equal((await call('/api/exams/flag',{body:{attemptId:id,questionId:ids.exam,flagged:true}})).status,400);
+ assert.equal((await call('/api/exams/flag',{body:{attemptId:id,questionId:qid,flagged:true}})).body.flags[qid],true);
+ const resume=await call('/api/exams/start',{body:{assessmentId:ids.reviewExam}});assert.equal(resume.body.flags[qid],true);assert.deepEqual(resume.body.questions,first.body.questions);
+ assert.deepEqual((await call('/api/exams/flag',{body:{attemptId:id,questionId:qid,flagged:false}})).body.flags,{});
+ const completed=(await db.query('select id,question_snapshot from qib.attempts where assessment_id=$1',[ids.exam])).rows[0];assert.equal((await call('/api/exams/flag',{body:{attemptId:completed.id,questionId:completed.question_snapshot[0].id,flagged:true}})).status,409);
+});
+test('retake requires independent supervisor grant, preserves history and consumes grant once',async()=>{
+ const old=(await db.query('select * from qib.attempts where assessment_id=$1',[ids.exam])).rows[0];
+ assert.equal((await call('/api/exams/start',{body:{assessmentId:ids.exam}})).body.attemptId,old.id);
+ assert.equal((await call('/api/exams/retake',{body:{previousAttemptId:old.id,reason:'Reviewed learning support plan'}})).status,403);
+ assert.equal((await call('/api/exams/retake',{token:'supervisor',center:ids.other,body:{previousAttemptId:old.id,reason:'Reviewed learning support plan'}})).status,403);
+ assert.equal((await call('/api/exams/retake',{token:'supervisor',body:{previousAttemptId:old.id,reason:'Reviewed learning support plan'}})).body.approved,true);
+ const retake=await call('/api/exams/start',{body:{assessmentId:ids.exam}});assert.equal(retake.body.attemptNumber,2);assert.notEqual(retake.body.attemptId,old.id);
+ assert.equal((await call('/api/exams/start',{body:{assessmentId:ids.exam}})).body.attemptId,retake.body.attemptId);
+ const saved=(await db.query('select status,score,answers from qib.attempts where id=$1',[old.id])).rows[0];assert.equal(saved.status,'submitted');assert.equal(saved.score,100);assert.deepEqual(saved.answers,old.answers);
+ assert.equal((await db.query('select used_by_attempt_id from qib.retake_grants where previous_attempt_id=$1',[old.id])).rows[0].used_by_attempt_id,retake.body.attemptId);
+ assert.equal((await call('/api/exams/retake',{token:'supervisor',body:{previousAttemptId:old.id,reason:'Reviewed additional support plan'}})).status,409);
+});
+test('per-question timing is server enforced, stable after revisit and cannot change after an attempt',async()=>{
+ const exam=(await db.query("insert into qib.assessments(center_id,title,status) values($1,'Timed synthetic assessment','published') returning id",[ids.center])).rows[0].id;
+ await db.query("insert into qib.questions(assessment_id,prompt_en,options_en,answer_index) values($1,'Timed synthetic question?','[\"A\",\"B\"]',0)",[exam]);
+ await db.query("update qib.memberships set role='admin' where user_id=$1",[ids.supervisor]);
+ assert.equal((await call('/api/exams/timing',{body:{assessmentId:exam,timingMode:'per_question',secondsPerQuestion:10,minutes:30}})).status,403);
+ assert.equal((await call('/api/exams/timing',{token:'supervisor',body:{assessmentId:exam,timingMode:'per_question',secondsPerQuestion:10,minutes:30}})).body.saved,true);
+ const a=(await call('/api/exams/start',{body:{assessmentId:exam}})).body,q=a.questions[0].id;
+ assert.equal((await call('/api/exams/answer',{body:{attemptId:a.attemptId,questionId:q,choice:0}})).status,409);
+ const opened=(await call('/api/exams/open-question',{body:{attemptId:a.attemptId,questionId:q}})).body;assert.ok(opened.deadlineAt);
+ assert.equal((await call('/api/exams/open-question',{body:{attemptId:a.attemptId,questionId:q}})).body.deadlineAt,opened.deadlineAt);
+ assert.equal((await call('/api/exams/answer',{body:{attemptId:a.attemptId,questionId:q,choice:0}})).status,200);
+ await db.query('update qib.attempts set question_clocks=$2 where id=$1',[a.attemptId,JSON.stringify({[q]:new Date(Date.now()-1000).toISOString()})]);
+ assert.equal((await call('/api/exams/answer',{body:{attemptId:a.attemptId,questionId:q,choice:1}})).body.error,'QUESTION_TIME_EXPIRED');
+ assert.equal((await call('/api/exams/flag',{body:{attemptId:a.attemptId,questionId:q,flagged:true}})).status,200);
+ assert.equal((await call('/api/exams/timing',{token:'supervisor',body:{assessmentId:exam,timingMode:'total',secondsPerQuestion:10,minutes:30}})).status,409);
+ await db.query("update qib.memberships set role='supervisor' where user_id=$1",[ids.supervisor]);
+});
+
+test('exam upgrade runs repeatedly without changing attempt history or losing RLS',async()=>{
+ const before=(await db.query('select id,status,score,answers,question_snapshot from qib.attempts order by id')).rows;
+ await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/exam-workflows-upgrade.sql'),'utf8'));
+ assert.deepEqual((await db.query('select id,status,score,answers,question_snapshot from qib.attempts order by id')).rows,before);
+ assert.equal((await db.query("select rowsecurity from pg_tables where schemaname='qib' and tablename='retake_grants'")).rows[0].rowsecurity,true);
 });
 
 test('revoked Supabase session cannot reuse an unexpired token',async()=>{

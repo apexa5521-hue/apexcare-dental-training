@@ -3,6 +3,7 @@ const http=require("node:http"),fs=require("node:fs"),path=require("node:path"),
 const {Pool}=require("pg");
 const {createClient}=require("@supabase/supabase-js");
 const development=require("./development.js");
+const examWorkflows=require("./exam-workflows.js");
 const contentWorkflows=require("./content-workflows.js");
 const {buildSpecialtyQuestions}=require("./build-specialty-exam.js");
 const required=["SUPABASE_URL","SUPABASE_PUBLISHABLE_KEY",...(process.env.DATABASE_URL?["DATABASE_URL"]:["PGHOST","PGUSER","PGPASSWORD"])];
@@ -38,7 +39,7 @@ async function handler(req,res){
  }
  if(req.method==="GET"&&["/","/verify","/verify.js","/competency-demo","/demo","/preview","/preview.js","/experience.js","/development.js","/journey-art.svg","/live.js","/live-theme.css","/learning-achievements.js","/api-bridge.js","/interface-i18n.js"].includes(url.pathname)){const fp=url.pathname==="/verify"?path.join(__dirname,"../v2/verify.html"):url.pathname==="/competency-demo"?path.join(__dirname,"../v2/NSE-Competency-Demo.html"):url.pathname==="/"?path.join(__dirname,"../v2/live.html"):url.pathname==="/demo"?path.join(__dirname,"../v2/index.html"):url.pathname==="/preview"?path.join(__dirname,"../v2/preview.html"):path.join(__dirname,"../v2",url.pathname.slice(1));return fs.readFile(fp,(err,bytes)=>{if(err)return send(res,404,{error:"NOT_FOUND"});res.writeHead(200,{"Content-Type":url.pathname.endsWith(".js")?"application/javascript; charset=utf-8":url.pathname.endsWith(".css")?"text/css; charset=utf-8":url.pathname.endsWith(".svg")?"image/svg+xml":"text/html; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"});res.end(bytes)})}
  if(url.pathname==="/health"){
-  try{await pool.query('select 1 from qib.specialties limit 1');return send(res,200,{ok:true,service:"NSE",status:"ready"})}
+  try{await pool.query('select timing_mode,seconds_per_question from qib.assessments limit 1');return send(res,200,{ok:true,service:"NSE",status:"ready"})}
   catch(e){if(Date.now()-lastReadinessErrorAt>30000){console.error('NSE_DB_READINESS',e.code||e.name||'DATABASE_ERROR');lastReadinessErrorAt=Date.now()}return send(res,503,{ok:false,service:"NSE",status:"database_unavailable"})}
  }
  if(url.pathname==="/api/config"&&req.method==="GET")return send(res,200,{supabaseUrl:process.env.SUPABASE_URL,publishableKey:process.env.SUPABASE_PUBLISHABLE_KEY});
@@ -54,6 +55,7 @@ async function handler(req,res){
   const role=await member(c,userId,centerId);
   const extension=await development({req,url,body,c,userId,centerId,role,mustUUID,deny});if(extension.handled)return extension.data;
   const workflow=await contentWorkflows({req,url,body,c,userId,centerId,role,mustUUID,deny});if(workflow.handled)return workflow.data;
+  const examFlow=await examWorkflows({req,url,body,c,userId,centerId,role,mustUUID,deny});if(examFlow.handled)return examFlow.data;
   if(req.method==="GET"&&url.pathname==="/api/bootstrap"){
    const [specialties,modules,assignments,notifications]=await Promise.all([
     c.query("select id,code,label from qib.specialties order by label"),
@@ -223,7 +225,7 @@ async function handler(req,res){
   }
   if(req.method==="GET"&&url.pathname==="/api/exams/drafts"){
     if(role.role!=="admin")deny();
-    const x=await c.query("select a.id,a.title,a.status,a.minutes,a.starts_at,a.ends_at,s.label as specialty,(select count(*)::int from qib.questions q where q.assessment_id=a.id) as question_count from qib.assessments a left join qib.specialties s on s.id=a.specialty_id where a.center_id=$1 order by a.title",[centerId]);
+    const x=await c.query("select a.id,a.title,a.status,a.minutes,a.timing_mode,a.seconds_per_question,a.starts_at,a.ends_at,s.label as specialty,(select count(*)::int from qib.questions q where q.assessment_id=a.id) as question_count from qib.assessments a left join qib.specialties s on s.id=a.specialty_id where a.center_id=$1 order by a.title",[centerId]);
     return {assessments:x.rows};
   }
   if(req.method==="GET"&&url.pathname==="/api/exams/draft-questions"){
@@ -252,15 +254,6 @@ async function handler(req,res){
    if(new Date(a.deadline_at)<=new Date() || Date.now()-new Date(a.heartbeat_at).getTime()>45000){await c.query("update qib.attempts set status='paused_review' where id=$1",[id]);await c.query("insert into qib.attempt_events(attempt_id,event_key,kind,actor_id) values($1,$2,'connection_interrupted',$3)",[id,randomUUID(),userId]);return {status:'paused_review'}}
    await c.query("update qib.attempts set heartbeat_at=now() where id=$1",[id]);return {status:'active'};
   }
-  if(req.method==="POST"&&url.pathname==="/api/exams/start"){
-   const assessmentId=mustUUID(body.assessmentId);
-   const a=await c.query("select * from qib.assessments where id=$1 and center_id=$2 and status='published' and (starts_at is null or starts_at<=now()) and (ends_at is null or ends_at>=now())",[assessmentId,centerId]);if(!a.rowCount)deny();
-   if(a.rows[0].specialty_id){const assign=await c.query("select 1 from qib.assignments where center_id=$1 and user_id=$2 and specialty_id=$3",[centerId,userId,a.rows[0].specialty_id]);if(!assign.rowCount)deny()}
-   const q=await c.query("select id,prompt_en,options_en,answer_index from qib.questions where assessment_id=$1",[assessmentId]);if(!q.rowCount)throw Object.assign(Error("NO_QUESTIONS"),{status:409});
-   await c.query("insert into qib.attempts(assessment_id,center_id,user_id,deadline_at,question_snapshot) values($1,$2,$3,least(now()+($4||' minutes')::interval,coalesce($5::timestamptz,now()+($4||' minutes')::interval)),$6) on conflict(assessment_id,user_id) do nothing",[assessmentId,centerId,userId,a.rows[0].minutes,a.rows[0].ends_at,JSON.stringify(q.rows)]);
-   const r=await c.query("select id,status,deadline_at,heartbeat_at,question_snapshot,answers from qib.attempts where assessment_id=$1 and user_id=$2 for update",[assessmentId,userId]);const attempt=r.rows[0];if(attempt.status==="active"&&(new Date(attempt.deadline_at)<=new Date()||Date.now()-new Date(attempt.heartbeat_at).getTime()>45000)){await c.query("update qib.attempts set status='paused_review' where id=$1",[attempt.id]);attempt.status="paused_review"}
-   return {attemptId:attempt.id,status:attempt.status,deadlineAt:attempt.deadline_at,questions:attempt.status==="active"?attempt.question_snapshot.map(({id,prompt_en,options_en})=>({id,prompt_en,options_en})):[],answers:attempt.status==="active"?attempt.answers:{}};
-  }
   if(req.method==="POST"&&url.pathname==="/api/exams/event"){
    const attemptId=mustUUID(body.attemptId),eventKey=String(body.eventKey||"");if(!eventKey||eventKey.length>100)throw Object.assign(Error("BAD_EVENT_KEY"),{status:400});
    const allowed=["visibility_hidden","pagehide","window_blur","connection_interrupted"];if(!allowed.includes(body.kind))throw Object.assign(Error("BAD_EVENT"),{status:400});
@@ -268,14 +261,6 @@ async function handler(req,res){
    await c.query("insert into qib.attempt_events(attempt_id,event_key,kind,actor_id) values($1,$2,$3,$4) on conflict do nothing",[attemptId,eventKey,body.kind,userId]);
    if(r.rows[0].status==="active")await c.query("update qib.attempts set status='paused_review' where id=$1",[attemptId]);
    return {status:r.rows[0].status==="active"?"paused_review":r.rows[0].status};
-  }
-  if(req.method==="POST"&&url.pathname==="/api/exams/answer"){
-   const id=mustUUID(body.attemptId),qid=mustUUID(body.questionId),choice=body.choice;
-   if(!Number.isInteger(choice)||choice<0)throw Object.assign(Error("BAD_CHOICE"),{status:400});
-   const r=await c.query("select * from qib.attempts where id=$1 and center_id=$2 and user_id=$3 for update",[id,centerId,userId]);if(!r.rowCount)deny();const a=r.rows[0];
-   if(a.status!=="active"||new Date(a.deadline_at)<=new Date()||Date.now()-new Date(a.heartbeat_at).getTime()>45000)throw Object.assign(Error("ATTEMPT_NOT_ACTIVE"),{status:409});
-   const q=a.question_snapshot.find(q=>q.id===qid);if(!q||choice>=q.options_en.length)throw Object.assign(Error("BAD_CHOICE"),{status:400});
-   const answers={...a.answers,[qid]:choice};await c.query("update qib.attempts set answers=$2,heartbeat_at=now() where id=$1",[id,JSON.stringify(answers)]);return {saved:true};
   }
   if(req.method==="POST"&&url.pathname==="/api/exams/submit"){
    const id=mustUUID(body.attemptId);
@@ -311,5 +296,5 @@ async function handler(req,res){
  send(res,200,result);
 }
 const server=http.createServer((req,res)=>handler(req,res).catch(e=>{console.error(e.message);if(!res.headersSent)send(res,e.status||500,{error:e.status?e.message:"SERVER_ERROR"})}));
-if(require.main===module){server.listen(process.env.PORT||10000,()=>console.log("NSE API ready"))}
+if(require.main===module){require('./upgrade-staging').upgradeStaging(pool,process.env.SUPABASE_URL).then(()=>server.listen(process.env.PORT||10000,()=>console.log("NSE API ready"))).catch(e=>{console.error('NSE_SCHEMA_UPGRADE_FAILED',e.code||e.message);pool.end().finally(()=>process.exit(1))})}
 module.exports={server,handler,pool};
