@@ -212,3 +212,10 @@ The original training platform uses **Google Sheets through Google Apps Script**
 - This deploy includes private content/document intake, step-based learning and evidence-based growth follow-ups previously marked pending. No main merge or changes to other projects.
 - Two attempts to open the application in the cloud browser failed with protocol navigation/frame-tree timeouts. This is a browser verification limitation, not evidence of a site bot block. Do not claim authenticated content/growth UI, mobile or nurse/supervisor acceptance from successful deploy alone.
 - Live AI generation still requires configured server credentials/model and an actual generation acceptance run; clinical/language review, identity onboarding and full specialty coverage remain open.
+
+## 2026-11-08 — Live content draft preparation and readiness follow-up
+
+- Through the signed-in dedicated Supabase SQL editor, verified the existing center and previously authorized owner, then inserted the six foundation lessons (24 localized versions) and six English question drafts with repeat-safe SQL. UI returned `draft | 6` separately for lessons and questions. No publishing, credential issuance or source system writes occurred.
+- Fixed a missing category/difficulty projection in new attempt snapshots so category-level support recommendations can use actual question metadata. Existing attempt snapshots are untouched.
+- Added admin-only readiness counts (published/unpublished lessons, incomplete translations, pending questions, unresolved source links, enrolled roles and boolean service configuration). UI counts do not imply clinical approval or complete acceptance.
+- 78 automated tests pass. Application cloud browser navigation remains impaired (existing blank tab and one fresh navigation timed out); Supabase SQL UI remains operational. Live AI configuration, verified staff onboarding, clinical/language approval, complete specialty content and authenticated/device acceptance are unresolved.

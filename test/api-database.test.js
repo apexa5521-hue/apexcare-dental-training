@@ -260,6 +260,10 @@ test('growth recommendations are private, evidence based and support plans are i
  const {reminderSweep}=require('../api/growth');const query=async(sql,args)=>{const r=await db.query(sql,args);return {...r,rowCount:r.rows.length||r.affectedRows||0}};await reminderSweep({query});const before=(await db.query("select count(*)::int n from qib.notifications where kind like 'training_reminder_%'")).rows[0].n;await reminderSweep({query});assert.equal((await db.query("select count(*)::int n from qib.notifications where kind like 'training_reminder_%'")).rows[0].n,before);
 });
 
+test('readiness is admin-only and reports actual preparation blockers without secrets',async()=>{
+ assert.equal((await call('/api/readiness')).status,403);await db.query("update qib.memberships set role='admin' where user_id=$1",[ids.supervisor]);try{const r=await call('/api/readiness',{token:'supervisor'});assert.equal(r.status,200);assert.ok(r.body.unpublishedLessons>0);assert.equal(r.body.automaticClinicalCompetency,false);assert.equal(r.body.aiConfigured,false);assert.equal(r.body.secretKey,undefined)}finally{await db.query("update qib.memberships set role='supervisor' where user_id=$1",[ids.supervisor])}
+});
+
 test('revoked Supabase session cannot reuse an unexpired token',async()=>{
  await db.query('delete from auth.sessions where id=$1',[sessions.nurse]);
  assert.equal((await call('/api/bootstrap')).status,401);

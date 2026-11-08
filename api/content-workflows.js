@@ -2,6 +2,11 @@
 const fail=(message,status=400)=>{throw Object.assign(Error(message),{status})};
 module.exports=async({req,url,body,c,userId,centerId,role,mustUUID,deny})=>{
  const route=url.pathname,admin=role.role==='admin';
+ if(req.method==='GET'&&route==='/api/readiness'){
+  if(!admin)deny();const [modules,members,issues,candidates]=await Promise.all([c.query('select id,status,translations from qib.modules where center_id=$1',[centerId]),c.query('select role,count(*)::int as count from qib.memberships where center_id=$1 group by role',[centerId]),c.query('select count(*)::int as count from qib.migration_issues where resolved_at is null'),c.query("select count(*)::int as count from qib.question_candidates where center_id=$1 and status='draft'",[centerId])]);
+  const missing=modules.rows.filter(m=>['ar','en','ur','id'].some(l=>!m.translations?.[l]?.title?.trim()||!m.translations?.[l]?.body?.trim())).length;
+  return {handled:true,data:{publishedLessons:modules.rows.filter(m=>m.status==='published').length,unpublishedLessons:modules.rows.filter(m=>m.status!=='published').length,incompleteTranslations:missing,members:members.rows,unresolvedSourceLinks:issues.rows[0].count,questionDrafts:candidates.rows[0].count,invitationsConfigured:!!process.env.SUPABASE_SECRET_KEY,aiConfigured:!!process.env.OPENAI_API_KEY&&!!process.env.OPENAI_MODEL,clinicalReviewRequired:true,automaticClinicalCompetency:false}};
+ }
  if(req.method==='POST'&&route==='/api/modules/prepare-foundations'){
   if(!admin)deny();const owner=await c.query('select 1 from qib.platform_owners where user_id=$1',[userId]);if(!owner.rowCount)deny();return {handled:true,data:await require('./curriculum').prepare(c,{centerId,userId})};
  }
