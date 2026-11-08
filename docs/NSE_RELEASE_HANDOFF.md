@@ -140,3 +140,13 @@ The original training platform uses **Google Sheets through Google Apps Script**
 - Browser opened `/competency-demo`, clicked the competency card verification link and verified `/verify?id=DEMO-NSE-C-0024`. Knowledge demo reference also matched the correct card kind.
 - Unknown reference was rejected; a synthetic non-demo UUID required sign-in and exposed no staff identity. No actual staff credential was created during these checks.
 - These browser checks validate the demo verification experience and anonymous guard. Real authenticated staff card issuance, onboarding and all multi-role development workflows still require acceptance with verified test identities.
+
+## 2026-11-08 — Content review, scheduling and real card display
+
+- Added owner-only, repeat-safe conversion of imported IPC content into center-local draft lessons. Source catalog rows are never edited. Missing source translations remain blank and block publication.
+- Publication now requires a review state, all four language titles/bodies and a documented clinical/translation approval recorded in content revisions. Administrators can edit imported translations and send drafts for review.
+- Added assessment scheduling with device-local datetime controls, server validation, audit entries and a lock once any attempt exists.
+- Added real card display with the signed-in name, actual evidence and verification link; no sample data is used for staff cards.
+- Added onboarding readiness display that separates archived legacy users from enrolled nurses and identifies whether invitations are configured.
+- Nurse learning endpoints now filter published lessons by assigned specialty (plus center-wide lessons).
+- 55 automated tests passed, including module review gates, scheduling locks, repeat-safe IPC draft preparation and nurse specialty filtering. Deployment and browser acceptance of this follow-up remain pending.

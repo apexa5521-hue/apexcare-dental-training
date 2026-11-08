@@ -3,6 +3,7 @@ const http=require("node:http"),fs=require("node:fs"),path=require("node:path"),
 const {Pool}=require("pg");
 const {createClient}=require("@supabase/supabase-js");
 const development=require("./development.js");
+const contentWorkflows=require("./content-workflows.js");
 const {buildSpecialtyQuestions}=require("./build-specialty-exam.js");
 const required=["SUPABASE_URL","SUPABASE_PUBLISHABLE_KEY",...(process.env.DATABASE_URL?["DATABASE_URL"]:["PGHOST","PGUSER","PGPASSWORD"])];
 if(require.main===module){for(const key of required)if(!process.env[key]){console.error("Missing "+key);process.exit(1)}}
@@ -52,13 +53,14 @@ async function handler(req,res){
  const result=await transaction(async c=>{
   const role=await member(c,userId,centerId);
   const extension=await development({req,url,body,c,userId,centerId,role,mustUUID,deny});if(extension.handled)return extension.data;
+  const workflow=await contentWorkflows({req,url,body,c,userId,centerId,role,mustUUID,deny});if(workflow.handled)return workflow.data;
   if(req.method==="GET"&&url.pathname==="/api/bootstrap"){
    const [specialties,modules,assignments,notifications]=await Promise.all([
     c.query("select id,code,label from qib.specialties order by label"),
     c.query("select id,specialty_id,slug,translations,version from qib.modules where status='published' and (center_id=$1 or center_id is null)",[centerId]),
     c.query("select a.specialty_id,s.label from qib.assignments a join qib.specialties s on s.id=a.specialty_id where a.user_id=$1 and a.center_id=$2",[userId,centerId]),
     c.query("select id,kind,body,read_at,created_at from qib.notifications where user_id=$1 and center_id=$2 order by created_at desc limit 25",[userId,centerId])]);
-   return {userId,role:role.role,centerId,specialties:specialties.rows,modules:modules.rows,assignments:assignments.rows,notifications:notifications.rows};
+   return {userId,displayName:role.display_name,role:role.role,centerId,specialties:specialties.rows,modules:modules.rows.filter(m=>role.role!=="nurse"||!m.specialty_id||assignments.rows.some(a=>a.specialty_id===m.specialty_id)),assignments:assignments.rows,notifications:notifications.rows};
   }
 
   if(req.method==="POST"&&url.pathname==="/api/specialties/create"){
@@ -105,7 +107,8 @@ async function handler(req,res){
   }
   if(req.method==="GET"&&url.pathname==="/api/modules"){
    const rows=await c.query("select id,slug,specialty_id,translations,status,version from qib.modules where center_id=$1 or (center_id is null and status='published') order by slug",[centerId]);
-   return {modules:rows.rows.filter(x=>x.status==="published"||["supervisor","admin"].includes(role.role))};
+   if(role.role==="nurse"){const assigned=await c.query("select specialty_id from qib.assignments where user_id=$1 and center_id=$2",[userId,centerId]);return {modules:rows.rows.filter(x=>x.status==="published"&&(!x.specialty_id||assigned.rows.some(a=>a.specialty_id===x.specialty_id)))}}
+   return {modules:rows.rows};
   }
   if(req.method==="POST"&&url.pathname==="/api/modules/save"){
    if(role.role!=="admin")deny();
@@ -120,11 +123,6 @@ async function handler(req,res){
    }
    const x=await c.query("insert into qib.modules(center_id,specialty_id,slug,translations) values($1,$2,$3,$4) returning id,version,status",[centerId,specialty,slug,JSON.stringify(translations)]);
    return x.rows[0];
-  }
-  if(req.method==="POST"&&url.pathname==="/api/modules/publish"){
-   if(role.role!=="admin")deny();const id=mustUUID(body.moduleId);
-   const r=await c.query("update qib.modules set status='published',updated_at=now() where id=$1 and center_id=$2 returning id,version",[id,centerId]);if(!r.rowCount)deny();
-   return {published:true,module:r.rows[0]};
   }
   if(req.method==="POST"&&url.pathname==="/api/modules/complete"){
    const moduleId=mustUUID(body.moduleId);
@@ -166,7 +164,7 @@ async function handler(req,res){
   }
   if(req.method==="GET"&&url.pathname==="/api/progress"){
    const p=await c.query("select module_id,completed_at from qib.module_progress where center_id=$1 and user_id=$2",[centerId,userId]);
-   const cert=await c.query("select id,kind,specialty_id,issued_at,expires_at,revoked_at from qib.certificates where center_id=$1 and user_id=$2",[centerId,userId]);
+   const cert=await c.query("select id,kind,specialty_id,issued_at,expires_at,revoked_at,evidence from qib.certificates where center_id=$1 and user_id=$2",[centerId,userId]);
    return {completedModules:p.rows,certificates:cert.rows};
   }
   if(req.method==="GET"&&url.pathname==="/api/reports"){
@@ -225,7 +223,7 @@ async function handler(req,res){
   }
   if(req.method==="GET"&&url.pathname==="/api/exams/drafts"){
     if(role.role!=="admin")deny();
-    const x=await c.query("select a.id,a.title,a.status,a.minutes,s.label as specialty,(select count(*)::int from qib.questions q where q.assessment_id=a.id) as question_count from qib.assessments a left join qib.specialties s on s.id=a.specialty_id where a.center_id=$1 order by a.title",[centerId]);
+    const x=await c.query("select a.id,a.title,a.status,a.minutes,a.starts_at,a.ends_at,s.label as specialty,(select count(*)::int from qib.questions q where q.assessment_id=a.id) as question_count from qib.assessments a left join qib.specialties s on s.id=a.specialty_id where a.center_id=$1 order by a.title",[centerId]);
     return {assessments:x.rows};
   }
   if(req.method==="GET"&&url.pathname==="/api/exams/draft-questions"){

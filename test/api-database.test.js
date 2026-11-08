@@ -120,6 +120,43 @@ test('certificate verification and revocation enforce ownership and reason',asyn
  assert.equal((await call('/api/certificates/verify?id='+id)).body.valid,false);
 });
 
+test('module publication requires review, four languages and an auditable rationale',async()=>{
+ await db.query("update qib.memberships set role='admin' where user_id=$1 and center_id=$2",[ids.supervisor,ids.center]);
+ try{
+ const id=(await db.query("insert into qib.modules(center_id,specialty_id,slug,translations) values($1,$2,'review-workflow-test',$3) returning id",[ids.center,specialty,JSON.stringify({en:{title:'Synthetic title',body:'Synthetic lesson'}})])).rows[0].id;
+ assert.equal((await call('/api/modules/publish',{token:'supervisor',body:{moduleId:id,reviewerNote:'Reviewed synthetic content'}})).body.error,'CONTENT_REVIEW_REQUIRED');
+ assert.equal((await call('/api/modules/request-review',{token:'supervisor',body:{moduleId:id}})).status,200);
+ assert.match((await call('/api/modules/publish',{token:'supervisor',body:{moduleId:id,reviewerNote:'Reviewed synthetic content'}})).body.error,/TRANSLATIONS_REQUIRED/);
+ const translations=Object.fromEntries(['ar','en','ur','id'].map(l=>[l,{title:'Synthetic title',body:'Synthetic lesson'}]));await db.query('update qib.modules set translations=$2 where id=$1',[id,JSON.stringify(translations)]);
+ assert.equal((await call('/api/modules/publish',{token:'supervisor',body:{moduleId:id,reviewerNote:'Reviewed synthetic content and translations'}})).status,200);
+ const audit=await db.query('select snapshot from qib.content_revisions where module_id=$1',[id]);assert.equal(audit.rows[0].snapshot.action,'clinical_publish_review');
+ }finally{await db.query("update qib.memberships set role='supervisor' where user_id=$1 and center_id=$2",[ids.supervisor,ids.center])}
+});
+test('assessment scheduling validates dates and refuses changes after an attempt',async()=>{
+ await db.query("update qib.memberships set role='admin' where user_id=$1 and center_id=$2",[ids.supervisor,ids.center]);
+ try{
+ const id=(await db.query("insert into qib.assessments(center_id,title,status) values($1,'Synthetic scheduled test','draft') returning id",[ids.center])).rows[0].id;
+ assert.equal((await call('/api/exams/schedule',{token:'supervisor',body:{assessmentId:id,startsAt:'invalid',reason:'Scheduling synthetic test'}})).status,400);
+ assert.equal((await call('/api/exams/schedule',{token:'supervisor',body:{assessmentId:id,startsAt:'2030-01-01T10:00:00Z',endsAt:'2030-01-01T11:00:00Z',reason:'Scheduling synthetic test'}})).status,200);
+ assert.equal((await call('/api/exams/schedule',{token:'supervisor',body:{assessmentId:ids.exam,startsAt:'2030-01-01T10:00:00Z',reason:'Scheduling synthetic test'}})).body.error,'SCHEDULE_LOCKED_AFTER_ATTEMPT');
+ }finally{await db.query("update qib.memberships set role='supervisor' where user_id=$1 and center_id=$2",[ids.supervisor,ids.center])}
+});
+
+test('legacy IPC becomes idempotent drafts without overwriting source or inventing translations',async()=>{
+ await db.query("update qib.memberships set role='admin' where user_id=$1 and center_id=$2",[ids.supervisor,ids.center]);await db.query('insert into qib.platform_owners(user_id) values($1)',[ids.supervisor]);
+ try{
+ for(const [source,id,payload] of [['IPC_Modules','ipc-synthetic',{id:'ipc-synthetic',nameEn:'Synthetic IPC',nameAr:'Synthetic Arabic title'}],['IPC_Steps','ipc-step',{id:'ipc-step',moduleId:'ipc-synthetic',textEn:'Original synthetic step',textAr:'Original synthetic Arabic step',order:1}]])await db.query('insert into qib.legacy_catalog(source_name,legacy_id,payload,content_hash) values($1,$2,$3,$4)',[source,id,JSON.stringify(payload),'synthetic-test-hash']);
+ const first=await call('/api/modules/import-ipc',{token:'supervisor',body:{}});assert.equal(first.body.created,1);assert.equal((await call('/api/modules/import-ipc',{token:'supervisor',body:{}})).body.created,0);
+ const r=await db.query("select status,translations from qib.modules where slug like 'legacy-ipc-%'");assert.equal(r.rows[0].status,'draft');assert.equal(r.rows[0].translations.en.body,'Original synthetic step');assert.equal(r.rows[0].translations.ur.body,'');assert.equal(r.rows[0].translations.id.title,'');
+ }finally{await db.query('delete from qib.platform_owners where user_id=$1',[ids.supervisor]);await db.query("update qib.memberships set role='supervisor' where user_id=$1 and center_id=$2",[ids.supervisor,ids.center])}
+});
+
+test('nurse lesson lists expose only assigned specialties and center-wide published content',async()=>{
+ const otherSpec=(await db.query("select id from qib.specialties where code='dermatology'")).rows[0].id;
+ const row=(await db.query("insert into qib.modules(center_id,specialty_id,slug,translations,status) values($1,$2,'unassigned-specialty-test','{}','published') returning id",[ids.center,otherSpec])).rows[0];
+ assert(!(await call('/api/modules')).body.modules.some(m=>m.id===row.id));assert(!(await call('/api/bootstrap')).body.modules.some(m=>m.id===row.id));
+});
+
 test('revoked Supabase session cannot reuse an unexpired token',async()=>{
  await db.query('delete from auth.sessions where id=$1',[sessions.nurse]);
  assert.equal((await call('/api/bootstrap')).status,401);
