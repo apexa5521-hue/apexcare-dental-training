@@ -204,3 +204,11 @@ The original training platform uses **Google Sheets through Google Apps Script**
 - Added deduplicated daily internal-inbox reminders for active plans with no lesson completion in three days. Sweep runs on startup and hourly while the web service is awake; free Render sleeping prevents exact-time guarantees. No email/push messages are sent.
 - 77 automated tests pass, including evidence freshness, private growth endpoints, idempotent support plans and reminder deduplication. No competency issuance condition was relaxed.
 - These changes are on the development branch only. Last Render interaction requested second-account authentication; deployment/authenticated UI and device acceptance remain blocked until that session is available. No main merge, staff activation, clinical approval or claim of complete release.
+
+## 2026-11-08 18:07 Riyadh — Growth and content release LIVE
+
+- User signed into the second Render and Supabase accounts. Verified workspace Apexa5551 and dedicated NSE-Staging project btehppfdtnajzmxtdhzk in Electronic System QIB (healthy).
+- Deployed exact source `2d19e5196f3d00dc1a3b4b61c1cff5101c7e539f` on the existing service/development branch. Deploy `dep-dbo8vumc6qcc73cvslb0` reached **Deploy succeeded | Live** in 40.1 seconds. Runtime reported successful schema upgrade with historical attempt counts/score totals unchanged. Build audit: zero known vulnerabilities.
+- This deploy includes private content/document intake, step-based learning and evidence-based growth follow-ups previously marked pending. No main merge or changes to other projects.
+- Two attempts to open the application in the cloud browser failed with protocol navigation/frame-tree timeouts. This is a browser verification limitation, not evidence of a site bot block. Do not claim authenticated content/growth UI, mobile or nurse/supervisor acceptance from successful deploy alone.
+- Live AI generation still requires configured server credentials/model and an actual generation acceptance run; clinical/language review, identity onboarding and full specialty coverage remain open.
