@@ -33,3 +33,7 @@ Not deployed or browser accepted. Full specialty content is not ready for staff 
 ## Implementation update
 
 Persistent flags, single-use supervisor-approved retakes and server per-question deadlines are now implemented in `api/exam-workflows.js` and the operational UI. Per-question time is a fixed deadline from first opening and continues on navigation away; overall exam time remains a hard limit. Prior results are preserved in numbered attempts. The upgrade is staging-project restricted and repeat-safe. The earlier pending list above records the initial design, not the final status of these three features. Media/document intake and category-balanced sampling remain pending.
+
+## Content intake implementation follow-up
+
+Private manual media/document upload, PDF/DOCX text extraction, category/difficulty/rationale/source-aware manual drafts, private image question delivery, independent reviewer adoption and an operational step reader are now implemented locally. An OpenAI structured-output adapter is implemented but remains unconfigured and has only mocked provider validation; do not claim live AI generation. Scanned-PDF OCR, legacy binary Word files, complete specialty learning coverage and clinical/language approval remain pending. Deployment is blocked by the expired second Render account session.

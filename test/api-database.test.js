@@ -20,6 +20,7 @@ before(async()=>{
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/schema.sql'),'utf8').replace('create extension if not exists pgcrypto;',''));
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/legacy-catalog.sql'),'utf8'));
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/exam-workflows-upgrade.sql'),'utf8'));
+ await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/content-intake-upgrade.sql'),'utf8'));
  const query=async(sql,args)=>{const r=await db.query(sql,args);return {...r,rowCount:r.rows.length||r.affectedRows||0}};
  mock.method(pool,'query',query);
  mock.method(pool,'connect',async()=>({query,release(){}}));
@@ -210,6 +211,44 @@ test('exam upgrade runs repeatedly without changing attempt history or losing RL
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/exam-workflows-upgrade.sql'),'utf8'));
  assert.deepEqual((await db.query('select id,status,score,answers,question_snapshot from qib.attempts order by id')).rows,before);
  assert.equal((await db.query("select rowsecurity from pg_tables where schemaname='qib' and tablename='retake_grants'")).rows[0].rowsecurity,true);
+});
+
+test('private content upload, source extraction and question drafts enforce center and role boundaries',async()=>{
+ assert.equal((await call('/api/content/status')).status,403);
+ await db.query("update qib.memberships set role='admin' where user_id=$1",[ids.supervisor]);
+ try{
+ const text='Synthetic educational source for testing. The correct option is A.',file={fileName:'source.txt',mimeType:'text/plain',base64:Buffer.from(text).toString('base64')};
+ assert.equal((await call('/api/content/upload',{body:file})).status,403);
+ const uploaded=await call('/api/content/upload',{token:'supervisor',body:file});assert.equal(uploaded.status,200);const assetId=uploaded.body.asset.id;assert.equal(uploaded.body.sections[0].text,text);
+ assert.equal((await call('/api/content/upload',{token:'supervisor',body:file})).body.asset.id,assetId);
+ assert.equal((await call('/api/content/file?id='+assetId)).status,403);assert.equal((await call('/api/content/source?id='+assetId)).status,403);assert.equal((await call('/api/content/file?id='+assetId,{token:'supervisor',center:ids.other})).status,403);
+ const q={specialtyId:specialty,sourceAssetId:assetId,source_section:1,source_quote:text,prompt_en:'Which option is specified in this synthetic source?',options_en:['A','B'],answer_index:0,rationale_en:'The synthetic source explicitly specifies option A.',category:'instrument_use',difficulty:'foundation'};
+ assert.equal((await call('/api/content/candidate',{body:q})).status,403);
+ assert.equal((await call('/api/content/candidate',{token:'supervisor',body:{...q,source_quote:'An invented supporting statement that is absent.'}})).body.error,'SOURCE_QUOTE_NOT_FOUND');
+ const candidate=await call('/api/content/candidate',{token:'supervisor',body:q});assert.equal(candidate.status,200);assert.equal((await call('/api/content/candidates')).status,403);
+ const exam=(await db.query("insert into qib.assessments(center_id,specialty_id,title,status) values($1,$2,'Content intake synthetic draft','draft') returning id",[ids.center,specialty])).rows[0].id;
+ assert.equal((await call('/api/content/adopt',{token:'supervisor',body:{candidateId:candidate.body.id,assessmentId:exam,reviewerNote:'Reviewed synthetic source and answer integrity'}})).body.error,'INDEPENDENT_CLINICAL_REVIEW_REQUIRED');
+ // Distinct verified reviewer in the same center. Synthetic test identity only.
+ await db.query('update qib.question_candidates set created_by=$2 where id=$1',[candidate.body.id,ids.nurse]);
+ assert.equal((await call('/api/content/adopt',{token:'supervisor',body:{candidateId:candidate.body.id,assessmentId:exam,reviewerNote:'Reviewed synthetic source and answer integrity'}})).body.adopted,true);
+ assert.equal((await db.query('select status from qib.assessments where id=$1',[exam])).rows[0].status,'draft');
+ assert.equal((await call('/api/content/generate',{token:'supervisor',body:{assetId,specialtyId:specialty,count:1,confirmEducationalOnly:true}})).body.error,'AI_GENERATION_NOT_CONFIGURED');
+ }finally{await db.query("update qib.memberships set role='supervisor' where user_id=$1",[ids.supervisor])}
+});
+test('step-based lessons persist per-user language bookmarks and restrict draft/unassigned modules and media',async()=>{
+ const tr={en:{title:'Synthetic lesson',body:'Objective paragraph.\n\nExplanation paragraph.'},ar:{title:'درس تجريبي',body:'الهدف التجريبي.\n\nالشرح التجريبي.'}};
+ const module=(await db.query("insert into qib.modules(center_id,specialty_id,slug,translations,status) values($1,$2,'synthetic-study-reader',$3,'published') returning id",[ids.center,specialty,JSON.stringify(tr)])).rows[0].id;
+ const lesson=await call('/api/study/lesson?moduleId='+module+'&language=en');assert.equal(lesson.body.steps.length,2);assert.equal(lesson.body.step,0);
+ assert.equal((await call('/api/study/step',{body:{moduleId:module,language:'en',version:1,step:1}})).body.saved,true);
+ assert.equal((await call('/api/study/lesson?moduleId='+module+'&language=en')).body.step,1);assert.equal((await call('/api/study/lesson?moduleId='+module+'&language=ar')).body.step,0);
+ assert.equal((await call('/api/study/step',{body:{moduleId:module,language:'en',version:2,step:1}})).status,400);
+ assert.equal((await call('/api/study/lesson?moduleId='+module+'&language=en',{center:ids.other})).status,403);
+ await db.query("update qib.modules set status='draft' where id=$1",[module]);assert.equal((await call('/api/study/lesson?moduleId='+module+'&language=en')).status,403);
+ await db.query("update qib.memberships set role='admin' where user_id=$1",[ids.supervisor]);
+ try{const image={moduleId:module,fileName:'synthetic.png',mimeType:'image/png',base64:Buffer.from([137,80,78,71,13,10,26,10,1,2,3]).toString('base64')};const asset=(await call('/api/content/upload',{token:'supervisor',body:image})).body.asset;
+ assert.equal((await call('/api/content/file?id='+asset.id)).status,403);await db.query("update qib.modules set status='published' where id=$1",[module]);assert.equal((await call('/api/content/file?id='+asset.id)).status,200);
+ const different=(await db.query("select id from qib.specialties where code='dermatology'")).rows[0].id;await db.query('update qib.modules set specialty_id=$2 where id=$1',[module,different]);assert.equal((await call('/api/content/assets?moduleId='+module)).status,403);assert.equal((await call('/api/content/file?id='+asset.id)).status,403);
+ }finally{await db.query("update qib.memberships set role='supervisor' where user_id=$1",[ids.supervisor])}
 });
 
 test('revoked Supabase session cannot reuse an unexpired token',async()=>{

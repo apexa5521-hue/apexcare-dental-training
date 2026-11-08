@@ -18,6 +18,7 @@
   const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"API_ERROR");return d;
  }
  const post=(route,body,opts={})=>request(route,{method:"POST",body:JSON.stringify({...body,centerId:state.center}),...opts});
+ const contentStudio=window.initContentStudio({request,post,el,context:()=>state});
  let activePage="home",pageTrail=[];
  function renderPageNavigation(){
   const ar=$("language").value==="ar";let bar=$("pageNavigation");if(!bar){bar=el("nav",undefined,"page-navigation");bar.id="pageNavigation";bar.setAttribute("aria-label","Page navigation");document.querySelector(".top").after(bar)}bar.replaceChildren();
@@ -94,14 +95,8 @@
    b.onclick=()=>openLesson(m);card.append(b);out.append(card)
   })
  }
- function openLesson(m){
-  const t=translation(m),body=$("modalBody"),ar=$("language").value==="ar";body.replaceChildren(el("span","NSE LEARNING","over"),el("h2",t.title||m.slug));
-  const published=state.modules.filter(x=>x.status===undefined||x.status==="published"),index=published.findIndex(x=>x.id===m.id);body.append(el("p",(ar?"الدرس ":"Lesson ")+(index+1)+(ar?" من ":" of ")+published.length,"step-counter"));
-  const p=el("p",t.body||t.description||(ar?"لم يُضف محتوى تفصيلي بعد.":"No detailed lesson has been entered yet."));p.style.whiteSpace="pre-wrap";body.append(p);
-  const note=el("p",help[$("language").value],"subtle"),btn=el("button",state.completed.has(m.id)?(ar?"مكتمل":"Completed"):(ar?"تسجيل إكمال الدرس":"Mark lesson complete"),"btn");btn.disabled=state.completed.has(m.id);
-  btn.onclick=async()=>{btn.disabled=true;try{await post("/api/modules/complete",{moduleId:m.id});state.completed.add(m.id);btn.textContent=ar?"تم إكمال الدرس":"Lesson completed";renderDashboard();renderModules()}catch(e){btn.disabled=false;showError(e)}};
-  const controls=el("nav",undefined,"lesson-navigation");controls.setAttribute("aria-label","Lesson navigation");const previous=el("button",ar?"الدرس السابق":"Previous lesson","btn sub");previous.disabled=index<=0;previous.onclick=()=>openLesson(published[index-1]);const next=el("button",ar?"الدرس التالي":"Next lesson","btn sub");next.disabled=index<0||index>=published.length-1;next.onclick=()=>openLesson(published[index+1]);const library=el("button",ar?"العودة للمكتبة":"Back to library","btn sub");library.onclick=()=>{$("modal").close();displayPage("learning")};controls.append(previous,next,library);body.append(note,btn,controls);$("closeModal").textContent=ar?"إغلاق والعودة":"Close & return";if(!$("modal").open)$("modal").showModal()
- }
+ function openLesson(m){return window.openNseStudy({module:m,language:$("language").value,center:state.center,request,post,el,isComplete:()=>state.completed.has(m.id),onLibrary:()=>displayPage("learning"),onComplete:async()=>{await post("/api/modules/complete",{moduleId:m.id});state.completed.add(m.id);renderDashboard();renderModules()}})}
+
  async function renderAchievements(){
   const c=$("certificates"),o=$("observations");c.replaceChildren();o.replaceChildren();
   if(!state.certificates.length)c.append(el("p","Verified Knowledge and Competency Cards will appear after center approval.","muted"));
@@ -241,7 +236,7 @@
      const label=el("label",undefined,"option"),radio=el("input");radio.type="radio";radio.name="q-"+q.id;radio.checked=data.answers?.[q.id]===index;
      radio.onchange=async()=>{pendingSaves++;try{await post("/api/exams/answer",{attemptId:data.attemptId,questionId:q.id,choice:index});data.answers={...data.answers,[q.id]:index};draw();setText("examMessage","Answer saved")}catch(e){showError(e);if(e.message.includes("QUESTION_TIME_EXPIRED")){radio.checked=data.answers?.[q.id]===index;tick()}else lockExam("connection_interrupted")}finally{pendingSaves--}};
      label.append(radio,document.createTextNode(" "+opt));group.append(label)
-    }div.append(group);panels.push(div);questionHost.append(div);const go=el("button",String(i+1),"btn sub");go.onclick=()=>{cursor=i;draw();openQuestion()};jumpButtons.push(go);jump.append(go)
+    }if(q.media_asset_id){const media=el("div");div.append(media);window.nseRenderAsset({id:q.media_asset_id,host:media,request,center:state.center,attemptId:data.attemptId}).catch(()=>media.append(el("p","Question image could not load. Contact your supervisor.","warning")))}div.append(group);panels.push(div);questionHost.append(div);const go=el("button",String(i+1),"btn sub");go.onclick=()=>{cursor=i;draw();openQuestion()};jumpButtons.push(go);jump.append(go)
    }
    const submit=el("button","Submit assessment","btn");submit.onclick=async()=>{try{const response=await post("/api/exams/submit",{attemptId:data.attemptId});state.attempt=null;clearInterval(state.heartbeat);root.replaceChildren(el("p","Assessment completed. Recorded score: "+response.score+"%","notice"));setText("examMessage","Submission verified by server.");await changeCenter()}catch(e){showError(e)}};
    submit.onclick=(original=>async()=>{if(pendingSaves){alert("Please wait for your answer to finish saving.");return}const unanswered=data.questions.filter(q=>data.answers?.[q.id]===undefined).length;if(!confirm("Submit assessment? "+unanswered+" unanswered; "+flags.size+" flagged for review."))return;await original()})(submit.onclick);
@@ -258,6 +253,7 @@
   const users=new Map(data.learners.map(x=>[x.user_id,x.display_name]));fill($("assignUser"),[...users].map(([id,name])=>({id,name})));fill($("legacyTarget"),[...users].map(([id,name])=>({id,name})));if(state.role==="admin"){const historic=await request("/api/legacy-history/unlinked?centerId="+encodeURIComponent(state.center));fill($("legacyUsername"),historic.unlinked.map(name=>({id:name,name})))}
  }
  async function loadStudio(){
+  await contentStudio.mount();
   await loadDraftExams();
   const data=await request("/api/modules?centerId="+encodeURIComponent(state.center)),root=$("manageModules");root.replaceChildren(el("h3","Drafts and published modules"));
   const importButton=el("button","Prepare imported IPC drafts","btn sub");importButton.onclick=async()=>{importButton.disabled=true;try{const result=await post("/api/modules/import-ipc",{});alert(result.created+" draft modules prepared. Translation and clinical review required.");await loadStudio()}catch(e){showError(e)}finally{importButton.disabled=false}};root.append(importButton);const foundations=el("button","Prepare 6 multilingual foundation drafts","btn sub");foundations.onclick=async()=>{foundations.disabled=true;try{const r=await post("/api/modules/prepare-foundations",{});alert(r.created+" lesson drafts and "+r.questionDraftsCreated+" English question drafts prepared. Clinical and translation review required.");await loadStudio()}catch(e){showError(e)}finally{foundations.disabled=false}};root.append(foundations);
@@ -282,7 +278,7 @@
       const data=await request("/api/exams/draft-questions?centerId="+encodeURIComponent(state.center)+"&assessmentId="+encodeURIComponent(x.id));
       const panel=$("modalBody");panel.replaceChildren(el("h2",x.title),el("p","Review every question and its correct answer before publishing.","muted"));
       data.questions.forEach((q,i)=>{
-       const item=el("div",undefined,"question");item.append(el("strong",(i+1)+". "+q.prompt_en));
+       const item=el("div",undefined,"question");item.append(el("span",(q.category||"general")+" · "+(q.difficulty||"foundation"),"pill"),el("strong",(i+1)+". "+q.prompt_en));if(q.rationale_en)item.append(el("p",q.rationale_en,"muted"));
        q.options_en.forEach((opt,j)=>item.append(el("p",(j===q.answer_index?"✓ ":"")+" "+opt,j===q.answer_index?"good":"muted")));
        panel.append(item);
       });

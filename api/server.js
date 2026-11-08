@@ -3,6 +3,8 @@ const http=require("node:http"),fs=require("node:fs"),path=require("node:path"),
 const {Pool}=require("pg");
 const {createClient}=require("@supabase/supabase-js");
 const development=require("./development.js");
+const studyWorkflows=require("./study-workflows.js");
+const contentIntake=require("./content-intake.js");
 const examWorkflows=require("./exam-workflows.js");
 const contentWorkflows=require("./content-workflows.js");
 const {buildSpecialtyQuestions}=require("./build-specialty-exam.js");
@@ -12,9 +14,9 @@ const pool=new Pool({...(process.env.DATABASE_URL?{connectionString:process.env.
 pool.on('error',e=>console.error('NSE_DB_POOL',e.code||'DATABASE_ERROR'));
 let lastReadinessErrorAt=0;
 const cors=process.env.CORS_ORIGIN||"";
-function send(res,status,body){res.writeHead(status,{"Content-Type":"application/json; charset=utf-8",...(cors?{"Access-Control-Allow-Origin":cors,"Vary":"Origin"}:{})});res.end(JSON.stringify(body))}
+function send(res,status,body){res.writeHead(status,{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store",...(cors?{"Access-Control-Allow-Origin":cors,"Vary":"Origin"}:{})});res.end(JSON.stringify(body))}
 function deny(code=403){const e=Error(code===401?"UNAUTHENTICATED":"FORBIDDEN");e.status=code;throw e}
-function parseBody(req){return new Promise((resolve,reject)=>{let data="";req.on("data",c=>{data+=c;if(data.length>100000){reject(Object.assign(Error("BODY_TOO_LARGE"),{status:413}));req.destroy()}});req.on("end",()=>{try{resolve(JSON.parse(data||"{}"))}catch{reject(Object.assign(Error("INVALID_JSON"),{status:400}))}});req.on("error",reject)})}
+function parseBody(req){return new Promise((resolve,reject)=>{let data="";req.on("data",c=>{data+=c;if(data.length>(req.url.split("?")[0]==="/api/content/upload"?29000000:100000)){reject(Object.assign(Error("BODY_TOO_LARGE"),{status:413}));req.destroy()}});req.on("end",()=>{try{resolve(JSON.parse(data||"{}"))}catch{reject(Object.assign(Error("INVALID_JSON"),{status:400}))}});req.on("error",reject)})}
 async function verifiedUser(req){
  const token=(req.headers.authorization||"").match(/^Bearer (.+)$/)?.[1];if(!token)deny(401);
  const resp=await fetch(process.env.SUPABASE_URL.replace(/\/$/,"")+"/auth/v1/user",{headers:{apikey:process.env.SUPABASE_PUBLISHABLE_KEY,authorization:"Bearer "+token}});
@@ -37,7 +39,7 @@ async function handler(req,res){
  if(req.method==='GET'&&url.pathname==='/supabase-client.js'){
   return fs.readFile(path.join(__dirname,'node_modules/@supabase/supabase-js/dist/umd/supabase.js'),(e,bytes)=>{if(e)return send(res,503,{error:'AUTH_CLIENT_UNAVAILABLE'});res.writeHead(200,{'Content-Type':'application/javascript; charset=utf-8','Cache-Control':'public, max-age=3600','X-Content-Type-Options':'nosniff'});res.end(bytes)});
  }
- if(req.method==="GET"&&["/","/verify","/verify.js","/competency-demo","/demo","/preview","/preview.js","/experience.js","/development.js","/journey-art.svg","/live.js","/live-theme.css","/learning-achievements.js","/api-bridge.js","/interface-i18n.js"].includes(url.pathname)){const fp=url.pathname==="/verify"?path.join(__dirname,"../v2/verify.html"):url.pathname==="/competency-demo"?path.join(__dirname,"../v2/NSE-Competency-Demo.html"):url.pathname==="/"?path.join(__dirname,"../v2/live.html"):url.pathname==="/demo"?path.join(__dirname,"../v2/index.html"):url.pathname==="/preview"?path.join(__dirname,"../v2/preview.html"):path.join(__dirname,"../v2",url.pathname.slice(1));return fs.readFile(fp,(err,bytes)=>{if(err)return send(res,404,{error:"NOT_FOUND"});res.writeHead(200,{"Content-Type":url.pathname.endsWith(".js")?"application/javascript; charset=utf-8":url.pathname.endsWith(".css")?"text/css; charset=utf-8":url.pathname.endsWith(".svg")?"image/svg+xml":"text/html; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"});res.end(bytes)})}
+ if(req.method==="GET"&&["/","/verify","/verify.js","/competency-demo","/demo","/preview","/preview.js","/experience.js","/development.js","/content-studio.js","/study-reader.js","/journey-art.svg","/live.js","/live-theme.css","/learning-achievements.js","/api-bridge.js","/interface-i18n.js"].includes(url.pathname)){const fp=url.pathname==="/verify"?path.join(__dirname,"../v2/verify.html"):url.pathname==="/competency-demo"?path.join(__dirname,"../v2/NSE-Competency-Demo.html"):url.pathname==="/"?path.join(__dirname,"../v2/live.html"):url.pathname==="/demo"?path.join(__dirname,"../v2/index.html"):url.pathname==="/preview"?path.join(__dirname,"../v2/preview.html"):path.join(__dirname,"../v2",url.pathname.slice(1));return fs.readFile(fp,(err,bytes)=>{if(err)return send(res,404,{error:"NOT_FOUND"});res.writeHead(200,{"Content-Type":url.pathname.endsWith(".js")?"application/javascript; charset=utf-8":url.pathname.endsWith(".css")?"text/css; charset=utf-8":url.pathname.endsWith(".svg")?"image/svg+xml":"text/html; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"});res.end(bytes)})}
  if(url.pathname==="/health"){
   try{await pool.query('select timing_mode,seconds_per_question from qib.assessments limit 1');return send(res,200,{ok:true,service:"NSE",status:"ready"})}
   catch(e){if(Date.now()-lastReadinessErrorAt>30000){console.error('NSE_DB_READINESS',e.code||e.name||'DATABASE_ERROR');lastReadinessErrorAt=Date.now()}return send(res,503,{ok:false,service:"NSE",status:"database_unavailable"})}
@@ -55,6 +57,8 @@ async function handler(req,res){
   const role=await member(c,userId,centerId);
   const extension=await development({req,url,body,c,userId,centerId,role,mustUUID,deny});if(extension.handled)return extension.data;
   const workflow=await contentWorkflows({req,url,body,c,userId,centerId,role,mustUUID,deny});if(workflow.handled)return workflow.data;
+  const study=await studyWorkflows({req,url,body,c,userId,centerId,role,mustUUID,deny});if(study.handled)return study.data;
+  const intake=await contentIntake({req,url,body,c,userId,centerId,role,mustUUID,deny});if(intake.handled)return intake.data;
   const examFlow=await examWorkflows({req,url,body,c,userId,centerId,role,mustUUID,deny});if(examFlow.handled)return examFlow.data;
   if(req.method==="GET"&&url.pathname==="/api/bootstrap"){
    const [specialties,modules,assignments,notifications]=await Promise.all([
@@ -219,20 +223,20 @@ async function handler(req,res){
    const minutes=Number(body.minutes)||30;if(minutes<1||minutes>240)throw Object.assign(Error("INVALID_EXAM_DURATION"),{status:400});
    const exam=await c.query("insert into qib.assessments(center_id,specialty_id,title,status,minutes) values($1,$2,$3,'draft',$4) returning id,title,status",[centerId,specialtyId,title,minutes]);
    for(const q of draft.questions){
-     await c.query("insert into qib.questions(assessment_id,prompt_en,options_en,answer_index) values($1,$2,$3,$4)",[exam.rows[0].id,q.prompt_en,JSON.stringify(q.options_en),q.answer_index]);
+     await c.query("insert into qib.questions(assessment_id,prompt_en,options_en,answer_index,category,difficulty,provenance) values($1,$2,$3,$4,$5,$6,$7)",[exam.rows[0].id,q.prompt_en,JSON.stringify(q.options_en),q.answer_index,q.category||"general",q.difficulty||"foundation",JSON.stringify({origin:q.origin})]);
    }
    return {assessment:exam.rows[0],questions:count,status:"draft",requiresClinicalReview:true};
   }
   if(req.method==="GET"&&url.pathname==="/api/exams/drafts"){
     if(role.role!=="admin")deny();
-    const x=await c.query("select a.id,a.title,a.status,a.minutes,a.timing_mode,a.seconds_per_question,a.starts_at,a.ends_at,s.label as specialty,(select count(*)::int from qib.questions q where q.assessment_id=a.id) as question_count from qib.assessments a left join qib.specialties s on s.id=a.specialty_id where a.center_id=$1 order by a.title",[centerId]);
+    const x=await c.query("select a.id,a.specialty_id,a.title,a.status,a.minutes,a.timing_mode,a.seconds_per_question,a.starts_at,a.ends_at,s.label as specialty,(select count(*)::int from qib.questions q where q.assessment_id=a.id) as question_count from qib.assessments a left join qib.specialties s on s.id=a.specialty_id where a.center_id=$1 order by a.title",[centerId]);
     return {assessments:x.rows};
   }
   if(req.method==="GET"&&url.pathname==="/api/exams/draft-questions"){
    if(role.role!=="admin")deny();
    const id=mustUUID(url.searchParams.get("assessmentId"));
    const exam=await c.query("select id,title,status from qib.assessments where id=$1 and center_id=$2",[id,centerId]);if(!exam.rowCount)deny();
-   const questions=await c.query("select id,prompt_en,options_en,answer_index from qib.questions where assessment_id=$1 order by id",[id]);
+   const questions=await c.query("select id,prompt_en,options_en,answer_index,category,difficulty,rationale_en,provenance from qib.questions where assessment_id=$1 order by id",[id]);
    return {assessment:exam.rows[0],questions:questions.rows,requiresClinicalReview:true};
   }
   if(req.method==="POST"&&url.pathname==="/api/exams/publish"){

@@ -25,6 +25,12 @@ jobs:
           node --check v2/interface-i18n.js
           node --check test/interface-i18n.test.js
           node --check v2/api-bridge.js
+          node --check api/content-intake.js
+          node --check api/document-worker.js
+          node --check api/study-workflows.js
+          node --check api/exam-workflows.js
+          node --check v2/content-studio.js
+          node --check v2/study-reader.js
           node --check api/server.js
           node --check api/build-specialty-exam.js
           node --check test/specialty-exam.test.js
