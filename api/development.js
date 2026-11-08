@@ -8,7 +8,7 @@ module.exports=async function development({req,url,body,c,userId,centerId,role,m
   const [plans,notifications,activity,skills]=await Promise.all([
    c.query("select id,specialty_id,steps,status from qib.learning_plans where center_id=$1 and user_id=$2 order by id",[centerId,userId]),
    c.query('select id,kind,body,read_at,created_at from qib.notifications where center_id=$1 and user_id=$2 order by created_at desc limit 50',[centerId,userId]),
-   c.query("select completed_at::date as day,count(*)::int as lessons from qib.module_progress where center_id=$1 and user_id=$2 and completed_at>=date_trunc('week',now()) group by completed_at::date order by day",[centerId,userId]),
+   c.query("select (completed_at at time zone 'Asia/Riyadh')::date as day,count(*)::int as lessons from qib.module_progress where center_id=$1 and user_id=$2 and (completed_at at time zone 'Asia/Riyadh')>=date_trunc('week',now() at time zone 'Asia/Riyadh') group by 1 order by day",[centerId,userId]),
    c.query('select s.id,s.name_en,s.specialty_id,s.rubric from qib.skill_definitions s where exists(select 1 from qib.assignments a where a.center_id=$1 and a.user_id=$2 and a.specialty_id=s.specialty_id)',[centerId,userId])]);
   return {handled:true,data:{plans:plans.rows,notifications:notifications.rows,activity:activity.rows,skills:skills.rows}};
  }

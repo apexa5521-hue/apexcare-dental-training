@@ -2,6 +2,7 @@
 const http=require("node:http"),fs=require("node:fs"),path=require("node:path"),{randomUUID}=require("node:crypto");
 const {Pool}=require("pg");
 const {createClient}=require("@supabase/supabase-js");
+const growth=require("./growth.js");
 const development=require("./development.js");
 const studyWorkflows=require("./study-workflows.js");
 const contentIntake=require("./content-intake.js");
@@ -55,6 +56,7 @@ async function handler(req,res){
  if(!centerId)throw Object.assign(Error("CENTER_REQUIRED"),{status:400});
  const result=await transaction(async c=>{
   const role=await member(c,userId,centerId);
+  const growthResult=await growth({req,url,body,c,userId,centerId,role,mustUUID,deny});if(growthResult.handled)return growthResult.data;
   const extension=await development({req,url,body,c,userId,centerId,role,mustUUID,deny});if(extension.handled)return extension.data;
   const workflow=await contentWorkflows({req,url,body,c,userId,centerId,role,mustUUID,deny});if(workflow.handled)return workflow.data;
   const study=await studyWorkflows({req,url,body,c,userId,centerId,role,mustUUID,deny});if(study.handled)return study.data;
@@ -300,5 +302,5 @@ async function handler(req,res){
  send(res,200,result);
 }
 const server=http.createServer((req,res)=>handler(req,res).catch(e=>{console.error(e.message);if(!res.headersSent)send(res,e.status||500,{error:e.status?e.message:"SERVER_ERROR"})}));
-if(require.main===module){require('./upgrade-staging').upgradeStaging(pool,process.env.SUPABASE_URL).then(()=>server.listen(process.env.PORT||10000,()=>console.log("NSE API ready"))).catch(e=>{console.error('NSE_SCHEMA_UPGRADE_FAILED',e.code||e.message);pool.end().finally(()=>process.exit(1))})}
+if(require.main===module){require('./upgrade-staging').upgradeStaging(pool,process.env.SUPABASE_URL).then(()=>server.listen(process.env.PORT||10000,()=>{console.log("NSE API ready");const reminders=()=>transaction(c=>growth.reminderSweep(c)).catch(()=>console.error("NSE_REMINDER_SWEEP_FAILED"));reminders();setInterval(reminders,3600000).unref()})).catch(e=>{console.error('NSE_SCHEMA_UPGRADE_FAILED',e.code||e.message);pool.end().finally(()=>process.exit(1))})}
 module.exports={server,handler,pool};

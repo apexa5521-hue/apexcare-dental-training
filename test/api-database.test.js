@@ -251,6 +251,15 @@ test('step-based lessons persist per-user language bookmarks and restrict draft/
  }finally{await db.query("update qib.memberships set role='supervisor' where user_id=$1",[ids.supervisor])}
 });
 
+test('growth recommendations are private, evidence based and support plans are idempotent',async()=>{
+ const attempt=(await db.query("select id from qib.attempts where assessment_id=$1 order by attempt_number limit 1",[ids.exam])).rows[0];await db.query('update qib.attempts set score=50 where id=$1',[attempt.id]);
+ assert.equal((await call('/api/growth/team')).status,403);assert.equal((await call('/api/growth',{center:ids.other})).status,403);
+ const own=await call('/api/growth');assert.ok(own.body.gaps.some(g=>g.reference===attempt.id));const request={userId:ids.nurse,reference:attempt.id};
+ assert.equal((await call('/api/growth/plan',{body:request})).status,403);
+ const plan=await call('/api/growth/plan',{token:'supervisor',body:request});assert.equal(plan.status,200);assert.equal((await call('/api/growth/plan',{token:'supervisor',body:request})).body.id,plan.body.id);
+ const {reminderSweep}=require('../api/growth');const query=async(sql,args)=>{const r=await db.query(sql,args);return {...r,rowCount:r.rows.length||r.affectedRows||0}};await reminderSweep({query});const before=(await db.query("select count(*)::int n from qib.notifications where kind like 'training_reminder_%'")).rows[0].n;await reminderSweep({query});assert.equal((await db.query("select count(*)::int n from qib.notifications where kind like 'training_reminder_%'")).rows[0].n,before);
+});
+
 test('revoked Supabase session cannot reuse an unexpired token',async()=>{
  await db.query('delete from auth.sessions where id=$1',[sessions.nurse]);
  assert.equal((await call('/api/bootstrap')).status,401);
