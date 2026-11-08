@@ -157,6 +157,14 @@ test('nurse lesson lists expose only assigned specialties and center-wide publis
  assert(!(await call('/api/modules')).body.modules.some(m=>m.id===row.id));assert(!(await call('/api/bootstrap')).body.modules.some(m=>m.id===row.id));
 });
 
+test('foundation curriculum prepares once as private drafts and does not publish answers to nurses',async()=>{
+ assert.equal((await call('/api/modules/prepare-foundations',{body:{}})).status,403);
+ await db.query("update qib.memberships set role='admin' where user_id=$1 and center_id=$2",[ids.supervisor,ids.center]);await db.query('insert into qib.platform_owners(user_id) values($1)',[ids.supervisor]);
+ try{const r=await call('/api/modules/prepare-foundations',{token:'supervisor',body:{}});assert.equal(r.status,200);assert.equal(r.body.created,6);assert.equal(r.body.questionDraftsCreated,6);const again=await call('/api/modules/prepare-foundations',{token:'supervisor',body:{}});assert.equal(again.body.created,0);assert.equal(again.body.questionDraftsCreated,0);
+ const modules=await db.query("select translations,status from qib.modules where slug like 'nse-foundation-%'");assert.equal(modules.rows.length,6);assert(modules.rows.every(m=>m.status==='draft'&&Object.keys(m.translations).length===4));assert(modules.rows.every(m=>!JSON.stringify(m.translations).includes('answer_index')));assert.equal((await call('/api/exams/draft-questions?assessmentId='+r.body.assessmentId)).status,403);
+ }finally{await db.query('delete from qib.platform_owners where user_id=$1',[ids.supervisor]);await db.query("update qib.memberships set role='supervisor' where user_id=$1 and center_id=$2",[ids.supervisor,ids.center])}
+});
+
 test('revoked Supabase session cannot reuse an unexpired token',async()=>{
  await db.query('delete from auth.sessions where id=$1',[sessions.nurse]);
  assert.equal((await call('/api/bootstrap')).status,401);

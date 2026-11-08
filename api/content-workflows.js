@@ -2,6 +2,9 @@
 const fail=(message,status=400)=>{throw Object.assign(Error(message),{status})};
 module.exports=async({req,url,body,c,userId,centerId,role,mustUUID,deny})=>{
  const route=url.pathname,admin=role.role==='admin';
+ if(req.method==='POST'&&route==='/api/modules/prepare-foundations'){
+  if(!admin)deny();const owner=await c.query('select 1 from qib.platform_owners where user_id=$1',[userId]);if(!owner.rowCount)deny();return {handled:true,data:await require('./curriculum').prepare(c,{centerId,userId})};
+ }
  if(req.method==='POST'&&route==='/api/modules/request-review'){
   if(!admin)deny();const r=await c.query("update qib.modules set status='review',updated_at=now() where id=$1 and center_id=$2 and status='draft' returning id,version",[mustUUID(body.moduleId),centerId]);if(!r.rowCount)fail('DRAFT_REQUIRED',409);return {handled:true,data:{module:r.rows[0],status:'review'}};
  }

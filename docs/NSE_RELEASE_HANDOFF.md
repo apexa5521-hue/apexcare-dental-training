@@ -150,3 +150,12 @@ The original training platform uses **Google Sheets through Google Apps Script**
 - Added onboarding readiness display that separates archived legacy users from enrolled nurses and identifies whether invitations are configured.
 - Nurse learning endpoints now filter published lessons by assigned specialty (plus center-wide lessons).
 - 55 automated tests passed, including module review gates, scheduling locks, repeat-safe IPC draft preparation and nurse specialty filtering. Deployment and browser acceptance of this follow-up remain pending.
+
+## 2026-11-08 — Foundation learning content prepared
+
+- Prepared `content/nse-foundations.json`: six authored lessons with Arabic, English, Urdu and Indonesian learning copy (24 localized versions), objectives and practical learning activities. Topics: hand hygiene, PPE, sharps, instrument reprocessing, patient identification and handover.
+- Retained CDC/WHO source URLs for clinical reviewer reference. Clinical, language and local-policy review states remain pending; translations are draft translations, not clinically approved translations.
+- Six English-only question drafts include options, answer keys and rationales in a server-side pack. They are not served as public web assets and are not embedded in published lesson bodies.
+- Added owner-only preparation action to create center-local lesson/exam drafts without publishing. Repeated preparation does not duplicate or overwrite content. Both newly authored material and existing source IPC draft conversion remain distinct.
+- Added a standalone reviewer preview to inspect all four languages and the English question drafts. It contains no staff data.
+- 56 automated tests pass, including idempotent preparation and protection of question keys from nurse routes. This is a foundation batch, not complete specialty curricula or dermatology treatment protocols.
