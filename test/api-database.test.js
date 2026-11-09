@@ -21,6 +21,7 @@ before(async()=>{
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/legacy-catalog.sql'),'utf8'));
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/exam-workflows-upgrade.sql'),'utf8'));
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/content-intake-upgrade.sql'),'utf8'));
+ await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/content-proposals-upgrade.sql'),'utf8'));
  const query=async(sql,args)=>{const r=await db.query(sql,args);return {...r,rowCount:r.rows.length||r.affectedRows||0}};
  mock.method(pool,'query',query);
  mock.method(pool,'connect',async()=>({query,release(){}}));
@@ -280,6 +281,43 @@ test('file-free authoring creates only review-blocked drafts and preserves publi
  assert.equal((await call('/api/authoring/fork',{token:'supervisor',center:ids.other,body:{moduleId:id}})).status,403);
  assert.equal((await call('/api/authoring/create',{token:'supervisor',body:{kind:'tool',specialtyId:specialty,sourceId:'not-in-source'}})).body.error,'SOURCE_SPECIALTY_MISMATCH');
  }finally{await db.query("update qib.memberships set role='supervisor' where user_id=$1",[ids.supervisor])}
+});
+
+test('AI lesson proposals are compared change by change and only accepted changes reach a draft',async()=>{
+ const tr={en:{title:'Synthetic hand hygiene',body:'Line one stays.\nLine two is vague.\nLine three stays.\nLine four is old.'},ar:{title:'',body:''}};
+ const id=(await db.query("insert into qib.modules(center_id,specialty_id,slug,translations,status) values($1,$2,'synthetic-proposals',$3,'review') returning id",[ids.center,specialty,JSON.stringify(tr)])).rows[0].id;
+ const sent=[],prior={key:process.env.OPENAI_API_KEY,model:process.env.OPENAI_MODEL},mockFetch=global.fetch;
+ let reply={title:'Synthetic hand hygiene',body:'Line one stays.\nLine two is now specific.\nLine three stays.\nLine four is new.\n[NEEDS CLINICAL INPUT: local policy]',changes:[{summary:'Clarified line two'},{summary:'Updated line four'}],review_notes:'Check local policy.'};
+ global.fetch=async(url,options)=>{if(String(url)==='https://api.openai.com/v1/responses'){sent.push(JSON.parse(options.body));return new Response(JSON.stringify({status:'completed',output:[{content:[{type:'output_text',text:JSON.stringify(reply)}]}]}),{status:200})}return mockFetch(url,options)};
+ const gen=body=>call('/api/proposals/generate',{token:'supervisor',body:{moduleId:id,confirmEducationalOnly:true,...body}});
+ assert.equal((await gen({mode:'revise',language:'en',instruction:'Make line two specific'})).status,403);
+ await db.query("update qib.memberships set role='admin' where user_id=$1",[ids.supervisor]);
+ try{
+  assert.equal((await gen({mode:'revise',language:'en',instruction:'Make line two specific'})).body.error,'AI_GENERATION_NOT_CONFIGURED');
+  process.env.OPENAI_API_KEY='synthetic-key';process.env.OPENAI_MODEL='synthetic-model';
+  assert.equal((await gen({mode:'revise',language:'en',instruction:'Make line two specific',confirmEducationalOnly:false})).body.error,'EDUCATIONAL_CONTENT_CONFIRMATION_REQUIRED');
+  assert.equal((await gen({mode:'revise',language:'en',instruction:'x'})).body.error,'EDIT_INSTRUCTION_REQUIRED');
+  assert.equal((await gen({mode:'revise',language:'ar',instruction:'Make line two specific'})).body.error,'LESSON_TEXT_REQUIRED');
+  assert.equal((await call('/api/proposals/generate',{token:'supervisor',center:ids.other,body:{moduleId:id,mode:'revise',language:'en',instruction:'Make line two specific',confirmEducationalOnly:true}})).status,403);
+  const made=await gen({mode:'revise',language:'en',instruction:'Make line two specific'});assert.equal(made.status,200);assert.equal(sent.length,1);assert.equal(sent[0].store,false);assert.match(sent[0].instructions,/untrusted data/);
+  const p=made.body.proposal,changes=p.segments.filter(s=>s.kind==='change');assert.equal(p.status,'pending');assert.equal(changes.length,2);assert.deepEqual(changes[0].removed,['Line two is vague.']);assert.deepEqual(changes[0].added,['Line two is now specific.']);
+  assert.equal((await db.query('select version,translations from qib.modules where id=$1',[id])).rows[0].translations.en.body,tr.en.body);
+  assert.equal((await call('/api/proposals/decide',{token:'supervisor',body:{proposalId:p.id,acceptChangeIds:[99]}})).body.error,'INVALID_CHANGE_SELECTION');
+  const decided=await call('/api/proposals/decide',{token:'supervisor',body:{proposalId:p.id,acceptChangeIds:[changes[0].id],note:'Accept clarity only'}});assert.equal(decided.body.status,'partially_accepted');assert.equal(decided.body.moduleStatus,'draft');
+  const m=(await db.query('select * from qib.modules where id=$1',[id])).rows[0];assert.equal(m.status,'draft');assert.equal(m.version,2);assert.equal(m.translations.en.body,'Line one stays.\nLine two is now specific.\nLine three stays.\nLine four is old.');assert.equal(m.translations._aiAssist.en.clinicalReview,'pending');
+  assert.equal((await db.query("select count(*)::int as n from qib.content_revisions where module_id=$1 and snapshot->>'action'='ai_proposal_applied'",[id])).rows[0].n,1);
+  assert.equal((await call('/api/proposals/decide',{token:'supervisor',body:{proposalId:p.id,acceptChangeIds:[]}})).body.error,'PROPOSAL_ALREADY_DECIDED');
+  reply={title:'نظافة اليدين التجريبية',body:'سطر أول\nسطر ثانٍ\nسطر ثالث\nسطر رابع',changes:[],review_notes:'Language review required.'};
+  assert.equal((await gen({mode:'translate',language:'ar',sourceLanguage:'ar'})).body.error,'INVALID_SOURCE_LANGUAGE');
+  const old=(await gen({mode:'translate',language:'ar',sourceLanguage:'en'})).body.proposal;
+  const translated=(await gen({mode:'translate',language:'ar',sourceLanguage:'en'})).body.proposal;assert.equal(translated.title.changed,true);
+  assert.equal((await call('/api/proposals/decide',{token:'supervisor',body:{proposalId:translated.id,acceptTitle:true,acceptChangeIds:translated.segments.filter(s=>s.kind==='change').map(s=>s.id)}})).body.status,'accepted');
+  assert.equal((await db.query('select translations from qib.modules where id=$1',[id])).rows[0].translations.ar.body,reply.body);
+  assert.equal((await call('/api/proposals/decide',{token:'supervisor',body:{proposalId:old.id,acceptTitle:true}})).body.error,'PROPOSAL_STALE');
+  assert.equal((await call('/api/proposals/decide',{token:'supervisor',body:{proposalId:old.id,acceptChangeIds:[],note:'Superseded'}})).body.status,'rejected');
+  const listed=await call('/api/proposals?moduleId='+id,{token:'supervisor'});assert.equal(listed.body.proposals.length,3);assert.equal(listed.body.proposals.find(x=>x.id===p.id).stale,true);
+  await db.query("update qib.modules set status='published' where id=$1",[id]);assert.equal((await gen({mode:'revise',language:'en',instruction:'Make line two specific'})).body.error,'FORK_PUBLISHED_MODULE_BEFORE_EDIT');
+ }finally{global.fetch=mockFetch;for(const [k,v] of [['OPENAI_API_KEY',prior.key],['OPENAI_MODEL',prior.model]])if(v===undefined)delete process.env[k];else process.env[k]=v;await db.query("update qib.memberships set role='supervisor' where user_id=$1",[ids.supervisor])}
 });
 
 test('revoked Supabase session cannot reuse an unexpired token',async()=>{

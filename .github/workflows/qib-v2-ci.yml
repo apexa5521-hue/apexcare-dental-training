@@ -30,6 +30,8 @@ jobs:
           node --check api/study-workflows.js
           node --check api/exam-workflows.js
           node --check v2/content-studio.js
+          node --check v2/proposal-studio.js
+          node --check api/content-proposals.js
           node --check v2/study-reader.js
           node --check api/server.js
           node --check api/build-specialty-exam.js

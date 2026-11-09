@@ -11,6 +11,7 @@ async function upgradeStaging(pool,url){
   const before=await client.query('select count(*)::int as attempts,coalesce(sum(score),0)::text as score_sum from qib.attempts');
   await client.query(fs.readFileSync(path.join(__dirname,'../deploy/exam-workflows-upgrade.sql'),'utf8'));
   await client.query(fs.readFileSync(path.join(__dirname,'../deploy/content-intake-upgrade.sql'),'utf8'));
+  await client.query(fs.readFileSync(path.join(__dirname,'../deploy/content-proposals-upgrade.sql'),'utf8'));
   const after=await client.query('select count(*)::int as attempts,coalesce(sum(score),0)::text as score_sum from qib.attempts');
   if(JSON.stringify(before.rows)!==JSON.stringify(after.rows))throw Error('NSE_ATTEMPT_HISTORY_MISMATCH');
   console.log('NSE exam schema ready; historical attempt counts and score totals unchanged.');

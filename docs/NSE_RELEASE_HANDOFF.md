@@ -258,3 +258,12 @@ The original training platform uses **Google Sheets through Google Apps Script**
 - Render build installed 59 packages and reported no production dependency vulnerabilities. Startup completed the staging-only database upgrade and confirmed historical attempt counts and total scores unchanged.
 - Opened the deployed login page in the cloud browser and inspected its rendered design. This verifies the public sign-in page, not authenticated nurse/supervisor workflows or mobile acceptance.
 - Full clinical content review, staff identity mapping, real AI configuration/generation, lesson AI proposal comparison, and authenticated end-to-end acceptance remain pending. No production merge or automatic content publication.
+
+## 2026-11-09 — AI lesson edit/translation proposals with compare, accept and reject
+
+- Added `api/content-proposals.js` and `deploy/content-proposals-upgrade.sql` (table `qib.module_proposals`, RLS on, no public grants; added to the staging-only startup upgrade).
+- Admin-only, center-scoped: `POST /api/proposals/generate` (mode `revise` with an editor instruction, or `translate` from one of the four languages into another), `GET /api/proposals?moduleId=`, `POST /api/proposals/decide`.
+- A proposal never changes the lesson. The studio shows a line-by-line comparison (title plus each changed block, Current vs Proposed, RTL aware); the administrator applies only the selected changes or rejects the proposal. Applying writes a `content_revisions` snapshot, bumps the version, returns the lesson to **draft** and records `_aiAssist[lang]` with clinical/language review pending. Publication rules are unchanged.
+- Safety: requires educational-only confirmation; published lessons must be forked first; archived lessons refused; proposals built on an older version are refused as `PROPOSAL_STALE`; decided proposals cannot be reapplied. Prompt treats lesson text as untrusted, forbids inventing clinical facts and asks for `[NEEDS CLINICAL INPUT: …]` / `[TRANSLATION REVIEW: …]` markers. `store:false`.
+- Tests: 84 pass (4 new: API workflow with a mock provider, center/role isolation, partial/stale/repeat decisions, diff/apply unit, output validation, DOM selection). Visual check at 390px and 1100px, light/dark, RTL, no horizontal scroll.
+- Not done: no real provider call, because `OPENAI_API_KEY`/`OPENAI_MODEL` are not configured on Render. Generation stays disabled in the UI until they are set. Authenticated browser acceptance on staging is still pending.
