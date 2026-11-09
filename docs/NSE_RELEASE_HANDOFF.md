@@ -232,3 +232,11 @@ The original training platform uses **Google Sheets through Google Apps Script**
 - Added `v2/design-21.css` across operational sign-in, dashboard, library, catalog, assessments, passports, team, studio, reports and dialogs. Uses petroleum/teal palette, lighter borders, refined typography and fields, responsive navigation, RTL support and a dark variant. Existing role/auth/API controls unchanged.
 - Added self-contained `v2/NSE-21st-Design-Preview.html` with existing nine-screen fictional nurse/admin interactions for immediate review; not real metrics, accounts or clinical credentials.
 - Deployment and browser visual acceptance pending. Automated validation recorded below after completion.
+
+## 2026-11-09 — Journey-first learning, exam focus and passport requirements
+
+- Replaced library excerpt cards with a task-first journey: real completion percentage, prominent next unfinished lesson, numbered steps, completed/current/upcoming states and a visible card pathway. Upcoming lessons remain available rather than imposing unreviewed prerequisite locks.
+- Added a private specialty-specific passport-path endpoint mirroring existing issuance checks: published specialty lessons, passed assessment, required practical skills/latest observations and actual active issued cards. Missing skills never count as practical competence. UI separates knowledge and competency stages and requires supervisor issuance.
+- Official exam presentation now emphasizes one question, larger answer options, answered-percentage progress and distinct answered/flagged states. Progress is explicitly not a score; no correctness or answer keys are revealed during an attempt.
+- Added self-contained fictional `NSE-Journey-Focus-Preview.html` for learning/exam/card route review. Its platform-navigation questions are unscored UI examples, not official bank questions. No credentials awarded.
+- Automated validation: 79 tests pass. Deployment, visual acceptance and authenticated role/device acceptance of this follow-up remain pending; no clinical review or final readiness claimed.
