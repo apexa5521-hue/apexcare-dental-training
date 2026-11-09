@@ -248,3 +248,13 @@ The original training platform uses **Google Sheets through Google Apps Script**
 - Added AI question-suggestion adapter for catalog/topic text using the existing structured-output/quote-validation integration. Requires configured provider credentials and explicit educational-only confirmation. It creates review candidates only; no real provider test was performed.
 - This is not the complete AI lesson-edit comparison/accept/reject workflow. Image identification, full AI lesson generation and AI proposal comparison still need implementation and live acceptance. Existing manual question edit-as-new-draft remains available.
 - 80 automated tests pass, including scaffold publication blocking, role/center boundaries, archival restoration and published version preservation. Not yet deployed or browser accepted.
+
+
+## Verified staging release — 2026-11-09
+
+- Deployed code: `8a65ffdbdbb7d89dfd113c0b628b7db9328c2aa2`. Render deployment `dep-dbosh3e417fc7399bk1g` succeeded and is Live (40.2 seconds).
+- An earlier deployment of `55104c5` failed because the GitHub tree omitted baseline files, including the dependency lockfile. Restored the complete repository from the existing baseline plus all current modifications. All 78 committed files were compared byte-for-byte against the tested local files; no mismatches.
+- Re-ran all 80 automated tests: 80 passed, 0 failed.
+- Render build installed 59 packages and reported no production dependency vulnerabilities. Startup completed the staging-only database upgrade and confirmed historical attempt counts and total scores unchanged.
+- Opened the deployed login page in the cloud browser and inspected its rendered design. This verifies the public sign-in page, not authenticated nurse/supervisor workflows or mobile acceptance.
+- Full clinical content review, staff identity mapping, real AI configuration/generation, lesson AI proposal comparison, and authenticated end-to-end acceptance remain pending. No production merge or automatic content publication.
