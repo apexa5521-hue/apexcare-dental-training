@@ -35,6 +35,7 @@ jobs:
           node --check api/content-rules.js
           node --check api/content-search.js
           node --check v2/content-search.js
+          node --check v2/gradient-wave.js
           node --check v2/study-reader.js
           node --check api/server.js
           node --check api/build-specialty-exam.js
