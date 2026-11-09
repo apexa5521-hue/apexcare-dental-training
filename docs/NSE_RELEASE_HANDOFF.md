@@ -225,3 +225,10 @@ The original training platform uses **Google Sheets through Google Apps Script**
 - Commit `961f607f761f55ac1b4019933b84659461c55d4e` reached Live in deploy `dep-dbo947ou01pc73ej7lcg` (40.9 seconds). Verified intended second Render workspace/service, source SHA, successful schema/history guard and zero build audit vulnerabilities.
 - Dedicated Supabase SQL UI independently returned: Foundation lessons (draft) 6; Foundation translations 24; Foundation questions (draft) 6. Screenshot retained without showing question keys. These are real database drafts, not complete specialty curricula or approved materials.
 - Release remains staging. Full staff identity mappings, live AI credentials/model and clinical/language approval are unavailable; browser navigation failures still block authenticated role/device acceptance. No clinical credentials issued, old source modified or main merge performed.
+
+## 2026-11-09 — 21st.dev-inspired interface refresh
+
+- Inspected public Wensity Sidebar and Efferd Minimal Auth examples on 21st.dev. Authored original HTML/CSS adaptation rather than importing account-gated React components or adding a new framework.
+- Added `v2/design-21.css` across operational sign-in, dashboard, library, catalog, assessments, passports, team, studio, reports and dialogs. Uses petroleum/teal palette, lighter borders, refined typography and fields, responsive navigation, RTL support and a dark variant. Existing role/auth/API controls unchanged.
+- Added self-contained `v2/NSE-21st-Design-Preview.html` with existing nine-screen fictional nurse/admin interactions for immediate review; not real metrics, accounts or clinical credentials.
+- Deployment and browser visual acceptance pending. Automated validation recorded below after completion.
