@@ -2,6 +2,7 @@
 const http=require("node:http"),fs=require("node:fs"),path=require("node:path"),{randomUUID}=require("node:crypto");
 const {Pool}=require("pg");
 const {createClient}=require("@supabase/supabase-js");
+const clinicPractice=require("./clinic-practice.js");
 const passportPath=require("./passport-path.js");
 const growth=require("./growth.js");
 const development=require("./development.js");
@@ -45,7 +46,7 @@ async function handler(req,res){
  if(req.method==='GET'&&url.pathname==='/supabase-client.js'){
   return fs.readFile(path.join(__dirname,'node_modules/@supabase/supabase-js/dist/umd/supabase.js'),(e,bytes)=>{if(e)return send(res,503,{error:'AUTH_CLIENT_UNAVAILABLE'});res.writeHead(200,{'Content-Type':'application/javascript; charset=utf-8','Cache-Control':'public, max-age=3600','X-Content-Type-Options':'nosniff'});res.end(bytes)});
  }
- if(req.method==="GET"&&["/","/verify","/verify.js","/competency-demo","/demo","/preview","/preview.js","/experience.js","/development.js","/content-studio.js","/proposal-studio.js","/content-search.js","/gradient-wave.js","/study-reader.js","/passport-path.js","/journey-art.svg","/live.js","/live-theme.css","/design-21.css","/learning-achievements.js","/api-bridge.js","/interface-i18n.js"].includes(url.pathname)){const fp=url.pathname==="/verify"?path.join(__dirname,"../v2/verify.html"):url.pathname==="/competency-demo"?path.join(__dirname,"../v2/NSE-Competency-Demo.html"):url.pathname==="/"?path.join(__dirname,"../v2/live.html"):url.pathname==="/demo"?path.join(__dirname,"../v2/index.html"):url.pathname==="/preview"?path.join(__dirname,"../v2/preview.html"):path.join(__dirname,"../v2",url.pathname.slice(1));return fs.readFile(fp,(err,bytes)=>{if(err)return send(res,404,{error:"NOT_FOUND"});res.writeHead(200,{"Content-Type":url.pathname.endsWith(".js")?"application/javascript; charset=utf-8":url.pathname.endsWith(".css")?"text/css; charset=utf-8":url.pathname.endsWith(".svg")?"image/svg+xml":"text/html; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"});res.end(bytes)})}
+ if(req.method==="GET"&&["/","/clinic-preview","/verify","/verify.js","/competency-demo","/demo","/preview","/preview.js","/experience.js","/development.js","/content-studio.js","/proposal-studio.js","/content-search.js","/gradient-wave.js","/clinic-practice.js","/clinic-practice.css","/study-reader.js","/passport-path.js","/journey-art.svg","/live.js","/live-theme.css","/design-21.css","/learning-achievements.js","/api-bridge.js","/interface-i18n.js"].includes(url.pathname)){const fp=url.pathname==="/clinic-preview"?path.join(__dirname,"../v2/NSE-Clinic-Preview.html"):url.pathname==="/verify"?path.join(__dirname,"../v2/verify.html"):url.pathname==="/competency-demo"?path.join(__dirname,"../v2/NSE-Competency-Demo.html"):url.pathname==="/"?path.join(__dirname,"../v2/live.html"):url.pathname==="/demo"?path.join(__dirname,"../v2/index.html"):url.pathname==="/preview"?path.join(__dirname,"../v2/preview.html"):path.join(__dirname,"../v2",url.pathname.slice(1));return fs.readFile(fp,(err,bytes)=>{if(err)return send(res,404,{error:"NOT_FOUND"});res.writeHead(200,{"Content-Type":url.pathname.endsWith(".js")?"application/javascript; charset=utf-8":url.pathname.endsWith(".css")?"text/css; charset=utf-8":url.pathname.endsWith(".svg")?"image/svg+xml":"text/html; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"});res.end(bytes)})}
  if(url.pathname==="/health"){
   try{await pool.query('select timing_mode,seconds_per_question from qib.assessments limit 1');return send(res,200,{ok:true,service:"NSE",status:"ready"})}
   catch(e){if(Date.now()-lastReadinessErrorAt>30000){console.error('NSE_DB_READINESS',e.code||e.name||'DATABASE_ERROR');lastReadinessErrorAt=Date.now()}return send(res,503,{ok:false,service:"NSE",status:"database_unavailable"})}
@@ -61,6 +62,7 @@ async function handler(req,res){
  if(!centerId)throw Object.assign(Error("CENTER_REQUIRED"),{status:400});
  const result=await transaction(async c=>{
   const role=await member(c,userId,centerId);
+  const clinic=await clinicPractice({req,url,body,c,userId,centerId,role,mustUUID,deny});if(clinic.handled)return clinic.data;
   const passport=await passportPath({req,url,c,userId,centerId});if(passport.handled)return passport.data;
   const growthResult=await growth({req,url,body,c,userId,centerId,role,mustUUID,deny});if(growthResult.handled)return growthResult.data;
   const extension=await development({req,url,body,c,userId,centerId,role,mustUUID,deny});if(extension.handled)return extension.data;

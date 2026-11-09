@@ -22,6 +22,7 @@ before(async()=>{
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/exam-workflows-upgrade.sql'),'utf8'));
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/content-intake-upgrade.sql'),'utf8'));
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/content-proposals-upgrade.sql'),'utf8'));
+ await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/clinic-practice-upgrade.sql'),'utf8'));
  const query=async(sql,args)=>{const r=await db.query(sql,args);return {...r,rowCount:r.rows.length||r.affectedRows||0}};
  mock.method(pool,'query',query);
  mock.method(pool,'connect',async()=>({query,release(){}}));
@@ -342,6 +343,42 @@ test('rule-based drafting and content search respect roles, centers and specialt
   assert.equal((await call('/api/search?q=laser',{token:'supervisor'})).body.tools.length,1);
   assert.equal((await call('/api/search?q=mirror',{center:ids.other})).status,403);
  }finally{await db.query("delete from qib.question_candidates where origin='catalog_rule_draft'");await db.query("delete from qib.legacy_catalog where legacy_id=any($1::text[])",[rows.map(r=>r[1])])}
+});
+
+
+test('guided clinic enforces specialty, explicit source review, private resume and server-side tray decisions without competency',async()=>{
+ const pack=require('../content/nse-dental.json');
+ const rows=[['Tools','clinic-t0',{id:'clinic-t0',specialtyId:'dental',nameEn:'Synthetic clinic tool'}],['Tools','clinic-t1',{id:'clinic-t1',specialtyId:'dental',nameEn:'Synthetic spare'}],['Procedures','clinic-p',{id:'clinic-p',specialtyId:'dental',nameEn:'Synthetic clinic procedure',toolIds:['clinic-t0'],consumableIds:[]}],['Procedures','clinic-broken',{id:'clinic-broken',specialtyId:'dental',nameEn:'Missing association',toolIds:['not-present']}]];
+ for(const [source,id,payload] of rows)await db.query('insert into qib.legacy_catalog(source_name,legacy_id,specialty_legacy_id,payload,content_hash) values($1,$2,$3,$4,$5)',[source,id,'dental',JSON.stringify(payload),'synthetic-clinic-hash']);
+ const before=(await db.query('select count(*)::int n from qib.certificates')).rows[0].n;
+ assert.equal((await call('/api/clinic/setup',{center:ids.other})).status,403);
+ assert.equal((await call('/api/clinic/start',{body:{procedureId:'clinic-p',preview:true}})).status,403);
+ assert.equal((await call('/api/clinic/start',{body:{procedureId:'clinic-p'}})).body.error,'CLINIC_REVIEW_REQUIRED');
+ await db.query("update qib.memberships set role='admin' where user_id=$1",[ids.supervisor]);
+ try{
+  const setup=await call('/api/clinic/setup',{token:'supervisor'});assert.equal(setup.body.ready,false);assert(setup.body.procedures.some(p=>p.id==='clinic-p'));assert(!setup.body.procedures.some(p=>p.id==='clinic-broken'));
+  const preview=await call('/api/clinic/start',{token:'supervisor',body:{procedureId:'clinic-p',preview:true}});assert.equal(preview.status,200);assert.equal(preview.body.preview,true);assert.equal(preview.body.lessons.length,6);assert.equal(preview.body.awardsCompetency,false);
+  assert.equal((await call('/api/clinic/session?sessionId='+preview.body.id)).status,403);
+  assert.equal((await call('/api/clinic/review',{token:'supervisor',body:{note:'Synthetic clinical language and policy review',confirmed:true}})).body.error,'CLINIC_SOURCES_NOT_PUBLISHED');
+  for(const m of pack.modules)await db.query("insert into qib.modules(center_id,specialty_id,slug,translations,status) values($1,$2,$3,$4,'published') on conflict(center_id,slug) do update set translations=excluded.translations,status='published'",[ids.center,specialty,m.slug,JSON.stringify(m.translations)]);
+  assert.equal((await call('/api/clinic/review',{body:{note:'Unprivileged review',confirmed:true}})).status,403);
+  assert.equal((await call('/api/clinic/review',{token:'supervisor',body:{note:'Synthetic clinical language and policy review',confirmed:true}})).status,200);
+  assert.equal((await call('/api/clinic/setup')).body.ready,true);
+  const start=await call('/api/clinic/start',{body:{procedureId:'clinic-p'}}),id=start.body.id;assert.equal(start.status,200);assert.equal(start.body.requiredTools,undefined);
+  assert.equal((await call('/api/clinic/act',{body:{sessionId:id,step:4,action:'handover'}})).status,409);
+  let r=await call('/api/clinic/act',{body:{sessionId:id,step:0,action:'rush'}});assert.equal(r.body.accepted,false);assert.equal(r.body.step,0);
+  r=await call('/api/clinic/act',{body:{sessionId:id,step:0,action:'receive'}});assert.equal(r.body.step,1);
+  assert.equal((await call('/api/clinic/session?sessionId='+id)).body.step,1);
+  await call('/api/clinic/act',{body:{sessionId:id,step:1,action:'prepare'}});
+  assert.equal((await call('/api/clinic/act',{body:{sessionId:id,step:2,tools:['foreign-id']}})).status,400);
+  assert.equal((await call('/api/clinic/act',{body:{sessionId:id,step:2,tools:['clinic-t0','clinic-t1']}})).body.accepted,false);
+  assert.equal((await call('/api/clinic/act',{body:{sessionId:id,step:2,tools:['clinic-t0']}})).body.step,3);
+  await call('/api/clinic/act',{body:{sessionId:id,step:3,action:'pause'}});
+  const done=await call('/api/clinic/act',{body:{sessionId:id,step:4,action:'handover'}});assert.equal(done.body.status,'completed');assert.equal(done.body.awardsCompetency,false);assert.equal(done.body.events.length,7);
+  assert.equal((await db.query('select count(*)::int n from qib.certificates')).rows[0].n,before);
+  await db.query("update qib.modules set version=version+1 where center_id=$1 and slug=$2",[ids.center,pack.modules[0].slug]);assert.equal((await call('/api/clinic/setup')).body.ready,false);assert.equal((await call('/api/clinic/session?sessionId='+id)).body.error,'CLINIC_SOURCE_CHANGED');
+  await db.query('delete from qib.assignments where user_id=$1 and center_id=$2 and specialty_id=$3',[ids.nurse,ids.center,specialty]);assert.equal((await call('/api/clinic/setup')).status,403);await db.query('insert into qib.assignments(user_id,center_id,specialty_id) values($1,$2,$3)',[ids.nurse,ids.center,specialty]);
+ }finally{await db.query("update qib.memberships set role='supervisor' where user_id=$1",[ids.supervisor])}
 });
 
 test('revoked Supabase session cannot reuse an unexpired token',async()=>{

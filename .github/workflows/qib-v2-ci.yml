@@ -37,6 +37,8 @@ jobs:
           node --check v2/content-search.js
           node --check v2/gradient-wave.js
           node --check v2/study-reader.js
+          node --check api/clinic-practice.js
+          node --check v2/clinic-practice.js
           node --check api/server.js
           node --check api/build-specialty-exam.js
           node --check test/specialty-exam.test.js

@@ -4,8 +4,8 @@
  const el=(tag,txt,cls)=>{const v=document.createElement(tag);if(txt!==undefined)v.textContent=txt;if(cls)v.className=cls;return v};
  const state={token:null,auth:null,centers:[],center:null,user:null,specialties:[],modules:[],assignments:[],completed:new Set(),certificates:[],exams:[],attempt:null,heartbeat:null,role:null,catalog:null,selectedProcedure:null};
  const workspace=document.querySelector(".layout");workspace.inert=true;
- const nav=[["home","Overview"],["learning","Learning library"],["catalog","Clinical skills"],["ipc","Infection control"],["assessments","Clinical Assessments"],["achievements","My achievements"],["team","Nursing team"],["studio","Content studio"],["reports","Insights & reports"]];
- const titles={ar:["نظرة عامة","المكتبة التعليمية","المهارات السريرية","مكافحة العدوى","التقييمات السريرية","إنجازاتي","فريق التمريض","محرر المحتوى","التقارير"],ur:["جائزہ","تعلیمی لائبریری","کلینیکل مہارتیں","انفیکشن کنٹرول","طبی جائزے","میری کامیابیاں","نرسنگ ٹیم","مواد میں ترمیم","رپورٹس"],id:["Ringkasan","Pustaka pembelajaran","Keterampilan klinis","Pencegahan infeksi","Penilaian klinis","Pencapaian saya","Tim keperawatan","Editor konten","Laporan"]};
+ const nav=[["home","Overview"],["learning","Learning library"],["catalog","Clinical skills"],["clinic","Interactive clinic"],["ipc","Infection control"],["assessments","Clinical Assessments"],["achievements","My achievements"],["team","Nursing team"],["studio","Content studio"],["reports","Insights & reports"]];
+ const titles={ar:["نظرة عامة","المكتبة التعليمية","المهارات السريرية","العيادة التفاعلية","مكافحة العدوى","التقييمات السريرية","إنجازاتي","فريق التمريض","محرر المحتوى","التقارير"],ur:["جائزہ","تعلیمی لائبریری","کلینیکل مہارتیں","انٹرایکٹو کلینک","انفیکشن کنٹرول","طبی جائزے","میری کامیابیاں","نرسنگ ٹیم","مواد میں ترمیم","رپورٹس"],id:["Ringkasan","Pustaka pembelajaran","Keterampilan klinis","Klinik interaktif","Pencegahan infeksi","Penilaian klinis","Pencapaian saya","Tim keperawatan","Editor konten","Laporan"]};
  const help={en:"Learn in your preferred language. Official exams and clinical practice are in English only.",ar:"تعلّمي بلغتك المفضلة. الاختبارات الرسمية والتدريبات السريرية باللغة الإنجليزية فقط.",ur:"اپنی پسندیدہ زبان میں سیکھیں۔ رسمی امتحانات اور طبی مشق صرف انگریزی میں ہیں۔",id:"Belajar dalam bahasa pilihan Anda. Ujian resmi dan latihan klinis hanya dalam bahasa Inggris."};
  const setText=(id,v)=>{$(id).textContent=String(v)};
  const err=(e)=>e?.message||"Request failed";
@@ -19,6 +19,7 @@
  }
  const post=(route,body,opts={})=>request(route,{method:"POST",body:JSON.stringify({...body,centerId:state.center}),...opts});
  const contentStudio=window.initContentStudio({request,post,el,context:()=>state});
+ const clinicPractice=window.initClinicPractice({request,post,context:()=>state,language:()=>$("language").value,el});
  let activePage="home",pageTrail=[];
  function renderPageNavigation(){
   const ar=$("language").value==="ar";let bar=$("pageNavigation");if(!bar){bar=el("nav",undefined,"page-navigation");bar.id="pageNavigation";bar.setAttribute("aria-label","Page navigation");document.querySelector(".top").after(bar)}bar.replaceChildren();
@@ -36,6 +37,7 @@
   document.querySelectorAll(".view").forEach(v=>v.hidden=v.dataset.page!==id);
   document.querySelectorAll("#nav button").forEach(v=>v.classList.toggle("selected",v.dataset.page===id));
   const index=nav.findIndex(n=>n[0]===id),l=$("language").value;setText("heading",titles[l]?.[index]||nav[index][1]);setText("breadcrumb","WORKSPACE / "+id.toUpperCase());
+  if(id==="clinic")clinicPractice.load();
   if(id==="catalog")loadCatalog().catch(showError);
   if(id==="ipc")loadIPC().catch(showError);
   if(id==="assessments")loadExams().catch(showError);
@@ -64,6 +66,7 @@
   fill($("center"),state.centers);state.center=$("center").value;await changeCenter();$("login").hidden=true;workspace.inert=false;
  }
  async function changeCenter(){
+  clinicPractice.reset();
   state.center=$("center").value;const data=await request("/api/bootstrap?centerId="+encodeURIComponent(state.center));
   state.catalog=null;state.selectedProcedure=null;state.user=data.userId;state.displayName=data.displayName;state.role=data.role;state.specialties=data.specialties||[];state.assignments=data.assignments||[];state.modules=data.modules||[];
   const [p,exams]=await Promise.all([request("/api/progress?centerId="+encodeURIComponent(state.center)),request("/api/exams?centerId="+encodeURIComponent(state.center))]);
