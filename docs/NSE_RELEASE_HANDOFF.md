@@ -240,3 +240,11 @@ The original training platform uses **Google Sheets through Google Apps Script**
 - Official exam presentation now emphasizes one question, larger answer options, answered-percentage progress and distinct answered/flagged states. Progress is explicitly not a score; no correctness or answer keys are revealed during an attempt.
 - Added self-contained fictional `NSE-Journey-Focus-Preview.html` for learning/exam/card route review. Its platform-navigation questions are unscored UI examples, not official bank questions. No credentials awarded.
 - Automated validation: 79 tests pass. Deployment, visual acceptance and authenticated role/device acceptance of this follow-up remain pending; no clinical review or final readiness claimed.
+
+## 2026-11-09 — Approved file-free content authoring
+
+- Added admin-only creation of editable lesson scaffolds from a specialty-matched imported instrument/procedure or a manually entered topic, without uploading a file. Original source facts and unresolved procedure tool IDs are retained as provenance. Scaffolds explicitly require authoring and are blocked from publication until edited and reviewed; no inferred clinical instructions or missing translations are presented as approved content.
+- Added manual draft archiving/restoration and safe published-module forking. Direct editing of a published lesson now fails closed and the studio creates a new draft, preserving the live version. Revision snapshots retain prior data.
+- Added AI question-suggestion adapter for catalog/topic text using the existing structured-output/quote-validation integration. Requires configured provider credentials and explicit educational-only confirmation. It creates review candidates only; no real provider test was performed.
+- This is not the complete AI lesson-edit comparison/accept/reject workflow. Image identification, full AI lesson generation and AI proposal comparison still need implementation and live acceptance. Existing manual question edit-as-new-draft remains available.
+- 80 automated tests pass, including scaffold publication blocking, role/center boundaries, archival restoration and published version preservation. Not yet deployed or browser accepted.

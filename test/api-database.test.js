@@ -269,6 +269,19 @@ test('passport roadmap remains private and does not infer practical competency f
  for(const p of r.body.paths){if(p.requiredSkills===0)assert.equal(p.practicalComplete,false);assert.equal(p.answer_index,undefined)}
 });
 
+test('file-free authoring creates only review-blocked drafts and preserves published content when forked',async()=>{
+ const input={kind:'idea',specialtyId:specialty,title:'Synthetic preparation topic',notes:'Synthetic source facts for testing only.'};assert.equal((await call('/api/authoring/create',{body:input})).status,403);await db.query("update qib.memberships set role='admin' where user_id=$1",[ids.supervisor]);
+ try{const created=await call('/api/authoring/create',{token:'supervisor',body:input});assert.equal(created.status,200);assert.equal(created.body.clinicalContentGenerated,false);const id=created.body.module.id;
+ const module=(await db.query('select * from qib.modules where id=$1',[id])).rows[0];assert.equal(module.status,'draft');assert.equal(module.translations._authoring.needsAuthoring,true);
+ await call('/api/modules/request-review',{token:'supervisor',body:{moduleId:id}});assert.equal((await call('/api/modules/publish',{token:'supervisor',body:{moduleId:id,reviewerNote:'Synthetic review cannot approve a scaffold'}})).body.error,'AUTHORING_REQUIRED');
+ assert.equal((await call('/api/authoring/archive',{token:'supervisor',body:{moduleId:id}})).body.status,'archived');assert.equal((await call('/api/authoring/restore',{token:'supervisor',body:{moduleId:id}})).body.status,'draft');
+ await db.query("update qib.modules set status='published' where id=$1",[id]);const fork=await call('/api/authoring/fork',{token:'supervisor',body:{moduleId:id}});assert.notEqual(fork.body.module.id,id);assert.equal((await db.query('select status from qib.modules where id=$1',[id])).rows[0].status,'published');
+ assert.equal((await call('/api/modules/save',{token:'supervisor',body:{specialtyId:specialty,slug:module.slug,translations:{en:{title:'Changed',body:'Changed content'}}}})).body.error,'FORK_PUBLISHED_MODULE_BEFORE_EDIT');
+ assert.equal((await call('/api/authoring/fork',{token:'supervisor',center:ids.other,body:{moduleId:id}})).status,403);
+ assert.equal((await call('/api/authoring/create',{token:'supervisor',body:{kind:'tool',specialtyId:specialty,sourceId:'not-in-source'}})).body.error,'SOURCE_SPECIALTY_MISMATCH');
+ }finally{await db.query("update qib.memberships set role='supervisor' where user_id=$1",[ids.supervisor])}
+});
+
 test('revoked Supabase session cannot reuse an unexpired token',async()=>{
  await db.query('delete from auth.sessions where id=$1',[sessions.nurse]);
  assert.equal((await call('/api/bootstrap')).status,401);

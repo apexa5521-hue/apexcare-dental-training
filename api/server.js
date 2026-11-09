@@ -6,6 +6,7 @@ const passportPath=require("./passport-path.js");
 const growth=require("./growth.js");
 const development=require("./development.js");
 const studyWorkflows=require("./study-workflows.js");
+const authoring=require("./content-authoring.js");
 const contentIntake=require("./content-intake.js");
 const examWorkflows=require("./exam-workflows.js");
 const contentWorkflows=require("./content-workflows.js");
@@ -62,6 +63,7 @@ async function handler(req,res){
   const extension=await development({req,url,body,c,userId,centerId,role,mustUUID,deny});if(extension.handled)return extension.data;
   const workflow=await contentWorkflows({req,url,body,c,userId,centerId,role,mustUUID,deny});if(workflow.handled)return workflow.data;
   const study=await studyWorkflows({req,url,body,c,userId,centerId,role,mustUUID,deny});if(study.handled)return study.data;
+  const authored=await authoring({req,url,body,c,userId,centerId,role,mustUUID,deny});if(authored.handled)return authored.data;
   const intake=await contentIntake({req,url,body,c,userId,centerId,role,mustUUID,deny});if(intake.handled)return intake.data;
   const examFlow=await examWorkflows({req,url,body,c,userId,centerId,role,mustUUID,deny});if(examFlow.handled)return examFlow.data;
   if(req.method==="GET"&&url.pathname==="/api/bootstrap"){
@@ -128,6 +130,8 @@ async function handler(req,res){
    const existing=await c.query("select * from qib.modules where center_id=$1 and slug=$2 for update",[centerId,slug]);
    if(existing.rowCount){
     const m=existing.rows[0],version=m.version+1;
+    if(m.status==='published')throw Object.assign(Error("FORK_PUBLISHED_MODULE_BEFORE_EDIT"),{status:409});
+    if(m.translations?._authoring)translations._authoring={...m.translations._authoring,needsAuthoring:false,lastEditedBy:userId};
     await c.query("insert into qib.content_revisions(module_id,editor_id,version,snapshot) values($1,$2,$3,$4)",[m.id,userId,m.version,JSON.stringify(m)]);
     await c.query("update qib.modules set translations=$2,version=$3,status='draft',updated_at=now() where id=$1",[m.id,JSON.stringify(translations),version]);return {id:m.id,version,status:"draft"};
    }
