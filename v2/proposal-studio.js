@@ -152,3 +152,30 @@ window.nseMountProposals = ({ root, request, post, el, ctx, modules, aiConfigure
   };
   return load().catch(e => { msg.textContent = e.message; });
 };
+
+// Free, content-bound question drafting from the imported catalog (no AI provider).
+window.nseMountRuleDrafts = ({ before, post, el, ctx, refresh }) => {
+  const box = el('form', undefined, 'stack section');
+  box.append(el('h3', 'توليد أسئلة من الكتالوج بدون ذكاء اصطناعي · Catalog question drafts (no AI)'),
+    el('p', 'كل سؤال مبني على معلومة موثقة في الكتالوج: فائدة الأداة، قائمة تجهيز الإجراء، أو ترتيب خطوات مكافحة العدوى. تدخل قائمة المراجعة كمسودات، ولا تُعتمد إلا بمراجع مستقل.', 'muted'));
+  const lab = (title, node) => { const l = el('label', undefined, 'field'); l.append(el('span', title), node); box.append(l); return node; };
+  const spec = lab('التخصص · Specialty', el('select'));
+  ctx.specialties.forEach(s => { const o = el('option', s.label); o.value = s.id; spec.append(o); });
+  const count = lab('عدد الأسئلة · Number of drafts', el('input')); count.type = 'number'; count.min = 1; count.max = 50; count.value = 20;
+  const cats = [['instrument_name', 'الفائدة ← اسم الأداة · Purpose → name'], ['instrument_use', 'الأداة ← فائدتها · Name → purpose'], ['procedure_preparation', 'تجهيز الإجراء · Procedure preparation'], ['sequence', 'ترتيب الخطوات · Step order']];
+  const checks = cats.map(([id, title]) => { const l = el('label', undefined, 'field'), c = el('input'); c.type = 'checkbox'; c.checked = true; c.value = id; l.append(c, el('span', ' ' + title)); box.append(l); return c; });
+  const msg = el('p', '', 'notice'); msg.setAttribute('aria-live', 'polite');
+  const go = el('button', 'توليد المسودات · Create drafts', 'btn');
+  box.append(go, msg);
+  box.onsubmit = async e => {
+    e.preventDefault(); go.disabled = true; msg.textContent = '';
+    try {
+      const chosen = checks.filter(c => c.checked).map(c => c.value);
+      if (!chosen.length) { msg.textContent = 'اختر نوعًا واحدًا على الأقل.'; return; }
+      const r = await post('/api/content/rule-candidates', { specialtyId: spec.value, count: Number(count.value), categories: chosen });
+      msg.textContent = r.created ? 'أُضيفت ' + r.created + ' مسودة لقائمة المراجعة.' : 'لا توجد أسئلة جديدة لهذا التخصص من الكتالوج الحالي (المتاح غير المكرر: ' + r.available + ').';
+      if (r.created) await refresh();
+    } catch (err) { msg.textContent = err.message; } finally { go.disabled = false; }
+  };
+  before.before(box);
+};

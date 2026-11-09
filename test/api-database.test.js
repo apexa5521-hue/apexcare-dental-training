@@ -165,6 +165,11 @@ test('foundation curriculum prepares once as private drafts and does not publish
  await db.query("update qib.memberships set role='admin' where user_id=$1 and center_id=$2",[ids.supervisor,ids.center]);await db.query('insert into qib.platform_owners(user_id) values($1)',[ids.supervisor]);
  try{const r=await call('/api/modules/prepare-foundations',{token:'supervisor',body:{}});assert.equal(r.status,200);assert.equal(r.body.created,6);assert.equal(r.body.questionDraftsCreated,6);const again=await call('/api/modules/prepare-foundations',{token:'supervisor',body:{}});assert.equal(again.body.created,0);assert.equal(again.body.questionDraftsCreated,0);
  const modules=await db.query("select translations,status from qib.modules where slug like 'nse-foundation-%'");assert.equal(modules.rows.length,6);assert(modules.rows.every(m=>m.status==='draft'&&Object.keys(m.translations).length===4));assert(modules.rows.every(m=>!JSON.stringify(m.translations).includes('answer_index')));assert.equal((await call('/api/exams/draft-questions?assessmentId='+r.body.assessmentId)).status,403);
+ const dental=await call('/api/modules/prepare-foundations',{token:'supervisor',body:{pack:'dental'}});assert.equal(dental.status,200);assert.equal(dental.body.created,6);assert.equal(dental.body.questionDraftsCreated,13);assert.equal((await call('/api/modules/prepare-foundations',{token:'supervisor',body:{pack:'dental'}})).body.created,0);
+ const dm=await db.query("select specialty_id,status,translations from qib.modules where slug like 'nse-dental-%'");assert.equal(dm.rows.length,6);assert(dm.rows.every(m=>m.specialty_id===specialty&&m.status==='draft'&&['ar','en','ur','id'].every(l=>m.translations[l].body.includes('Sources:'))));
+ assert.equal((await db.query('select specialty_id from qib.assessments where id=$1',[dental.body.assessmentId])).rows[0].specialty_id,specialty);assert.equal((await db.query('select count(*)::int as n from qib.questions where assessment_id=$1 and rationale_en is not null',[dental.body.assessmentId])).rows[0].n,13);
+ assert.equal((await call('/api/modules/prepare-foundations',{token:'supervisor',body:{pack:'../secret'}})).body.error,'UNKNOWN_CURRICULUM_PACK');
+ const nurseView=await call('/api/modules');assert(!nurseView.body.modules.some(m=>m.slug.startsWith('nse-dental-')));
  }finally{await db.query('delete from qib.platform_owners where user_id=$1',[ids.supervisor]);await db.query("update qib.memberships set role='supervisor' where user_id=$1 and center_id=$2",[ids.supervisor,ids.center])}
 });
 
@@ -318,6 +323,25 @@ test('AI lesson proposals are compared change by change and only accepted change
   const listed=await call('/api/proposals?moduleId='+id,{token:'supervisor'});assert.equal(listed.body.proposals.length,3);assert.equal(listed.body.proposals.find(x=>x.id===p.id).stale,true);
   await db.query("update qib.modules set status='published' where id=$1",[id]);assert.equal((await gen({mode:'revise',language:'en',instruction:'Make line two specific'})).body.error,'FORK_PUBLISHED_MODULE_BEFORE_EDIT');
  }finally{global.fetch=mockFetch;for(const [k,v] of [['OPENAI_API_KEY',prior.key],['OPENAI_MODEL',prior.model]])if(v===undefined)delete process.env[k];else process.env[k]=v;await db.query("update qib.memberships set role='supervisor' where user_id=$1",[ids.supervisor])}
+});
+
+test('rule-based drafting and content search respect roles, centers and specialty assignment',async()=>{
+ const rows=[['Tools','rt0',{id:'rt0',specialtyId:'dental',nameEn:'Synthetic mirror',useEn:'Synthetic indirect vision'}],['Tools','rt1',{id:'rt1',specialtyId:'dental',nameEn:'Synthetic probe',useEn:'Synthetic pocket measurement'}],['Tools','rt2',{id:'rt2',specialtyId:'dental',nameEn:'Synthetic pliers',useEn:'Synthetic small item transfer'}],['Tools','rt3',{id:'rt3',specialtyId:'dental',nameEn:'Synthetic bib',useEn:'Synthetic clothing protection'}],['Tools','rx0',{id:'rx0',specialtyId:'zz-other',nameEn:'Other specialty laser',useEn:'Not assigned to nurse'}]];
+ for(const [s,id,p] of rows)await db.query('insert into qib.legacy_catalog(source_name,legacy_id,specialty_legacy_id,payload,content_hash) values($1,$2,$3,$4,$5)',[s,id,p.specialtyId,JSON.stringify(p),'synthetic-test-hash']);
+ try{
+  assert.equal((await call('/api/content/rule-candidates',{body:{specialtyId:specialty,count:5}})).status,403);
+  await db.query("update qib.memberships set role='admin' where user_id=$1",[ids.supervisor]);
+  try{
+   assert.equal((await call('/api/content/rule-candidates',{token:'supervisor',body:{specialtyId:specialty,count:0}})).body.error,'INVALID_COUNT');
+   const made=await call('/api/content/rule-candidates',{token:'supervisor',body:{specialtyId:specialty,count:50,categories:['instrument_use']}});assert.equal(made.status,200);assert.equal(made.body.aiUsed,false);assert.ok(made.body.created>=4);
+   const rowsOut=(await db.query("select * from qib.question_candidates where origin='catalog_rule_draft' and center_id=$1",[ids.center])).rows;assert.equal(rowsOut.length,made.body.created);assert.ok(rowsOut.every(r=>r.status==='draft'&&r.category==='instrument_use'&&r.source_quote));
+   assert.equal((await call('/api/content/rule-candidates',{token:'supervisor',body:{specialtyId:specialty,count:50,categories:['instrument_use']}})).body.created,0);
+  }finally{await db.query("update qib.memberships set role='supervisor' where user_id=$1",[ids.supervisor])}
+  const nurse=await call('/api/search?q='+encodeURIComponent('synthetic mirror'));assert.equal(nurse.status,200);assert.equal(nurse.body.tools[0].id,'rt0');
+  assert.equal((await call('/api/search?q=laser')).body.tools.length,0);
+  assert.equal((await call('/api/search?q=laser',{token:'supervisor'})).body.tools.length,1);
+  assert.equal((await call('/api/search?q=mirror',{center:ids.other})).status,403);
+ }finally{await db.query("delete from qib.question_candidates where origin='catalog_rule_draft'");await db.query("delete from qib.legacy_catalog where legacy_id=any($1::text[])",[rows.map(r=>r[1])])}
 });
 
 test('revoked Supabase session cannot reuse an unexpired token',async()=>{

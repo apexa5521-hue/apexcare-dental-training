@@ -1,0 +1,428 @@
+{
+ "version": 1,
+ "preparedOn": "2026-11-09",
+ "status": "draft",
+ "languages": 4,
+ "assessmentLanguage": "en",
+ "specialtyCode": "dental",
+ "assessmentTitle": "NSE Dental Chairside Knowledge Review — Draft",
+ "modules": [
+  {
+   "slug": "nse-dental-patient-reception",
+   "track": "dental",
+   "specialtyCode": "dental",
+   "minutes": 6,
+   "translations": {
+    "ar": {
+     "title": "استقبال مريض الأسنان وتوجيهه للكرسي",
+     "body": "الهدف\nاستقبلي المريض بأمان، وحدّثي المعلومات الصحية المهمة قبل بدء العلاج.\n\nالشرح\nتحققي من هوية المريض بمعرّفين على الأقل حسب سياسة المركز. اسألي عن أي أعراض تنفسية عند الدخول، وقدّمي كمامة عند الحاجة. راجعي مع المريض التاريخ الصحي: الحساسية (مثل اللاتكس أو الأدوية)، الأدوية الحالية ومنها مميعات الدم، الحمل، والأمراض المزمنة، وبلّغي الطبيب بأي تغيير قبل البدء. أجلسي المريض وعدّلي الكرسي بهدوء، وضعي المريلة ونظارات الحماية، واشرحي ما سيحدث بلغة بسيطة. اتفقي مع المريض على إشارة يرفع فيها يده إذا احتاج التوقف.\n\nنشاط تدريبي\nتخيّلي مريضًا يقول إنه بدأ دواءً جديدًا لسيولة الدم. حددي متى ولمن تبلغين قبل تجهيز أي إجراء.\n\nملاحظة للمشرفة\nهذه مسودة تعليمية تحتاج مراجعة سريرية ولغوية واعتماد سياسة المركز. إكمال القراءة لا يمنح كفاءة عملية.",
+     "objective": "استقبلي المريض بأمان، وحدّثي المعلومات الصحية المهمة قبل بدء العلاج.",
+     "activity": "تخيّلي مريضًا يقول إنه بدأ دواءً جديدًا لسيولة الدم. حددي متى ولمن تبلغين قبل تجهيز أي إجراء."
+    },
+    "en": {
+     "title": "Receiving and seating the dental patient",
+     "body": "Objective\nReceive the patient safely and update key health information before treatment starts.\n\nLesson\nVerify identity with at least two identifiers according to center policy. Ask about respiratory symptoms at entry and offer a mask when needed. Review the health history with the patient: allergies (for example latex or medicines), current medicines including blood thinners, pregnancy and chronic conditions, and tell the dentist about any change before treatment starts. Seat the patient and adjust the chair gently, place the bib and protective eyewear, and explain what will happen in plain language. Agree on a hand signal the patient can use to ask for a pause.\n\nPractice activity\nA patient says they started a new blood-thinning medicine. Decide when and to whom you report this before preparing any procedure.\n\nSupervisor review\nThis draft needs clinical and language review and alignment with center policy. Reading completion alone does not establish practical competency.",
+     "objective": "Receive the patient safely and update key health information before treatment starts.",
+     "activity": "A patient says they started a new blood-thinning medicine. Decide when and to whom you report this before preparing any procedure."
+    },
+    "ur": {
+     "title": "دانتوں کے مریض کا استقبال اور کرسی تک رہنمائی",
+     "body": "مقصد\nمریض کا محفوظ استقبال کریں اور علاج شروع ہونے سے پہلے اہم صحت کی معلومات تازہ کریں۔\n\nسبق\nمرکز کی پالیسی کے مطابق کم از کم دو شناختی معلومات سے مریض کی شناخت کی تصدیق کریں۔ داخلے پر سانس کی علامات کے بارے میں پوچھیں اور ضرورت ہو تو ماسک دیں۔ مریض کے ساتھ صحت کی تاریخ دیکھیں: الرجی (مثلاً لیٹیکس یا دوائیں)، موجودہ دوائیں بشمول خون پتلا کرنے والی دوائیں، حمل اور دائمی بیماریاں، اور علاج شروع ہونے سے پہلے کسی بھی تبدیلی کی اطلاع ڈینٹسٹ کو دیں۔ مریض کو بٹھا کر کرسی آہستگی سے درست کریں، بب اور حفاظتی چشمہ لگائیں، اور آسان زبان میں بتائیں کہ کیا ہوگا۔ ایک اشارہ طے کریں جس سے مریض رکنے کا کہہ سکے۔\n\nتربیتی سرگرمی\nایک مریض بتاتا ہے کہ اس نے خون پتلا کرنے کی نئی دوا شروع کی ہے۔ طے کریں کہ کسی بھی عمل کی تیاری سے پہلے آپ کب اور کس کو اطلاع دیں گی۔\n\nنگران کے لیے نوٹ\nیہ تعلیمی مسودہ ہے جسے طبی اور لسانی جائزے اور مرکز کی پالیسی کی منظوری درکار ہے۔ صرف پڑھ لینے سے عملی مہارت ثابت نہیں ہوتی۔",
+     "objective": "مریض کا محفوظ استقبال کریں اور علاج شروع ہونے سے پہلے اہم صحت کی معلومات تازہ کریں۔",
+     "activity": "ایک مریض بتاتا ہے کہ اس نے خون پتلا کرنے کی نئی دوا شروع کی ہے۔ طے کریں کہ کسی بھی عمل کی تیاری سے پہلے آپ کب اور کس کو اطلاع دیں گی۔"
+    },
+    "id": {
+     "title": "Menerima dan mendudukkan pasien gigi",
+     "body": "Tujuan\nMenerima pasien dengan aman dan memperbarui informasi kesehatan penting sebelum perawatan dimulai.\n\nMateri\nVerifikasi identitas dengan minimal dua penanda sesuai kebijakan pusat. Tanyakan gejala pernapasan saat masuk dan tawarkan masker bila perlu. Tinjau riwayat kesehatan bersama pasien: alergi (misalnya lateks atau obat), obat yang sedang dipakai termasuk pengencer darah, kehamilan dan penyakit kronis, lalu laporkan setiap perubahan kepada dokter gigi sebelum perawatan dimulai. Dudukkan pasien dan atur kursi dengan perlahan, pasang celemek dan kacamata pelindung, dan jelaskan langkah perawatan dengan bahasa sederhana. Sepakati isyarat tangan untuk meminta jeda.\n\nKegiatan latihan\nSeorang pasien mengatakan baru mulai minum obat pengencer darah. Tentukan kapan dan kepada siapa Anda melapor sebelum menyiapkan prosedur.\n\nCatatan untuk supervisor\nDraf ini memerlukan tinjauan klinis dan bahasa serta penyesuaian dengan kebijakan pusat. Menyelesaikan bacaan saja tidak membuktikan kompetensi praktik.",
+     "objective": "Menerima pasien dengan aman dan memperbarui informasi kesehatan penting sebelum perawatan dimulai.",
+     "activity": "Seorang pasien mengatakan baru mulai minum obat pengencer darah. Tentukan kapan dan kepada siapa Anda melapor sebelum menyiapkan prosedur."
+    }
+   },
+   "sourceUrls": [
+    "https://www.cdc.gov/dental-infection-control/hcp/summary/standard-precautions.html",
+    "https://www.cdc.gov/mmwr/pdf/rr/rr5217.pdf"
+   ],
+   "review": {
+    "clinical": "pending",
+    "translation": "pending",
+    "policy": "pending"
+   },
+   "questionDrafts": [
+    {
+     "prompt_en": "A patient reports starting a new blood-thinning medicine since the last visit. What should the dental nurse do first?",
+     "options_en": [
+      "Inform the dentist before treatment starts",
+      "Continue preparing the tray and mention it after treatment",
+      "Ask the patient to stop the medicine"
+     ],
+     "answer_index": 0,
+     "rationale_en": "Health-history changes such as anticoagulant use must reach the dentist before treatment so the plan can be reviewed.",
+     "difficulty": "foundation",
+     "status": "draft"
+    },
+    {
+     "prompt_en": "A patient arrives with cough and fever. Which action fits respiratory hygiene at entry?",
+     "options_en": [
+      "Offer a mask and inform the clinical team",
+      "Seat the patient immediately without comment",
+      "Send the patient home without informing anyone"
+     ],
+     "answer_index": 0,
+     "rationale_en": "CDC dental guidance includes screening for respiratory symptoms at entry and offering masks.",
+     "difficulty": "foundation",
+     "status": "draft"
+    }
+   ]
+  },
+  {
+   "slug": "nse-dental-operatory-turnover",
+   "track": "dental",
+   "specialtyCode": "dental",
+   "minutes": 7,
+   "translations": {
+    "ar": {
+     "title": "تجهيز عيادة الأسنان بين مريض وآخر",
+     "body": "الهدف\nجهّزي وحدة الأسنان بين المرضى بترتيب يمنع انتقال العدوى.\n\nالشرح\nبعد خروج المريض وارتداء معدات الوقاية المناسبة: أزيلي الأغطية الواقية المستخدمة والمستهلكات، وتخلصي من الأدوات الحادة في حاوية الأدوات الحادة. انقلي الأدوات المستخدمة في وعاء مغلق إلى منطقة التعقيم. نظّفي ثم طهّري الأسطح التي لُمست أثناء العلاج (مقبض الإضاءة، لوحة التحكم، مسند الذراع) بمطهر معتمد، والتزمي بزمن التلامس المكتوب على المنتج. شغّلي الماء في القبضات وخطوط الماء والهواء 20 إلى 30 ثانية بعد كل مريض. اخلعي القفازات ونظّفي يديك، ثم ضعي أغطية واقية جديدة وجهّزي صينية الإجراء التالي من عبوات معقمة سليمة. القبضات تُعقم بالحرارة بين المرضى ولا يكفي مسحها.\n\nنشاط تدريبي\nرتّبي هذه الخطوات: وضع أغطية جديدة، تطهير الأسطح، إزالة الأغطية المستخدمة، نظافة اليدين.\n\nملاحظة للمشرفة\nهذه مسودة تعليمية تحتاج مراجعة سريرية ولغوية واعتماد سياسة المركز. إكمال القراءة لا يمنح كفاءة عملية.",
+     "objective": "جهّزي وحدة الأسنان بين المرضى بترتيب يمنع انتقال العدوى.",
+     "activity": "رتّبي هذه الخطوات: وضع أغطية جديدة، تطهير الأسطح، إزالة الأغطية المستخدمة، نظافة اليدين."
+    },
+    "en": {
+     "title": "Dental operatory turnover between patients",
+     "body": "Objective\nPrepare the dental unit between patients in an order that prevents cross-contamination.\n\nLesson\nAfter the patient leaves, and wearing appropriate PPE: remove used barriers and disposables, and discard sharps into the sharps container. Move used instruments in a closed container to the reprocessing area. Clean, then disinfect, clinical contact surfaces touched during care (light handle, control panel, armrest) with an approved disinfectant, keeping the contact time on the product label. Flush handpieces and air/water lines for 20 to 30 seconds after each patient. Remove gloves and clean your hands, then place new barriers and set the next tray from intact sterile packs. Handpieces are heat sterilized between patients; wiping is not enough.\n\nPractice activity\nPut these steps in order: place new barriers, disinfect surfaces, remove used barriers, hand hygiene.\n\nSupervisor review\nThis draft needs clinical and language review and alignment with center policy. Reading completion alone does not establish practical competency.",
+     "objective": "Prepare the dental unit between patients in an order that prevents cross-contamination.",
+     "activity": "Put these steps in order: place new barriers, disinfect surfaces, remove used barriers, hand hygiene."
+    },
+    "ur": {
+     "title": "مریضوں کے درمیان ڈینٹل یونٹ کی تیاری",
+     "body": "مقصد\nمریضوں کے درمیان ڈینٹل یونٹ کو اس ترتیب سے تیار کریں جو انفیکشن کی منتقلی روکے۔\n\nسبق\nمریض کے جانے کے بعد اور مناسب حفاظتی سامان پہن کر: استعمال شدہ حفاظتی کور اور ڈسپوزیبل اشیاء ہٹائیں، اور نوک دار اشیاء کو شارپس کنٹینر میں ڈالیں۔ استعمال شدہ اوزار بند برتن میں جراثیم کشی کے حصے تک لے جائیں۔ علاج کے دوران چھوئی گئی سطحوں (لائٹ کا ہینڈل، کنٹرول پینل، بازو کی ٹیک) کو پہلے صاف کریں پھر منظور شدہ جراثیم کش سے جراثیم سے پاک کریں، اور پروڈکٹ پر لکھا رابطے کا وقت پورا کریں۔ ہر مریض کے بعد ہینڈپیس اور پانی و ہوا کی لائنوں میں 20 سے 30 سیکنڈ پانی چلائیں۔ دستانے اتار کر ہاتھ صاف کریں، پھر نئے کور لگائیں اور اگلی ٹرے سالم جراثیم سے پاک پیکٹوں سے تیار کریں۔ ہینڈپیس مریضوں کے درمیان حرارت سے جراثیم سے پاک کیے جاتے ہیں؛ صرف صاف کرنا کافی نہیں۔\n\nتربیتی سرگرمی\nان مراحل کو ترتیب دیں: نئے کور لگانا، سطحوں کی جراثیم کشی، استعمال شدہ کور ہٹانا، ہاتھوں کی صفائی۔\n\nنگران کے لیے نوٹ\nیہ تعلیمی مسودہ ہے جسے طبی اور لسانی جائزے اور مرکز کی پالیسی کی منظوری درکار ہے۔ صرف پڑھ لینے سے عملی مہارت ثابت نہیں ہوتی۔",
+     "objective": "مریضوں کے درمیان ڈینٹل یونٹ کو اس ترتیب سے تیار کریں جو انفیکشن کی منتقلی روکے۔",
+     "activity": "ان مراحل کو ترتیب دیں: نئے کور لگانا، سطحوں کی جراثیم کشی، استعمال شدہ کور ہٹانا، ہاتھوں کی صفائی۔"
+    },
+    "id": {
+     "title": "Menyiapkan unit gigi di antara pasien",
+     "body": "Tujuan\nMenyiapkan unit gigi di antara pasien dengan urutan yang mencegah kontaminasi silang.\n\nMateri\nSetelah pasien pergi dan dengan APD yang sesuai: lepaskan penghalang bekas dan barang sekali pakai, dan buang benda tajam ke wadah benda tajam. Pindahkan instrumen bekas dalam wadah tertutup ke area pemrosesan ulang. Bersihkan lalu disinfeksi permukaan yang disentuh selama perawatan (gagang lampu, panel kontrol, sandaran tangan) dengan disinfektan yang disetujui, dan patuhi waktu kontak pada label produk. Alirkan air pada handpiece serta saluran air dan udara selama 20 sampai 30 detik setelah setiap pasien. Lepaskan sarung tangan dan bersihkan tangan, lalu pasang penghalang baru dan siapkan baki berikutnya dari kemasan steril yang utuh. Handpiece disterilkan dengan panas di antara pasien; menyeka saja tidak cukup.\n\nKegiatan latihan\nUrutkan langkah berikut: memasang penghalang baru, disinfeksi permukaan, melepas penghalang bekas, kebersihan tangan.\n\nCatatan untuk supervisor\nDraf ini memerlukan tinjauan klinis dan bahasa serta penyesuaian dengan kebijakan pusat. Menyelesaikan bacaan saja tidak membuktikan kompetensi praktik.",
+     "objective": "Menyiapkan unit gigi di antara pasien dengan urutan yang mencegah kontaminasi silang.",
+     "activity": "Urutkan langkah berikut: memasang penghalang baru, disinfeksi permukaan, melepas penghalang bekas, kebersihan tangan."
+    }
+   },
+   "sourceUrls": [
+    "https://www.cdc.gov/dental-infection-control/hcp/summary/sterilization-disinfection.html",
+    "https://www.cdc.gov/mmwr/pdf/rr/rr5217.pdf"
+   ],
+   "review": {
+    "clinical": "pending",
+    "translation": "pending",
+    "policy": "pending"
+   },
+   "questionDrafts": [
+    {
+     "prompt_en": "How long should dental handpieces and air/water lines be flushed after each patient?",
+     "options_en": [
+      "20 to 30 seconds",
+      "2 to 3 seconds",
+      "Flushing is only needed at the end of the day"
+     ],
+     "answer_index": 0,
+     "rationale_en": "CDC dental guidance advises flushing for 20 to 30 seconds after each patient.",
+     "difficulty": "foundation",
+     "status": "draft"
+    },
+    {
+     "prompt_en": "How should a dental handpiece be processed between patients?",
+     "options_en": [
+      "Heat sterilized",
+      "Wiped with disinfectant only",
+      "Rinsed with water only"
+     ],
+     "answer_index": 0,
+     "rationale_en": "CDC dental guidance states handpieces and attachments are heat sterilized between patients.",
+     "difficulty": "foundation",
+     "status": "draft"
+    },
+    {
+     "prompt_en": "Which is the correct order during operatory turnover?",
+     "options_en": [
+      "Remove used barriers, clean and disinfect surfaces, hand hygiene, place new barriers",
+      "Place new barriers, remove used barriers, disinfect surfaces",
+      "Disinfect surfaces over the used barriers, then place new barriers"
+     ],
+     "answer_index": 0,
+     "rationale_en": "Used barriers come off before surfaces are cleaned and disinfected; hands are cleaned before placing new barriers.",
+     "difficulty": "intermediate",
+     "status": "draft"
+    }
+   ]
+  },
+  {
+   "slug": "nse-dental-examination-instruments",
+   "track": "dental",
+   "specialtyCode": "dental",
+   "minutes": 6,
+   "translations": {
+    "ar": {
+     "title": "أدوات الفحص الأساسية في عيادة الأسنان",
+     "body": "الهدف\nتعرّفي على أدوات الفحص الأساسية وطريقة ترتيبها وتمريرها بأمان.\n\nالشرح\nطقم الفحص الأساسي عادة: مرآة الفم للرؤية غير المباشرة وإبعاد الخد واللسان وعكس الضوء؛ المسبار (Explorer) لتحسس أسطح الأسنان؛ مسبار اللثة (Periodontal probe) لقياس عمق جيوب اللثة بالمليمتر؛ وملقط القطن لحمل القطن والمواد الصغيرة إلى الفم. تُرتّب الأدوات في الصينية بترتيب الاستخدام. المسبار ومسبار اللثة لهما أطراف دقيقة؛ أمسكيها من المقبض ووجّهي الطرف العامل بعيدًا عنك وعن المريض عند التمرير. الأدوات التي تلامس الفم تُعقم بعد كل مريض، وتُفتح العبوة المعقمة أمام المريض بعد التأكد من سلامتها ومؤشر التعقيم. ارجعي لقائمة أدوات المركز لأن الأسماء والتجهيز قد يختلفان.\n\nنشاط تدريبي\nجهّزي صينية فحص على الورق، واكتبي بجانب كل أداة اسمها بالإنجليزية وفائدتها.\n\nملاحظة للمشرفة\nهذه مسودة تعليمية تحتاج مراجعة سريرية ولغوية واعتماد سياسة المركز. إكمال القراءة لا يمنح كفاءة عملية.",
+     "objective": "تعرّفي على أدوات الفحص الأساسية وطريقة ترتيبها وتمريرها بأمان.",
+     "activity": "جهّزي صينية فحص على الورق، واكتبي بجانب كل أداة اسمها بالإنجليزية وفائدتها."
+    },
+    "en": {
+     "title": "Basic dental examination instruments",
+     "body": "Objective\nRecognize the basic examination instruments and arrange and pass them safely.\n\nLesson\nA basic examination set usually includes: the mouth mirror for indirect vision, retracting the cheek and tongue and reflecting light; the explorer for feeling tooth surfaces; the periodontal probe for measuring gum pocket depth in millimetres; and cotton pliers for carrying cotton and small items into the mouth. Arrange instruments on the tray in order of use. The explorer and probe have fine tips; hold them by the handle and keep the working end pointed away from you and the patient when passing. Instruments that enter the mouth are sterilized after every patient, and the sterile pack is opened in front of the patient after checking it is intact and the indicator has changed. Check your center list because names and set-ups can differ.\n\nPractice activity\nDraw an examination tray and write the English name and purpose next to each instrument.\n\nSupervisor review\nThis draft needs clinical and language review and alignment with center policy. Reading completion alone does not establish practical competency.",
+     "objective": "Recognize the basic examination instruments and arrange and pass them safely.",
+     "activity": "Draw an examination tray and write the English name and purpose next to each instrument."
+    },
+    "ur": {
+     "title": "دانتوں کے معائنے کے بنیادی اوزار",
+     "body": "مقصد\nمعائنے کے بنیادی اوزار پہچانیں اور انہیں محفوظ طریقے سے ترتیب دیں اور پکڑائیں۔\n\nسبق\nبنیادی معائنہ سیٹ میں عموماً شامل ہیں: منہ کا آئینہ بالواسطہ دیکھنے، گال اور زبان کو ہٹانے اور روشنی منعکس کرنے کے لیے؛ ایکسپلورر دانت کی سطح محسوس کرنے کے لیے؛ پیریوڈونٹل پروب مسوڑھوں کی جیب کی گہرائی ملی میٹر میں ناپنے کے لیے؛ اور کاٹن پلائر روئی اور چھوٹی اشیاء منہ تک لے جانے کے لیے۔ اوزار ٹرے میں استعمال کی ترتیب سے رکھیں۔ ایکسپلورر اور پروب کی نوکیں باریک ہوتی ہیں؛ انہیں ہینڈل سے پکڑیں اور پکڑاتے وقت کام کرنے والا سرا اپنے اور مریض سے دور رکھیں۔ منہ میں جانے والے اوزار ہر مریض کے بعد جراثیم سے پاک کیے جاتے ہیں، اور جراثیم سے پاک پیکٹ سالم ہونے اور اشارے کی تبدیلی دیکھنے کے بعد مریض کے سامنے کھولا جاتا ہے۔ مرکز کی فہرست دیکھیں کیونکہ نام اور ترتیب مختلف ہو سکتے ہیں۔\n\nتربیتی سرگرمی\nکاغذ پر معائنے کی ٹرے بنائیں اور ہر اوزار کے ساتھ اس کا انگریزی نام اور فائدہ لکھیں۔\n\nنگران کے لیے نوٹ\nیہ تعلیمی مسودہ ہے جسے طبی اور لسانی جائزے اور مرکز کی پالیسی کی منظوری درکار ہے۔ صرف پڑھ لینے سے عملی مہارت ثابت نہیں ہوتی۔",
+     "objective": "معائنے کے بنیادی اوزار پہچانیں اور انہیں محفوظ طریقے سے ترتیب دیں اور پکڑائیں۔",
+     "activity": "کاغذ پر معائنے کی ٹرے بنائیں اور ہر اوزار کے ساتھ اس کا انگریزی نام اور فائدہ لکھیں۔"
+    },
+    "id": {
+     "title": "Instrumen dasar pemeriksaan gigi",
+     "body": "Tujuan\nMengenali instrumen dasar pemeriksaan serta menata dan menyerahkannya dengan aman.\n\nMateri\nSet pemeriksaan dasar biasanya berisi: kaca mulut untuk penglihatan tidak langsung, menahan pipi dan lidah, dan memantulkan cahaya; explorer untuk meraba permukaan gigi; probe periodontal untuk mengukur kedalaman poket gusi dalam milimeter; dan pinset kapas untuk membawa kapas dan benda kecil ke dalam mulut. Tata instrumen di baki sesuai urutan pemakaian. Explorer dan probe memiliki ujung halus; pegang pada gagangnya dan arahkan ujung kerja menjauh dari Anda dan pasien saat menyerahkan. Instrumen yang masuk ke mulut disterilkan setelah setiap pasien, dan kemasan steril dibuka di depan pasien setelah memastikan kemasan utuh dan indikator sudah berubah. Periksa daftar pusat Anda karena nama dan susunan dapat berbeda.\n\nKegiatan latihan\nGambar baki pemeriksaan dan tulis nama bahasa Inggris serta kegunaan di samping setiap instrumen.\n\nCatatan untuk supervisor\nDraf ini memerlukan tinjauan klinis dan bahasa serta penyesuaian dengan kebijakan pusat. Menyelesaikan bacaan saja tidak membuktikan kompetensi praktik.",
+     "objective": "Mengenali instrumen dasar pemeriksaan serta menata dan menyerahkannya dengan aman.",
+     "activity": "Gambar baki pemeriksaan dan tulis nama bahasa Inggris serta kegunaan di samping setiap instrumen."
+    }
+   },
+   "sourceUrls": [
+    "https://www.cdc.gov/dental-infection-control/hcp/summary/sterilization-disinfection.html",
+    "https://www.cdc.gov/mmwr/pdf/rr/rr5217.pdf"
+   ],
+   "review": {
+    "clinical": "pending",
+    "translation": "pending",
+    "policy": "pending"
+   },
+   "questionDrafts": [
+    {
+     "prompt_en": "Which instrument is used to measure periodontal pocket depth?",
+     "options_en": [
+      "Periodontal probe",
+      "Mouth mirror",
+      "Cotton pliers",
+      "Saliva ejector"
+     ],
+     "answer_index": 0,
+     "rationale_en": "The periodontal probe is graduated in millimetres to measure pocket depth.",
+     "difficulty": "foundation",
+     "status": "draft"
+    },
+    {
+     "prompt_en": "What should be checked before opening a sterile instrument pack for a patient?",
+     "options_en": [
+      "The pack is intact and the sterilization indicator has changed",
+      "The pack was stored next to the sink",
+      "The pack has been opened earlier to check its contents"
+     ],
+     "answer_index": 0,
+     "rationale_en": "Sterility depends on an intact package and a changed process indicator.",
+     "difficulty": "foundation",
+     "status": "draft"
+    }
+   ]
+  },
+  {
+   "slug": "nse-dental-four-handed-assisting",
+   "track": "dental",
+   "specialtyCode": "dental",
+   "minutes": 7,
+   "translations": {
+    "ar": {
+     "title": "المساعدة بأربع أيدٍ وتمرير الأدوات بأمان",
+     "body": "الهدف\nساعدي الطبيب بكفاءة مع تقليل خطر الوخز والتلوث.\n\nالشرح\nفي المساعدة بأربع أيدٍ تجلس المساعدة في الجهة المقابلة للطبيب وأعلى قليلًا لرؤية ساحة العمل. تُمرَّر الأدوات في منطقة النقل أسفل ذقن المريض، وليس فوق وجهه أو عينيه. سلّمي الأداة بحيث يكون طرفها العامل موجّهًا نحو الجهة التي يعمل عليها الطبيب، واستلمي الأداة المستخدمة باليد نفسها بطريقة منظمة. استخدمي الشفاط عالي القوة قرب منطقة العمل لتقليل الرذاذ والسوائل. لا تعيدي غطاء الإبرة بيديك؛ استخدمي طريقة اليد الواحدة أو الأداة المخصصة حسب سياسة المركز. إذا حدث وخز أو تعرض لسوائل، أوقفي العمل وبلّغي فورًا واتبعي إجراء التعرض في المركز.\n\nنشاط تدريبي\nتدرّبي مع زميلة على تمرير المرآة والمسبار في منطقة النقل دون المرور فوق وجه \"المريض\".\n\nملاحظة للمشرفة\nهذه مسودة تعليمية تحتاج مراجعة سريرية ولغوية واعتماد سياسة المركز. إكمال القراءة لا يمنح كفاءة عملية.",
+     "objective": "ساعدي الطبيب بكفاءة مع تقليل خطر الوخز والتلوث.",
+     "activity": "تدرّبي مع زميلة على تمرير المرآة والمسبار في منطقة النقل دون المرور فوق وجه \"المريض\"."
+    },
+    "en": {
+     "title": "Four-handed assisting and safe instrument transfer",
+     "body": "Objective\nAssist the dentist efficiently while reducing sharps and contamination risk.\n\nLesson\nIn four-handed dentistry the assistant sits opposite the dentist and slightly higher to see the field. Instruments are passed in the transfer zone below the patient's chin, never over the face or eyes. Hand the instrument with its working end oriented toward the area the dentist is treating, and receive the used instrument in an organized way. Use high-volume evacuation close to the working area to reduce spray and fluids. Do not recap needles with two hands; use a one-handed technique or a recapping device according to center policy. If a sharps injury or fluid exposure happens, stop, report immediately and follow the center exposure procedure.\n\nPractice activity\nPractice with a colleague passing the mirror and explorer in the transfer zone without crossing the \"patient's\" face.\n\nSupervisor review\nThis draft needs clinical and language review and alignment with center policy. Reading completion alone does not establish practical competency.",
+     "objective": "Assist the dentist efficiently while reducing sharps and contamination risk.",
+     "activity": "Practice with a colleague passing the mirror and explorer in the transfer zone without crossing the \"patient's\" face."
+    },
+    "ur": {
+     "title": "چار ہاتھوں سے معاونت اور اوزار کی محفوظ منتقلی",
+     "body": "مقصد\nڈینٹسٹ کی مؤثر مدد کریں اور سوئی چبھنے اور آلودگی کا خطرہ کم کریں۔\n\nسبق\nچار ہاتھوں کی ڈینٹسٹری میں معاون ڈینٹسٹ کے سامنے والی طرف اور کام کی جگہ دیکھنے کے لیے تھوڑا اونچا بیٹھتی ہے۔ اوزار مریض کی ٹھوڑی کے نیچے منتقلی کے حصے میں دیے جاتے ہیں، چہرے یا آنکھوں کے اوپر سے کبھی نہیں۔ اوزار اس طرح دیں کہ اس کا کام کرنے والا سرا اس حصے کی طرف ہو جہاں ڈینٹسٹ کام کر رہا ہے، اور استعمال شدہ اوزار منظم طریقے سے واپس لیں۔ چھینٹوں اور رطوبتوں کو کم کرنے کے لیے تیز سکشن کام کی جگہ کے قریب رکھیں۔ سوئی کا ڈھکن دونوں ہاتھوں سے دوبارہ نہ لگائیں؛ مرکز کی پالیسی کے مطابق ایک ہاتھ کا طریقہ یا مخصوص آلہ استعمال کریں۔ سوئی چبھنے یا رطوبت سے رابطے کی صورت میں کام روکیں، فوراً اطلاع دیں اور مرکز کا طریقہ کار اپنائیں۔\n\nتربیتی سرگرمی\nایک ساتھی کے ساتھ آئینہ اور ایکسپلورر منتقلی کے حصے میں دینے کی مشق کریں، \"مریض\" کے چہرے کے اوپر سے گزرے بغیر۔\n\nنگران کے لیے نوٹ\nیہ تعلیمی مسودہ ہے جسے طبی اور لسانی جائزے اور مرکز کی پالیسی کی منظوری درکار ہے۔ صرف پڑھ لینے سے عملی مہارت ثابت نہیں ہوتی۔",
+     "objective": "ڈینٹسٹ کی مؤثر مدد کریں اور سوئی چبھنے اور آلودگی کا خطرہ کم کریں۔",
+     "activity": "ایک ساتھی کے ساتھ آئینہ اور ایکسپلورر منتقلی کے حصے میں دینے کی مشق کریں، \"مریض\" کے چہرے کے اوپر سے گزرے بغیر۔"
+    },
+    "id": {
+     "title": "Asistensi empat tangan dan penyerahan instrumen yang aman",
+     "body": "Tujuan\nMembantu dokter gigi secara efisien sambil mengurangi risiko tertusuk dan kontaminasi.\n\nMateri\nDalam kedokteran gigi empat tangan, asisten duduk di sisi berlawanan dengan dokter gigi dan sedikit lebih tinggi agar dapat melihat area kerja. Instrumen diserahkan di zona transfer di bawah dagu pasien, tidak pernah melewati wajah atau mata. Serahkan instrumen dengan ujung kerja mengarah ke area yang sedang dirawat, dan terima instrumen bekas secara teratur. Gunakan suction berdaya tinggi di dekat area kerja untuk mengurangi semprotan dan cairan. Jangan menutup kembali jarum dengan dua tangan; gunakan teknik satu tangan atau alat penutup sesuai kebijakan pusat. Jika terjadi luka tusuk atau paparan cairan, hentikan pekerjaan, segera laporkan, dan ikuti prosedur paparan di pusat.\n\nKegiatan latihan\nBerlatih bersama rekan menyerahkan kaca mulut dan explorer di zona transfer tanpa melewati wajah \"pasien\".\n\nCatatan untuk supervisor\nDraf ini memerlukan tinjauan klinis dan bahasa serta penyesuaian dengan kebijakan pusat. Menyelesaikan bacaan saja tidak membuktikan kompetensi praktik.",
+     "objective": "Membantu dokter gigi secara efisien sambil mengurangi risiko tertusuk dan kontaminasi.",
+     "activity": "Berlatih bersama rekan menyerahkan kaca mulut dan explorer di zona transfer tanpa melewati wajah \"pasien\"."
+    }
+   },
+   "sourceUrls": [
+    "https://www.cdc.gov/dental-infection-control/hcp/summary/standard-precautions.html",
+    "https://www.cdc.gov/mmwr/pdf/rr/rr5217.pdf"
+   ],
+   "review": {
+    "clinical": "pending",
+    "translation": "pending",
+    "policy": "pending"
+   },
+   "questionDrafts": [
+    {
+     "prompt_en": "Where should instruments be passed during four-handed dentistry?",
+     "options_en": [
+      "In the transfer zone below the patient's chin",
+      "Directly over the patient's eyes",
+      "Behind the patient's head"
+     ],
+     "answer_index": 0,
+     "rationale_en": "Passing below the chin keeps sharp and contaminated instruments away from the patient's face.",
+     "difficulty": "foundation",
+     "status": "draft"
+    },
+    {
+     "prompt_en": "Which needle recapping practice is safe?",
+     "options_en": [
+      "One-handed technique or a recapping device",
+      "Two-handed recapping",
+      "Bending the needle before recapping"
+     ],
+     "answer_index": 0,
+     "rationale_en": "Two-handed recapping causes needlestick injuries; one-handed or device-assisted recapping is used.",
+     "difficulty": "foundation",
+     "status": "draft"
+    }
+   ]
+  },
+  {
+   "slug": "nse-dental-five-moments-chairside",
+   "track": "dental",
+   "specialtyCode": "dental",
+   "minutes": 6,
+   "translations": {
+    "ar": {
+     "title": "لحظات نظافة اليدين الخمس عند كرسي الأسنان",
+     "body": "الهدف\nطبّقي لحظات منظمة الصحة العالمية الخمس على مواقف عيادة الأسنان.\n\nالشرح\nاللحظات الخمس: (1) قبل لمس المريض، مثل قبل تعديل رأسه أو وضع المريلة. (2) قبل إجراء نظيف أو معقم، مثل قبل فتح عبوة الأدوات المعقمة أو تجهيز مادة تدخل الفم. (3) بعد خطر التعرض لسوائل الجسم، مثل بعد الشفط أو خلع القفازات الملوثة. (4) بعد لمس المريض، عند انتهاء العلاج. (5) بعد لمس محيط المريض، مثل مقبض الإضاءة ولوحة الكرسي، حتى لو لم تلمسي المريض. لبس القفازات لا يلغي نظافة اليدين قبلها وبعد خلعها، وتُغيّر القفازات بين المرضى.\n\nنشاط تدريبي\nراقبي زيارة كاملة على كرسي الأسنان (أو تخيليها) وسجّلي كل لحظة من الخمس ومتى حدثت.\n\nملاحظة للمشرفة\nهذه مسودة تعليمية تحتاج مراجعة سريرية ولغوية واعتماد سياسة المركز. إكمال القراءة لا يمنح كفاءة عملية.",
+     "objective": "طبّقي لحظات منظمة الصحة العالمية الخمس على مواقف عيادة الأسنان.",
+     "activity": "راقبي زيارة كاملة على كرسي الأسنان (أو تخيليها) وسجّلي كل لحظة من الخمس ومتى حدثت."
+    },
+    "en": {
+     "title": "The five moments for hand hygiene at the dental chair",
+     "body": "Objective\nApply the WHO five moments for hand hygiene to dental chairside situations.\n\nLesson\nThe five moments: (1) Before touching a patient, for example before adjusting the head or placing the bib. (2) Before a clean or aseptic procedure, for example before opening a sterile instrument pack or preparing material that enters the mouth. (3) After body-fluid exposure risk, for example after suctioning or removing contaminated gloves. (4) After touching a patient, at the end of treatment. (5) After touching patient surroundings, such as the light handle or chair controls, even without touching the patient. Gloves do not replace hand hygiene before putting them on and after removing them, and gloves are changed between patients.\n\nPractice activity\nObserve (or imagine) a full chairside visit and record each of the five moments and when it happened.\n\nSupervisor review\nThis draft needs clinical and language review and alignment with center policy. Reading completion alone does not establish practical competency.",
+     "objective": "Apply the WHO five moments for hand hygiene to dental chairside situations.",
+     "activity": "Observe (or imagine) a full chairside visit and record each of the five moments and when it happened."
+    },
+    "ur": {
+     "title": "ڈینٹل کرسی پر ہاتھوں کی صفائی کے پانچ لمحات",
+     "body": "مقصد\nعالمی ادارہ صحت کے پانچ لمحات کو ڈینٹل کلینک کی صورتوں پر لاگو کریں۔\n\nسبق\nپانچ لمحات: (1) مریض کو چھونے سے پہلے، مثلاً سر درست کرنے یا بب لگانے سے پہلے۔ (2) صاف یا جراثیم سے پاک عمل سے پہلے، مثلاً جراثیم سے پاک اوزار کا پیکٹ کھولنے یا منہ میں جانے والا مواد تیار کرنے سے پہلے۔ (3) جسمانی رطوبت سے رابطے کے خطرے کے بعد، مثلاً سکشن کے بعد یا آلودہ دستانے اتارنے کے بعد۔ (4) مریض کو چھونے کے بعد، علاج ختم ہونے پر۔ (5) مریض کے ماحول کو چھونے کے بعد، جیسے لائٹ کا ہینڈل یا کرسی کے کنٹرول، چاہے مریض کو نہ چھوا ہو۔ دستانے پہننے سے پہلے اور اتارنے کے بعد ہاتھوں کی صفائی ضروری ہے، اور ہر مریض کے لیے دستانے بدلے جاتے ہیں۔\n\nتربیتی سرگرمی\nڈینٹل کرسی پر ایک مکمل وزٹ کا مشاہدہ کریں (یا تصور کریں) اور پانچوں لمحات اور ان کا وقت لکھیں۔\n\nنگران کے لیے نوٹ\nیہ تعلیمی مسودہ ہے جسے طبی اور لسانی جائزے اور مرکز کی پالیسی کی منظوری درکار ہے۔ صرف پڑھ لینے سے عملی مہارت ثابت نہیں ہوتی۔",
+     "objective": "عالمی ادارہ صحت کے پانچ لمحات کو ڈینٹل کلینک کی صورتوں پر لاگو کریں۔",
+     "activity": "ڈینٹل کرسی پر ایک مکمل وزٹ کا مشاہدہ کریں (یا تصور کریں) اور پانچوں لمحات اور ان کا وقت لکھیں۔"
+    },
+    "id": {
+     "title": "Lima momen kebersihan tangan di kursi gigi",
+     "body": "Tujuan\nMenerapkan lima momen kebersihan tangan WHO pada situasi di kursi gigi.\n\nMateri\nLima momen: (1) Sebelum menyentuh pasien, misalnya sebelum mengatur posisi kepala atau memasang celemek. (2) Sebelum tindakan bersih atau aseptik, misalnya sebelum membuka kemasan instrumen steril atau menyiapkan bahan yang masuk ke mulut. (3) Setelah risiko paparan cairan tubuh, misalnya setelah suction atau melepas sarung tangan yang terkontaminasi. (4) Setelah menyentuh pasien, di akhir perawatan. (5) Setelah menyentuh lingkungan pasien, seperti gagang lampu atau panel kursi, meskipun tidak menyentuh pasien. Sarung tangan tidak menggantikan kebersihan tangan sebelum dipakai dan setelah dilepas, dan sarung tangan diganti untuk setiap pasien.\n\nKegiatan latihan\nAmati (atau bayangkan) satu kunjungan lengkap di kursi gigi dan catat setiap momen dari lima momen serta kapan terjadi.\n\nCatatan untuk supervisor\nDraf ini memerlukan tinjauan klinis dan bahasa serta penyesuaian dengan kebijakan pusat. Menyelesaikan bacaan saja tidak membuktikan kompetensi praktik.",
+     "objective": "Menerapkan lima momen kebersihan tangan WHO pada situasi di kursi gigi.",
+     "activity": "Amati (atau bayangkan) satu kunjungan lengkap di kursi gigi dan catat setiap momen dari lima momen serta kapan terjadi."
+    }
+   },
+   "sourceUrls": [
+    "https://www.who.int/publications/i/item/9789241597906",
+    "https://www.who.int/teams/integrated-health-services/infection-prevention-control/hand-hygiene",
+    "https://www.cdc.gov/dental-infection-control/hcp/summary/standard-precautions.html"
+   ],
+   "review": {
+    "clinical": "pending",
+    "translation": "pending",
+    "policy": "pending"
+   },
+   "questionDrafts": [
+    {
+     "prompt_en": "You touched the dental light handle but not the patient. Is hand hygiene needed afterwards?",
+     "options_en": [
+      "Yes, after touching patient surroundings",
+      "No, because the patient was not touched",
+      "Only if the handle looks dirty"
+     ],
+     "answer_index": 0,
+     "rationale_en": "Moment 5 covers contact with patient surroundings even without patient contact.",
+     "difficulty": "foundation",
+     "status": "draft"
+    },
+    {
+     "prompt_en": "Which WHO moment applies just before opening a sterile instrument pack for a patient?",
+     "options_en": [
+      "Before a clean or aseptic procedure",
+      "After touching patient surroundings",
+      "After touching a patient"
+     ],
+     "answer_index": 0,
+     "rationale_en": "Opening a sterile pack for intraoral use is an aseptic task, which is Moment 2.",
+     "difficulty": "foundation",
+     "status": "draft"
+    }
+   ]
+  },
+  {
+   "slug": "nse-dental-instrument-flow",
+   "track": "dental",
+   "specialtyCode": "dental",
+   "minutes": 7,
+   "translations": {
+    "ar": {
+     "title": "مسار أدوات الأسنان من الكرسي إلى التعقيم",
+     "body": "الهدف\nانقلي الأدوات المستخدمة بأمان من الكرسي إلى منطقة التعقيم دون خلط الملوث بالنظيف.\n\nالشرح\nعند الكرسي: تتخلص مستخدمة الأداة الحادة منها بنفسها في حاوية الأدوات الحادة. أزيلي البقايا الظاهرة وفق سياسة المركز، وضعي الأدوات في كاسيت أو وعاء صلب مغلق. في منطقة التعقيم يسير العمل في اتجاه واحد: استقبال الملوث ← التنظيف ← الفحص والتغليف ← التعقيم ← التخزين. البسي قفازات خدمة شاقة ومعدات وقاية مناسبة أثناء التنظيف. لا تُعقّم أداة لم تُنظّف جيدًا. خزّني العبوات المعقمة في مكان نظيف وجاف ومغلق، وأعيدي تعقيم أي عبوة مبللة أو ممزقة.\n\nنشاط تدريبي\nاكتبي اتجاه سير الأدوات في منطقة التعقيم بمركزك، وحددي أي نقطة قد يلتقي فيها الملوث بالنظيف.\n\nملاحظة للمشرفة\nهذه مسودة تعليمية تحتاج مراجعة سريرية ولغوية واعتماد سياسة المركز. إكمال القراءة لا يمنح كفاءة عملية.",
+     "objective": "انقلي الأدوات المستخدمة بأمان من الكرسي إلى منطقة التعقيم دون خلط الملوث بالنظيف.",
+     "activity": "اكتبي اتجاه سير الأدوات في منطقة التعقيم بمركزك، وحددي أي نقطة قد يلتقي فيها الملوث بالنظيف."
+    },
+    "en": {
+     "title": "Dental instrument flow from chair to sterilization",
+     "body": "Objective\nMove used instruments safely from the chair to reprocessing without mixing dirty and clean items.\n\nLesson\nAt the chair: the person who used a sharp disposes of it into the sharps container. Remove visible debris according to center policy and place instruments in a cassette or closed rigid container. In the reprocessing area work flows one way: receiving dirty items, cleaning, inspection and packaging, sterilization, storage. Wear heavy-duty utility gloves and appropriate PPE when cleaning. Do not sterilize an instrument that has not been properly cleaned. Store sterile packs in a clean, dry, enclosed area, and reprocess any pack that is wet or torn.\n\nPractice activity\nWrite the direction of instrument flow in your center reprocessing area and identify any point where dirty and clean items might meet.\n\nSupervisor review\nThis draft needs clinical and language review and alignment with center policy. Reading completion alone does not establish practical competency.",
+     "objective": "Move used instruments safely from the chair to reprocessing without mixing dirty and clean items.",
+     "activity": "Write the direction of instrument flow in your center reprocessing area and identify any point where dirty and clean items might meet."
+    },
+    "ur": {
+     "title": "ڈینٹل اوزار کا کرسی سے جراثیم کشی تک راستہ",
+     "body": "مقصد\nاستعمال شدہ اوزار کو آلودہ اور صاف اشیاء ملائے بغیر کرسی سے جراثیم کشی کے حصے تک محفوظ طریقے سے لے جائیں۔\n\nسبق\nکرسی پر: نوکدار چیز استعمال کرنے والا شخص خود اسے شارپس کنٹینر میں ڈالتا ہے۔ مرکز کی پالیسی کے مطابق نظر آنے والا ملبہ ہٹائیں اور اوزار کیسٹ یا بند سخت برتن میں رکھیں۔ جراثیم کشی کے حصے میں کام ایک ہی سمت چلتا ہے: آلودہ اشیاء کی وصولی، صفائی، معائنہ اور پیکنگ، جراثیم کشی، ذخیرہ۔ صفائی کے دوران مضبوط دستانے اور مناسب حفاظتی سامان پہنیں۔ جو اوزار اچھی طرح صاف نہ ہوا ہو اسے جراثیم سے پاک نہ کریں۔ جراثیم سے پاک پیکٹ صاف، خشک اور بند جگہ میں رکھیں، اور گیلا یا پھٹا ہوا پیکٹ دوبارہ پروسیس کریں۔\n\nتربیتی سرگرمی\nاپنے مرکز کے جراثیم کشی کے حصے میں اوزار کی سمت لکھیں اور وہ جگہ پہچانیں جہاں آلودہ اور صاف اشیاء مل سکتی ہیں۔\n\nنگران کے لیے نوٹ\nیہ تعلیمی مسودہ ہے جسے طبی اور لسانی جائزے اور مرکز کی پالیسی کی منظوری درکار ہے۔ صرف پڑھ لینے سے عملی مہارت ثابت نہیں ہوتی۔",
+     "objective": "استعمال شدہ اوزار کو آلودہ اور صاف اشیاء ملائے بغیر کرسی سے جراثیم کشی کے حصے تک محفوظ طریقے سے لے جائیں۔",
+     "activity": "اپنے مرکز کے جراثیم کشی کے حصے میں اوزار کی سمت لکھیں اور وہ جگہ پہچانیں جہاں آلودہ اور صاف اشیاء مل سکتی ہیں۔"
+    },
+    "id": {
+     "title": "Alur instrumen gigi dari kursi ke sterilisasi",
+     "body": "Tujuan\nMemindahkan instrumen bekas dengan aman dari kursi ke area pemrosesan ulang tanpa mencampur barang kotor dan bersih.\n\nMateri\nDi kursi: orang yang memakai benda tajam membuangnya sendiri ke wadah benda tajam. Bersihkan kotoran yang terlihat sesuai kebijakan pusat dan letakkan instrumen dalam kaset atau wadah kaku tertutup. Di area pemrosesan ulang alur kerja satu arah: penerimaan barang kotor, pembersihan, pemeriksaan dan pengemasan, sterilisasi, penyimpanan. Gunakan sarung tangan tebal dan APD yang sesuai saat membersihkan. Jangan mensterilkan instrumen yang belum dibersihkan dengan baik. Simpan kemasan steril di tempat bersih, kering, dan tertutup, dan proses ulang kemasan yang basah atau robek.\n\nKegiatan latihan\nTuliskan arah alur instrumen di area pemrosesan ulang pusat Anda dan tentukan titik di mana barang kotor dan bersih bisa bertemu.\n\nCatatan untuk supervisor\nDraf ini memerlukan tinjauan klinis dan bahasa serta penyesuaian dengan kebijakan pusat. Menyelesaikan bacaan saja tidak membuktikan kompetensi praktik.",
+     "objective": "Memindahkan instrumen bekas dengan aman dari kursi ke area pemrosesan ulang tanpa mencampur barang kotor dan bersih.",
+     "activity": "Tuliskan arah alur instrumen di area pemrosesan ulang pusat Anda dan tentukan titik di mana barang kotor dan bersih bisa bertemu."
+    }
+   },
+   "sourceUrls": [
+    "https://www.cdc.gov/dental-infection-control/hcp/summary/sterilization-disinfection.html",
+    "https://www.cdc.gov/mmwr/pdf/rr/rr5217.pdf"
+   ],
+   "review": {
+    "clinical": "pending",
+    "translation": "pending",
+    "policy": "pending"
+   },
+   "questionDrafts": [
+    {
+     "prompt_en": "What is the correct order of instrument reprocessing?",
+     "options_en": [
+      "Receiving, cleaning, inspection and packaging, sterilization, storage",
+      "Sterilization, cleaning, packaging, storage",
+      "Packaging, sterilization, cleaning, storage"
+     ],
+     "answer_index": 0,
+     "rationale_en": "Instruments must be cleaned and packaged before sterilization; work flows from dirty to clean.",
+     "difficulty": "intermediate",
+     "status": "draft"
+    },
+    {
+     "prompt_en": "A sterile pack is found wet in storage. What should be done?",
+     "options_en": [
+      "Reprocess it before use",
+      "Use it if the indicator changed",
+      "Dry it with a towel and use it"
+     ],
+     "answer_index": 0,
+     "rationale_en": "Wet or torn packs are no longer considered sterile and must be reprocessed.",
+     "difficulty": "foundation",
+     "status": "draft"
+    }
+   ]
+  }
+ ],
+ "scopeNote": "Dental chairside foundation lessons drafted for review. Not a complete dental curriculum; clinical, language and center-policy review required before publication. Specialty procedures and the center instrument list remain the authoritative catalog."
+}
