@@ -22,6 +22,7 @@ before(async()=>{
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/exam-workflows-upgrade.sql'),'utf8'));
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/content-intake-upgrade.sql'),'utf8'));
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/content-proposals-upgrade.sql'),'utf8'));
+ await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/tray-practice-upgrade.sql'),'utf8'));
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/clinic-practice-upgrade.sql'),'utf8'));
  const query=async(sql,args)=>{const r=await db.query(sql,args);return {...r,rowCount:r.rows.length||r.affectedRows||0}};
  mock.method(pool,'query',query);
@@ -379,6 +380,23 @@ test('guided clinic enforces specialty, explicit source review, private resume a
   await db.query("update qib.modules set version=version+1 where center_id=$1 and slug=$2",[ids.center,pack.modules[0].slug]);assert.equal((await call('/api/clinic/setup')).body.ready,false);assert.equal((await call('/api/clinic/session?sessionId='+id)).body.error,'CLINIC_SOURCE_CHANGED');
   await db.query('delete from qib.assignments where user_id=$1 and center_id=$2 and specialty_id=$3',[ids.nurse,ids.center,specialty]);assert.equal((await call('/api/clinic/setup')).status,403);await db.query('insert into qib.assignments(user_id,center_id,specialty_id) values($1,$2,$3)',[ids.nurse,ids.center,specialty]);
  }finally{await db.query("update qib.memberships set role='supervisor' where user_id=$1",[ids.supervisor])}
+});
+
+test('tray practice keeps the answer key on the server, grades once and stays inside the center',async()=>{
+ const rows=[...Array.from({length:8},(_,i)=>['Tools','tr'+i,{id:'tr'+i,specialtyId:'dental',nameEn:'Tray synthetic item '+i,useEn:'Synthetic use '+i}]),['Procedures','trp',{id:'trp',specialtyId:'dental',nameEn:'Synthetic tray procedure',toolIds:'["tr0","tr1","tr2"]'}]];
+ for(const [s,id,p] of rows)await db.query('insert into qib.legacy_catalog(source_name,legacy_id,specialty_legacy_id,payload,content_hash) values($1,$2,$3,$4,$5)',[s,id,p.specialtyId,JSON.stringify(p),'synthetic-test-hash']);
+ try{
+  const start=await call('/api/tray/start',{body:{}});assert.equal(start.status,200);assert.equal(start.body.procedure.id,'trp');assert.equal(start.body.expectedCount,3);
+  assert.ok(!JSON.stringify(start.body).includes('expected"'));assert.ok(start.body.options.every(o=>!('uses' in o)));
+  const distractor=start.body.options.find(o=>!['tr0','tr1','tr2'].includes(o.id)).id;
+  assert.equal((await call('/api/tray/submit',{token:'supervisor',body:{roundId:start.body.roundId,selected:['tr0']}})).status,404);
+  assert.equal((await call('/api/tray/submit',{center:ids.other,body:{roundId:start.body.roundId,selected:['tr0']}})).status,403);
+  const g=await call('/api/tray/submit',{body:{roundId:start.body.roundId,selected:['tr0','tr1',distractor]}});assert.equal(g.status,200);assert.equal(g.body.correct.length,2);assert.deepEqual(g.body.missed.map(x=>x.id),['tr2']);assert.deepEqual(g.body.wrong.map(x=>x.id),[distractor]);assert.equal(g.body.practiceOnly,true);
+  assert.equal((await call('/api/tray/submit',{body:{roundId:start.body.roundId,selected:['tr0']}})).body.error,'ROUND_ALREADY_SUBMITTED');
+  const h=await call('/api/tray/history');assert.equal(h.body.completed,1);assert.equal(h.body.averageScore,33);
+  const other=await db.query("select id from qib.specialties where code<>'dental' limit 1");
+  if(other.rowCount)assert.equal((await call('/api/tray/start',{body:{specialtyId:other.rows[0].id}})).body.error,'SPECIALTY_NOT_ASSIGNED');
+ }finally{await db.query('delete from qib.tray_rounds');await db.query("delete from qib.legacy_catalog where legacy_id=any($1::text[])",[rows.map(r=>r[1])])}
 });
 
 test('revoked Supabase session cannot reuse an unexpired token',async()=>{

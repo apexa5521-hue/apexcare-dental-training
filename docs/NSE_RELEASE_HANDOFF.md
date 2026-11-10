@@ -289,3 +289,11 @@ Owner decision: no paid AI subscription is required. Added free, content-bound f
 - Validation: 90 automated tests passed, including actual isolated database/API clinic workflow, role/center/specialty boundaries, review gate, step order, wrong/extra/missing tray items, resume, source changes, no credential issuance, and DOM navigation/localization. Deployment and authenticated acceptance recorded separately when verified.
 
 - Commit `10130f95b24cd86f99f595586ad13f59609f14a3` saved the clinic implementation on the existing development branch. Render browser session redirected to login on 2026-11-10, so deployment was not triggered. Added a self-contained fictional `v2/NSE-Clinic-Preview-Standalone.html` using the same operational renderer for immediate offline review. Authenticated database/device/browser acceptance remains pending; the 90 automated tests do not prove live acceptance.
+
+## 2026-11-10 — Procedure-tray practice
+
+- `api/tray-practice.js` + `deploy/tray-practice-upgrade.sql` (`qib.tray_rounds`, RLS on, no public grants; in staging-only startup upgrade). `v2/tray-practice.js`: home-page card opening the practice dialog.
+- `POST /api/tray/start`: picks a random documented procedure in the learner's assigned specialty (nurses cannot choose an unassigned one), skipping the last five, excluding catalog rows with unresolved migration links. Shows every listed item (resolved only, up to 13) mixed with unlisted distractors from the same specialty (max 16 tiles). The expected list is stored server-side only; documented uses are not sent before submission.
+- `POST /api/tray/submit`: one submission per round, own rounds only. Returns correct / missed / wrong items with names and documented uses for feedback. Score = (correct − wrong) ÷ listed items, floored at 0. `GET /api/tray/history`: rounds, average, perfect trays.
+- Item names are English (drills are English-only); feedback adds the learner's language name/use when the catalog has it. Labelled "Practice — not an official assessment"; it never counts as practical competency.
+- Tests: 93 pass (round composition, grading, no answer leak, single submission, own-user/center isolation, unassigned specialty refusal). Visual check at 390px and 1280px.
