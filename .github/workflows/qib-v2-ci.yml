@@ -38,6 +38,8 @@ jobs:
           node --check v2/gradient-wave.js
           node --check api/tray-practice.js
           node --check v2/tray-practice.js
+          node --check api/daily-practice.js
+          node --check v2/daily-practice.js
           node --check v2/study-reader.js
           node --check api/clinic-practice.js
           node --check v2/clinic-practice.js

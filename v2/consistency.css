@@ -28,7 +28,7 @@
 :root[data-theme] .grid>.card:has(>.metric)>.metric{font-size:30px;line-height:1.1;align-self:start;margin:0}
 
 /* Content cards added by the platform (search, tray) follow the same box */
-:root[data-theme] #nseTrayCard{padding:18px var(--nse-pad)}
+:root[data-theme] #nseTrayCard,:root[data-theme] #nseDrillCard{padding:18px var(--nse-pad)}
 :root[data-theme] #nseTrayCard .icon{width:42px;height:42px;display:grid;place-items:center;background:var(--nse-soft);border-radius:13px;font-size:22px}
 :root[data-theme] #nseSearch>p.muted{margin:0 0 14px}
 :root[data-theme] #nseSearch form .btn,:root[data-theme] #nseSearch form .input{min-height:44px}

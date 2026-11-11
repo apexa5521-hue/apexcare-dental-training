@@ -23,6 +23,7 @@ before(async()=>{
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/content-intake-upgrade.sql'),'utf8'));
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/content-proposals-upgrade.sql'),'utf8'));
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/tray-practice-upgrade.sql'),'utf8'));
+ await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/daily-practice-upgrade.sql'),'utf8'));
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/clinic-practice-upgrade.sql'),'utf8'));
  const query=async(sql,args)=>{const r=await db.query(sql,args);return {...r,rowCount:r.rows.length||r.affectedRows||0}};
  mock.method(pool,'query',query);
@@ -397,6 +398,28 @@ test('tray practice keeps the answer key on the server, grades once and stays in
   const other=await db.query("select id from qib.specialties where code<>'dental' limit 1");
   if(other.rowCount)assert.equal((await call('/api/tray/start',{body:{specialtyId:other.rows[0].id}})).body.error,'SPECIALTY_NOT_ASSIGNED');
  }finally{await db.query('delete from qib.tray_rounds');await db.query("delete from qib.legacy_catalog where legacy_id=any($1::text[])",[rows.map(r=>r[1])])}
+});
+
+test('daily drill hides answer keys, gives instant feedback in order and builds a streak; item of the day is assigned-specialty only',async()=>{
+ const rows=[...Array.from({length:8},(_,i)=>['Tools','dl'+i,{id:'dl'+i,specialtyId:'dental',nameEn:'Daily synthetic item '+i,useEn:'Daily synthetic use '+i,imageUrl:'https://img.test/'+i+'.webp'}]),['Tools','dlx',{id:'dlx',specialtyId:'zz-other',nameEn:'Other specialty daily item',useEn:'Should not appear for nurse'}],['Procedures','dlp',{id:'dlp',specialtyId:'dental',nameEn:'Daily synthetic procedure',toolIds:'["dl0","dl1","dl2"]'}]];
+ for(const [s,id,p] of rows)await db.query('insert into qib.legacy_catalog(source_name,legacy_id,specialty_legacy_id,payload,content_hash) values($1,$2,$3,$4,$5)',[s,id,p.specialtyId,JSON.stringify(p),'synthetic-test-hash']);
+ try{
+  const item=await call('/api/daily/item');assert.equal(item.status,200);assert.match(item.body.item.id,/^dl\d$/);
+  assert.equal((await call('/api/daily/drill')).body.drill,null);
+  const d=await call('/api/daily/drill/start',{body:{}});assert.equal(d.status,200);assert.equal(d.body.questions.length,3);assert.ok(d.body.questions.every(q=>!('answer_index' in q)&&!('rationale_en' in q)));
+  assert.equal((await call('/api/daily/drill/start',{body:{}})).body.drillId,d.body.drillId);
+  assert.equal((await call('/api/daily/drill/answer',{body:{drillId:d.body.drillId,index:1,choice:0}})).body.error,'ANSWER_IN_ORDER');
+  assert.equal((await call('/api/daily/drill/answer',{token:'supervisor',body:{drillId:d.body.drillId,index:0,choice:0}})).status,404);
+  const key=(await db.query('select questions from qib.daily_drills where id=$1',[d.body.drillId])).rows[0].questions.map(q=>q.answer_index);
+  const a0=await call('/api/daily/drill/answer',{body:{drillId:d.body.drillId,index:0,choice:key[0]}});assert.equal(a0.body.correct,true);assert.ok(a0.body.rationale_en.length>10);assert.equal(a0.body.completed,false);
+  assert.equal((await call('/api/daily/drill/answer',{body:{drillId:d.body.drillId,index:0,choice:key[0]}})).body.error,'ALREADY_ANSWERED');
+  const wrong=(key[1]+1)%d.body.questions[1].options_en.length,a1=await call('/api/daily/drill/answer',{body:{drillId:d.body.drillId,index:1,choice:wrong}});assert.equal(a1.body.correct,false);assert.equal(a1.body.correctIndex,key[1]);
+  const a2=await call('/api/daily/drill/answer',{body:{drillId:d.body.drillId,index:2,choice:key[2]}});assert.equal(a2.body.completed,true);assert.equal(a2.body.score,2);assert.equal(a2.body.streak,1);
+  const y=await db.query("select (to_char(day - 1,'YYYY-MM-DD')) as d from qib.daily_drills where id=$1",[d.body.drillId]);
+  await db.query("insert into qib.daily_drills(user_id,center_id,day,specialty_code,questions,completed_at) values($1,$2,$3,'dental','[]',now())",[ids.nurse,ids.center,y.rows[0].d]);
+  assert.equal((await call('/api/daily/drill')).body.streak,2);
+  assert.equal((await call('/api/daily/drill',{center:ids.other})).status,403);
+ }finally{await db.query('delete from qib.daily_drills');await db.query("delete from qib.legacy_catalog where legacy_id=any($1::text[])",[rows.map(r=>r[1])])}
 });
 
 test('revoked Supabase session cannot reuse an unexpired token',async()=>{

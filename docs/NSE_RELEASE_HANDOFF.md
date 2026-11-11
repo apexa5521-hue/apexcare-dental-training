@@ -297,3 +297,11 @@ Owner decision: no paid AI subscription is required. Added free, content-bound f
 - `POST /api/tray/submit`: one submission per round, own rounds only. Returns correct / missed / wrong items with names and documented uses for feedback. Score = (correct − wrong) ÷ listed items, floored at 0. `GET /api/tray/history`: rounds, average, perfect trays.
 - Item names are English (drills are English-only); feedback adds the learner's language name/use when the catalog has it. Labelled "Practice — not an official assessment"; it never counts as practical competency.
 - Tests: 93 pass (round composition, grading, no answer leak, single submission, own-user/center isolation, unassigned specialty refusal). Visual check at 390px and 1280px.
+
+## 2026-11-11 — Consistency pass, Today's Drill and Item of the Day
+
+- `v2/consistency.css` (loaded last): one gap scale between blocks, one card padding/radius, one card heading size, compact equal-height stat boxes (two per row on phones), equal-height header controls, single-row week strip on phones, inline breadcrumb.
+- `api/daily-practice.js` + `deploy/daily-practice-upgrade.sql` (`qib.daily_drills`, unique per learner/center/Riyadh day, RLS on, no public grants; in staging-only startup upgrade). `v2/daily-practice.js`: two home cards.
+- **Today's Drill**: 3 English questions per learner per Riyadh day, one per category where possible (purpose→name, name→purpose, procedure checklist), built from catalog facts in assigned specialties (unresolved links excluded). Answer keys stay on the server; each answer is graded immediately, in order, once, with the correct option and documented rationale. Daily streak counts consecutive completed days. Practice only.
+- **Item of the Day**: same instrument for the whole Riyadh day per specialty set, preferring items with a source image; shows English name, learner-language name/use when available (labelled when not), and up to four procedures that list it. Image opens enlarged.
+- Tests: 96 pass (stable daily item, drill composition and key integrity, no key leak, order/once rules, other-user and other-center isolation, streak). Visual check at 390px and 1280px.
