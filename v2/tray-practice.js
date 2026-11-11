@@ -37,13 +37,13 @@ window.nseMountTray = ({ host, request, post, el, center, language }) => {
   const local = n => (lang() !== 'en' && n[lang()]) ? n[lang()] : '';
 
   const card = el('section', undefined, 'card section'); card.id = 'nseTrayCard'; card.tabIndex = 0; card.setAttribute('role', 'button');
-  const stats = el('p', 'اختاري أدوات الإجراء من بين أدوات له وأدوات ليست له · Pick the right tools for a procedure', 'small');
+  const stats = el('p', lang() === 'ar' ? 'اختاري أدوات الإجراء الصحيحة من بين أدوات متنوعة' : 'Pick the right tools for a procedure', 'small');
   const grow = el('div', undefined, 'grow'); grow.append(el('h3', 'تجهيز التري · Procedure Tray'), stats);
   card.append(el('span', '🧺', 'icon'), grow, el('span', '›', 'pill'));
   const anchor = host.querySelector('#nseSearch') || host.querySelector('.hero');
   anchor ? anchor.after(card) : host.prepend(card);
   const refreshStats = () => request('/api/tray/history?centerId=' + encodeURIComponent(center())).then(h => {
-    if (h.completed) stats.textContent = 'تدرّبتِ ' + h.completed + ' مرة · متوسط ' + h.averageScore + '% · كاملة ' + h.perfect + ' · Practice only';
+    if (h.completed) stats.textContent = lang() === 'ar' ? 'تدرّبتِ ' + h.completed + ' مرات · المتوسط ' + h.averageScore + '٪ · ' + h.perfect + ' تري كامل · تدريب فقط' : h.completed + ' rounds · average ' + h.averageScore + '% · ' + h.perfect + ' perfect · practice only';
   }).catch(() => {});
   refreshStats();
 

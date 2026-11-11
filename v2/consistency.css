@@ -1,0 +1,58 @@
+/* NSE consistency layer — loaded last. One spacing scale, one card style and one type scale
+   so boxes, headings and text line up across every page. */
+:root{--nse-gap:20px;--nse-gap-sm:12px;--nse-radius:18px;--nse-pad:22px;--nse-h-card:18px;--nse-body:14px;--nse-small:12.5px}
+
+/* Vertical rhythm: the same gap between every block on a page */
+:root[data-theme] .view>.section,:root[data-theme] .view>.card,:root[data-theme] .view>section,:root[data-theme] #learningJourney>*+*{margin-top:var(--nse-gap)}
+:root[data-theme] .view>.hero{margin-top:var(--nse-gap-sm)}
+:root[data-theme] .journey-grid{gap:var(--nse-gap)}
+:root[data-theme] .grid{gap:16px}
+
+/* One card style */
+:root[data-theme] .card,:root[data-theme] .daily-task{border-radius:var(--nse-radius);padding:var(--nse-pad)}
+:root[data-theme] .daily-task{gap:18px}
+
+/* One heading scale inside boxes (the hero keeps its display size) */
+:root[data-theme] .view .card>h2,:root[data-theme] .view .card>h3,:root[data-theme] .view .card .grow>h3,:root[data-theme] .daily-task h2,:root[data-theme] .journey-grid .card>h2,:root[data-theme] .journey-grid .card>h3{font-size:var(--nse-h-card);line-height:1.35;font-weight:700;letter-spacing:-.2px;margin:0 0 6px}
+:root[data-theme] .view .card>h2+p,:root[data-theme] .view .card>h3+p{margin-top:0}
+:root[data-theme] .view .card p.muted,:root[data-theme] .daily-task p.muted{font-size:var(--nse-body);line-height:1.6}
+:root[data-theme] .view .small{font-size:var(--nse-small);line-height:1.5}
+:root[data-theme] .over,:root[data-theme] .eyebrow{font-size:10.5px;letter-spacing:1.4px}
+:root[data-theme] .view .card>.btn,:root[data-theme] .view .card>p+.btn{margin-top:4px}
+:root[data-theme] .btn{min-height:42px;font-size:13.5px}
+
+/* Compact stat boxes: icon beside label and number, equal heights */
+:root[data-theme] .grid>.card:has(>.metric){display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;column-gap:14px;row-gap:2px;align-items:center;padding:18px 20px}
+:root[data-theme] .grid>.card:has(>.metric)>.kpi-icon{grid-row:1/3;margin:0}
+:root[data-theme] .grid>.card:has(>.metric)>.over{align-self:end;margin:0;line-height:1.4}
+:root[data-theme] .grid>.card:has(>.metric)>.metric{font-size:30px;line-height:1.1;align-self:start;margin:0}
+
+/* Content cards added by the platform (search, tray) follow the same box */
+:root[data-theme] #nseTrayCard{padding:18px var(--nse-pad)}
+:root[data-theme] #nseTrayCard .icon{width:42px;height:42px;display:grid;place-items:center;background:var(--nse-soft);border-radius:13px;font-size:22px}
+:root[data-theme] #nseSearch>p.muted{margin:0 0 14px}
+:root[data-theme] #nseSearch form .btn,:root[data-theme] #nseSearch form .input{min-height:44px}
+
+/* Small boxes keep their own compact padding */
+:root[data-theme] .week-strip .card{padding:12px 4px!important;border-radius:12px!important}
+:root[data-theme] .page-navigation .small{flex-basis:auto}
+
+/* Header controls: equal heights */
+:root[data-theme] .controls .input,:root[data-theme] .controls .btn{height:42px;min-height:42px}
+
+@media(max-width:760px){
+ :root{--nse-gap:16px;--nse-pad:18px;--nse-h-card:17px}
+ :root[data-theme] .controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+ :root[data-theme] .controls .input{max-width:none;min-width:0;width:100%}
+ :root[data-theme] .controls #center{grid-column:1/-1}
+ :root[data-theme] .controls #palette{max-width:none;font-size:13px}
+ :root[data-theme] .week-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+ :root[data-theme] .week-strip .card{padding:8px 2px!important;border-radius:10px!important;font-size:10px;gap:4px;min-width:0}
+ :root[data-theme] .week-strip .card strong{font-size:10px;line-height:1.25}
+ :root[data-theme] .view>.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ :root[data-theme] .grid>.card:has(>.metric){grid-template-columns:1fr;padding:14px 16px}
+ :root[data-theme] .grid>.card:has(>.metric)>.kpi-icon{grid-row:auto;width:34px;height:34px;border-radius:10px;margin-bottom:6px}
+ :root[data-theme] .grid>.card:has(>.metric)>.kpi-icon svg{width:18px;height:18px}
+ :root[data-theme] .grid>.card:has(>.metric)>.metric{font-size:26px}
+ :root[data-theme] .daily-task{flex-wrap:wrap}
+}
