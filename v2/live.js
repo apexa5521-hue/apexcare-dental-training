@@ -341,6 +341,13 @@
   try{const client=await authClient();const {data,error}=await client.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});$("password").value='';if(error||!data.session)throw Error('Invalid account or password');state.token=data.session.access_token;await openWorkspace()}
   catch(e){setText('loginError',err(e))}finally{button.disabled=false}
  };
+ $("forgotPassword").onclick=async()=>{
+  const email=$("email").value.trim(),button=$("forgotPassword");setText("loginError","");$("loginError").style.color="";
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){setText("loginError","Enter your work email above, then choose Forgot password. · اكتب بريدك أولًا ثم اضغط نسيت كلمة المرور.");$("email").focus();return}
+  button.disabled=true;
+  try{const client=await authClient();const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:location.origin+"/"});if(error&&error.status===429)throw Error("Too many requests. Wait a few minutes and try again. · طلبات كثيرة، انتظر دقائق.");$("loginError").style.color="var(--nse-green,#127b69)";setText("loginError","If this email has an account, a reset link has been sent. Open it on this device to set a new password. · إذا كان البريد مسجلًا، وصلك رابط لتعيين كلمة مرور جديدة.")}
+  catch(e){setText("loginError",err(e))}finally{button.disabled=false}
+ };
  $("passwordSetupForm").onsubmit=async e=>{
   e.preventDefault();setText('passwordSetupError','');const button=$("passwordSetupForm").querySelector('button[type="submit"]');
   if($("newPassword").value!==$("confirmPassword").value){setText('passwordSetupError','The passwords do not match.');return}
