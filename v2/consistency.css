@@ -56,3 +56,34 @@
  :root[data-theme] .grid>.card:has(>.metric)>.metric{font-size:26px}
  :root[data-theme] .daily-task{flex-wrap:wrap}
 }
+
+/* Approved colour (round 2 · screen 7): vivid emerald, with its night mode. */
+:root[data-palette="emerald"][data-theme="light"]{--nse-bg:#f6faf8;--nse-surface:#ffffff;--nse-soft:#e3f6ee;--nse-green:#0b7f59;--nse-bright:#0f9d6e;--nse-shadow:#086447;--nse-line:#e2ece7;--nse-ink:#11281f;--nse-muted:#56705f;--nse-accent:#ffb020;--focus:#0b7f59}
+:root[data-palette="emerald"][data-theme="dark"]{--nse-bg:#0d1714;--nse-surface:#14221d;--nse-soft:#173a2d;--nse-green:#2fd39a;--nse-bright:#2fd39a;--nse-shadow:#1f9d72;--nse-line:#24382f;--nse-ink:#e6f4ee;--nse-muted:#9ab8aa;--nse-accent:#ffc14d;--focus:#2fd39a}
+:root[data-palette="emerald"] body{background:var(--nse-bg)}
+:root[data-palette="emerald"][data-theme] .hero{background:linear-gradient(120deg,#0b6a4a,#0f9d6e 70%,#1fb683)}
+:root[data-palette="emerald"][data-theme="dark"] .hero{background:linear-gradient(120deg,#0e3d2e,#134a37 60%,#17614a)}
+:root[data-palette="emerald"][data-theme] .login-story{background:radial-gradient(ellipse at 15% 20%,#2fd39a33,transparent 55%),#0b5f44}
+:root[data-palette="emerald"][data-theme="dark"] .btn:not(.sub){color:#06241a}
+:root[data-palette="emerald"][data-theme] .progress i{background:linear-gradient(90deg,#ffd36b,#ffb020)}
+:root[data-palette="emerald"][data-theme] .nse-tabs-glider{box-shadow:0 1px 3px #0b231a24}
+
+/* Home: today's drill, tray and item of the day in one row on wide screens */
+@media(min-width:1100px){
+ :root[data-theme] .nse-daily-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:var(--nse-gap)}
+ :root[data-theme] .nse-daily-row>section{margin-top:0!important;height:100%;box-sizing:border-box}
+ :root[data-theme] .nse-daily-row #nseItemCard{align-items:flex-start}
+ :root[data-theme] .nse-daily-row #nseItemCard img,:root[data-theme] .nse-daily-row #nseItemCard .ph{width:72px;height:72px;flex-basis:72px}
+}
+@media(min-width:1100px){
+ :root[data-theme] .nse-daily-row #nseDrillCard,:root[data-theme] .nse-daily-row #nseTrayCard{flex-direction:column;align-items:flex-start;gap:12px;padding:20px var(--nse-pad)}
+ :root[data-theme] .nse-daily-row #nseDrillCard .grow,:root[data-theme] .nse-daily-row #nseTrayCard .grow{flex:0 0 auto;width:100%}
+ :root[data-theme] .nse-daily-row #nseDrillCard .dots{margin-top:auto}
+ :root[data-theme] .nse-daily-row #nseTrayCard>.pill{margin-top:auto}
+}
+@media(max-width:760px){
+ :root[data-theme] .controls{grid-template-columns:44px minmax(0,1fr) minmax(0,1fr)}
+ :root[data-theme] .controls .nse-bell{width:44px;height:42px}
+ :root[data-theme] .controls #center{grid-column:1/-1}
+ :root[data-theme] .controls #themeToggle{grid-column:1/3}
+}

@@ -311,3 +311,12 @@ Owner decision: no paid AI subscription is required. Added free, content-bound f
 - `v2/page-tabs.js`: segmented tabs (pattern inspired by 21st.dev "Segmented Tabs", original vanilla code; no component code retrieved) for **Nursing team** (Team · Invite · Assign · History · Development) and **Content studio** (Overview · Lessons · Edit proposals · Questions · Exams · Media). Blocks are not moved; tabs only show the active tab's blocks and re-classify on DOM changes, so page scripts that re-render keep working. Active tab is remembered per page; arrow keys move between tabs; tabs scroll horizontally on phones. Forms in these pages use two columns on desktop (one on phones).
 - Fixed a Studio bug introduced in `d3c0a9a`: `t.append(dentalPack)` threw `t is not defined`, which stopped the drafts list and preparation buttons from rendering. Now `root.append(dentalPack)`.
 - 21st.dev connector verified on the user's free plan (2 code retrievals/day, unlimited search, no hosted AI generation).
+
+## 2026-11-11 — Approved design round 2: emerald colour, notifications, daily row
+
+- Design samples for approval: https://claude.ai/artifact/1axGfWeQS9MpappQzDgWS3 (private canvas; round 1 screens and round 2 colours/notifications/supervisor/lesson/card). Owner approved round 2.
+- **Emerald palette** (`v2/consistency.css`, `v2/experience.js`): new default for everyone (a stored older choice is replaced once by `nse-palette-v2`); light buttons use `#0b7f59` for 5:1 contrast with white, the brighter `#0f9d6e` is used for decoration; night mode uses `#2fd39a` with dark button text (8.5:1). Hero and sign-in panel recoloured. Old palettes remain selectable.
+- **Notifications** (`api/notifications.js`, `v2/notifications.js`): `GET /api/notifications` (own, current center, latest 50 + unread count) and `POST /api/notifications/read-all`; bell with unread badge in the header; panel with All / My tasks / Results / Content filters, Today/Yesterday/Earlier groups, click-to-read, mark-all-read, Esc/outside-click close, bottom sheet on phones; `window.nseToast()` for success/info/warning/error alerts. In-app only — no email/push.
+- **Home**: Today's Drill, Procedure Tray and Item of the Day share one row on screens ≥1100px (`window.nseArrangeHome`).
+- Fixed: filter clicks inside the notification panel closed it (detached-target outside-click check).
+- Tests: 98 pass (own-only list/read-all across users and centers; bell count, filters, mark-all, toast role).

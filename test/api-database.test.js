@@ -422,6 +422,18 @@ test('daily drill hides answer keys, gives instant feedback in order and builds 
  }finally{await db.query('delete from qib.daily_drills');await db.query("delete from qib.legacy_catalog where legacy_id=any($1::text[])",[rows.map(r=>r[1])])}
 });
 
+test('notification list and mark-all-read only touch the caller own notifications in the center',async()=>{
+ await db.query("insert into qib.notifications(center_id,user_id,kind,body) values($1,$2,'learning_plan','Plan A'),($1,$2,'support_plan','Plan B'),($1,$3,'learning_plan','Other user'),($4,$2,'learning_plan','Other center')",[ids.center,ids.nurse,ids.supervisor,ids.other]);
+ try{
+  const base=(await db.query('select count(*)::int as n from qib.notifications where center_id=$1 and user_id=$2 and read_at is null',[ids.center,ids.nurse])).rows[0].n;
+  const list=await call('/api/notifications');assert.equal(list.status,200);assert.equal(list.body.unread,base);const bodies=list.body.notifications.map(n=>n.body);assert.ok(bodies.includes('Plan A')&&bodies.includes('Plan B'));assert.ok(!bodies.includes('Other user')&&!bodies.includes('Other center'));
+  const marked=await call('/api/notifications/read-all',{body:{}});assert.equal(marked.body.marked,base);
+  assert.equal((await call('/api/notifications')).body.unread,0);
+  assert.equal((await db.query("select count(*)::int as n from qib.notifications where read_at is null and body in ('Other user','Other center')")).rows[0].n,2);
+  assert.ok((await call('/api/notifications',{token:'supervisor'})).body.notifications.some(n=>n.body==='Other user'&&!n.read_at));
+ }finally{await db.query("delete from qib.notifications where body in ('Plan A','Plan B','Other user','Other center')")}
+});
+
 test('revoked Supabase session cannot reuse an unexpired token',async()=>{
  await db.query('delete from auth.sessions where id=$1',[sessions.nurse]);
  assert.equal((await call('/api/bootstrap')).status,401);

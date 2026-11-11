@@ -123,3 +123,14 @@ window.nseMountDaily = ({ host, request, post, el, center, language }) => {
   drillCard.onclick = openDrill;
   drillCard.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDrill(); } };
 };
+
+// Approved home layout: Today's Drill, Procedure Tray and Item of the Day in one row after the hero.
+window.nseArrangeHome = host => {
+  if (!host) return;
+  let row = host.querySelector(':scope > .nse-daily-row');
+  if (!row) { row = document.createElement('div'); row.className = 'nse-daily-row'; }
+  const hero = host.querySelector(':scope > .hero');
+  if (hero) hero.after(row); else host.prepend(row);
+  ['nseDrillCard', 'nseTrayCard', 'nseItemCard'].forEach(id => { const n = document.getElementById(id); if (n) row.append(n); });
+  const search = document.getElementById('nseSearch'); if (search) row.after(search);
+};
