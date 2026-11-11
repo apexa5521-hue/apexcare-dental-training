@@ -305,3 +305,9 @@ Owner decision: no paid AI subscription is required. Added free, content-bound f
 - **Today's Drill**: 3 English questions per learner per Riyadh day, one per category where possible (purpose→name, name→purpose, procedure checklist), built from catalog facts in assigned specialties (unresolved links excluded). Answer keys stay on the server; each answer is graded immediately, in order, once, with the correct option and documented rationale. Daily streak counts consecutive completed days. Practice only.
 - **Item of the Day**: same instrument for the whole Riyadh day per specialty set, preferring items with a source image; shows English name, learner-language name/use when available (labelled when not), and up to four procedures that list it. Image opens enlarged.
 - Tests: 96 pass (stable daily item, drill composition and key integrity, no key leak, order/once rules, other-user and other-center isolation, streak). Visual check at 390px and 1280px.
+
+## 2026-11-11 — Tabbed admin pages and Studio fix
+
+- `v2/page-tabs.js`: segmented tabs (pattern inspired by 21st.dev "Segmented Tabs", original vanilla code; no component code retrieved) for **Nursing team** (Team · Invite · Assign · History · Development) and **Content studio** (Overview · Lessons · Edit proposals · Questions · Exams · Media). Blocks are not moved; tabs only show the active tab's blocks and re-classify on DOM changes, so page scripts that re-render keep working. Active tab is remembered per page; arrow keys move between tabs; tabs scroll horizontally on phones. Forms in these pages use two columns on desktop (one on phones).
+- Fixed a Studio bug introduced in `d3c0a9a`: `t.append(dentalPack)` threw `t is not defined`, which stopped the drafts list and preparation buttons from rendering. Now `root.append(dentalPack)`.
+- 21st.dev connector verified on the user's free plan (2 code retrievals/day, unlimited search, no hosted AI generation).
