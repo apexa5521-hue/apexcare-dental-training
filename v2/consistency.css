@@ -155,3 +155,64 @@
  body:has(#examPanel .exam-layout) .nse-bottom{display:none}
  body.nse-has-bottom:has(#examPanel .exam-layout) .main{padding-bottom:24px!important}
 }
+
+/* Approved lesson reader (round 2 · screen 10) */
+#modalBody.nse-reader{display:flex;flex-direction:column;gap:14px}
+.nse-reader .reader-top{display:flex;align-items:center;gap:12px}
+.nse-reader .reader-dots{flex:1;display:flex;gap:5px}
+.nse-reader .reader-dots span{flex:1;height:6px;border-radius:99px;background:var(--nse-line)}
+.nse-reader .reader-dots span.on{background:var(--nse-bright,var(--nse-green))}
+.nse-reader .reader-count{font:600 12px Inter,sans-serif;color:var(--nse-muted)}
+.nse-reader .reader-langs{display:flex;gap:6px;flex-wrap:wrap}
+.nse-reader .reader-lang{flex:1 1 0;min-width:72px;height:38px;border-radius:10px;border:1px solid var(--nse-line);background:var(--nse-surface);color:var(--nse-muted);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.nse-reader .reader-lang[aria-pressed="true"]{background:var(--nse-ink);border-color:var(--nse-ink);color:var(--nse-surface)}
+.nse-reader .reader-title{margin:4px 0 0;font-size:clamp(21px,4.6vw,26px);line-height:1.4}
+.nse-reader .reader-content{padding:20px 22px;border-radius:18px;background:var(--nse-soft);border:1px solid var(--nse-line)}
+.nse-reader .reader-content p{margin:0;font-size:17px;line-height:1.9;color:var(--nse-ink)}
+.nse-reader[lang="ur"] .reader-content p,.nse-reader[lang="ur"] .reader-title{line-height:2.2}
+.nse-reader .reader-nav{display:flex;gap:10px}
+.nse-reader .reader-nav .btn{margin:0;min-height:50px;font-size:15px}
+.nse-reader .reader-nav .btn:not(.sub){flex:1}
+.nse-reader .reader-nav .btn.sub{width:auto;min-width:110px}
+.nse-reader .reader-library{align-self:flex-start;width:auto!important;margin:0}
+.nse-reader .reader-note{margin:0;font-size:12px;color:var(--nse-muted)}
+@media(max-width:760px){
+ .nse-reader .reader-nav{position:sticky;bottom:0;z-index:2;background:var(--nse-surface);padding:10px 0 4px;margin-top:-4px}
+ .nse-reader .reader-content{padding:16px}
+ .nse-reader .reader-content p{font-size:16px;line-height:1.85}
+}
+
+/* Chips replace short selects (labels keep the field caption on its own row) */
+:root[data-theme] .view form.nse-2col>label.field:has(>select.nse-chip-select){grid-column:1/-1;margin-bottom:-8px}
+
+/* Phone typography and block sizes */
+@media(max-width:480px){
+ :root[data-theme] body{font-size:15px}
+ :root[data-theme] #heading{font-size:26px;line-height:1.25}
+ :root[data-theme] .view .card>h2,:root[data-theme] .view .card>h3,:root[data-theme] .daily-task h2{font-size:17px}
+ :root[data-theme] .view .card p.muted,:root[data-theme] .view .card p{font-size:14px;line-height:1.65}
+ :root[data-theme] .view .small,:root[data-theme] .small{font-size:12.5px}
+ :root[data-theme] .card,:root[data-theme] .daily-task{padding:16px;border-radius:16px}
+ :root[data-theme] .hero{padding:20px!important;border-radius:18px}
+ :root[data-theme] .hero h2{font-size:24px!important;line-height:1.3;letter-spacing:-.4px}
+ :root[data-theme] .hero p{font-size:14px}
+ :root[data-theme] .main{padding:18px 14px}
+ :root[data-theme] .grid{gap:10px}
+ :root[data-theme] .btn{min-height:46px;font-size:14px}
+ :root[data-theme] label.field{font-size:13px}
+ :root[data-theme] input,:root[data-theme] select,:root[data-theme] textarea,:root[data-theme] .input{font-size:16px!important}
+ :root[data-theme] .nse-tabs{margin-bottom:14px}
+ :root[data-theme] .nse-tab{padding:8px 11px;min-height:40px;font-size:12.5px}
+ :root[data-theme] .page-navigation .btn{min-height:40px;padding:6px 12px;font-size:13px}
+ :root[data-theme] #nseItemCard{gap:12px}
+ :root[data-theme] #nseSearch form{flex-wrap:nowrap}
+ :root[data-theme] #nseSearch form .btn{flex:0 0 auto;padding:0 14px}
+ :root[data-theme] dialog#modal{width:calc(100vw - 16px);max-width:none;max-height:calc(100dvh - 16px);margin:auto;padding:16px;border-radius:18px;box-sizing:border-box}
+}
+@media(max-width:480px){
+ :root[data-theme] .controls #palette{display:none}
+ :root[data-theme] .controls #language{grid-column:2/-1}
+ :root[data-theme] .controls .input{padding-inline:12px}
+ :root[data-theme] .view form.nse-2col>.btn,:root[data-theme] .view form.nse-2col>button{width:100%!important;justify-self:stretch}
+}
+:root[data-theme] .view form .nse-chips{margin-bottom:10px}

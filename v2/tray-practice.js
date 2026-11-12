@@ -30,6 +30,18 @@ window.nseMountTray = ({ host, request, post, el, center, language }) => {
 .nse-tray .s-miss{background:color-mix(in srgb,#d99a1e 16%,transparent)}
 .nse-tray .s-bad{background:color-mix(in srgb,#d64545 14%,transparent)}
 .nse-tray .fb{margin:6px 0;padding-inline-start:10px;border-inline-start:3px solid var(--nse-line,#e4eaf1)}
+.nse-tray .tray-head{display:flex;align-items:center;gap:16px;margin-bottom:6px}
+.nse-tray .tray-info{flex:1;min-width:0}
+.nse-tray .tray-info h2{margin:4px 0 2px;font-size:clamp(20px,4.5vw,26px)}
+.nse-tray .tray-info p{margin:2px 0}
+.nse-tray .tray-kicker{font-size:12px;font-weight:700;color:var(--nse-green,#127b69)}
+.nse-tray .tray-ring{--p:0%;width:88px;height:88px;flex:0 0 88px;border-radius:50%;background:conic-gradient(var(--nse-bright,var(--nse-green,#127b69)) var(--p),var(--nse-line,#e4eaf1) 0);display:grid;place-items:center;transition:background .2s}
+.nse-tray .tray-ring-in{width:72px;height:72px;border-radius:50%;background:var(--nse-surface,#fff);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.nse-tray .tray-ring-in strong{font:700 19px Inter,sans-serif}
+.nse-tray .tray-ring-in span{font-size:11px;color:var(--nse-muted,#637589)}
+.nse-tray .tray-result:empty{display:none}
+.nse-tray .tray-result{margin:10px 0 4px}
+@media(max-width:480px){.nse-tray .tray-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.nse-tray .item img,.nse-tray .item .ph{max-width:64px;border-radius:9px}.nse-tray .item .ph{font-size:22px}.nse-tray .actions{display:grid;grid-template-columns:auto 1fr;gap:8px}.nse-tray .actions .btn{margin:0;min-height:46px}.nse-tray .actions .btn.sub{grid-column:1/-1;min-height:42px;font-size:13px}.nse-tray .tray-ring{width:72px;height:72px;flex-basis:72px}.nse-tray .tray-ring-in{width:58px;height:58px}.nse-tray .tray-ring-in strong{font-size:16px}.nse-tray .item{padding:8px;gap:6px}.nse-tray .item .nm{font-size:13px}.nse-tray .item .tick{font-size:12px}.nse-tray .summary div{font-size:13px;padding:8px 6px}}
 .nse-tray .actions{display:flex;flex-wrap:wrap;gap:8px;position:sticky;bottom:0;background:var(--nse-surface,#fff);padding:10px 0}`;
     document.head.append(s);
   }
@@ -54,12 +66,17 @@ window.nseMountTray = ({ host, request, post, el, center, language }) => {
     let r;
     try { r = await post('/api/tray/start', {}); } catch (e) { body.replaceChildren(el('p', e.message === 'NO_ASSIGNED_SPECIALTY' ? 'لا يوجد تخصص مسند لك بعد. اطلبي من المشرفة إسناد تخصص.' : e.message, 'notice')); return; }
     const box = el('div', undefined, 'nse-tray');
+    const head = el('div', undefined, 'tray-head'), info = el('div', undefined, 'tray-info');
     const title = el('h2'); const en = el('span', r.procedure.names.en); en.lang = 'en'; en.dir = 'ltr'; title.append(en);
-    box.append(el('span', 'تدريب غير مقيّم · Practice — not an official assessment', 'pill'), title);
-    if (local(r.procedure.names)) box.append(el('p', local(r.procedure.names), 'muted'));
-    box.append(el('p', 'اختاري كل الأدوات اللازمة لهذا الإجراء، وعددها ' + r.expectedCount + '.', 'small'));
-    const hint = el('p', 'Select every item needed for this procedure (' + r.expectedCount + ' items).', 'small'); hint.lang = 'en'; hint.dir = 'ltr'; box.append(hint);
-    if (r.partialList) box.append(el('p', 'This round shows part of a long checklist.', 'small'));
+    info.append(el('span', 'تدريب غير مقيّم · Practice', 'tray-kicker'), title);
+    if (local(r.procedure.names)) info.append(el('p', local(r.procedure.names), 'muted'));
+    info.append(el('p', 'اختاري كل الأدوات اللازمة لهذا الإجراء، وعددها ' + r.expectedCount + '.', 'small'));
+    const hint = el('p', 'Select every item needed for this procedure (' + r.expectedCount + ' items).', 'small'); hint.lang = 'en'; hint.dir = 'ltr'; info.append(hint);
+    if (r.partialList) info.append(el('p', 'This round shows part of a long checklist.', 'small'));
+    const ring = el('div', undefined, 'tray-ring'), ringIn = el('div', undefined, 'tray-ring-in'), ringNum = el('strong', '0/' + r.expectedCount);
+    ringIn.append(ringNum, el('span', 'مختارة')); ring.append(ringIn); ring.setAttribute('role', 'img');
+    const paintRing = () => { const n = picked.size; ring.style.setProperty('--p', Math.min(100, Math.round(100 * n / r.expectedCount)) + '%'); ringNum.textContent = n + '/' + r.expectedCount; ring.setAttribute('aria-label', n + ' of ' + r.expectedCount + ' selected'); };
+    head.append(info, ring); box.append(head);
     const grid = el('div', undefined, 'tray-grid'), picked = new Set(), tiles = new Map();
     r.options.forEach(o => {
       const b = el('button', undefined, 'item'); b.type = 'button'; b.setAttribute('aria-pressed', 'false');
@@ -67,15 +84,15 @@ window.nseMountTray = ({ host, request, post, el, center, language }) => {
       const n = el('span', o.names.en, 'nm'); n.lang = 'en'; n.dir = 'ltr';
       const tick = el('span', '', 'tick');
       b.append(n, tick);
-      b.onclick = () => { if (b.disabled) return; const on = !picked.has(o.id); on ? picked.add(o.id) : picked.delete(o.id); b.setAttribute('aria-pressed', String(on)); tick.textContent = on ? '✓' : ''; count.textContent = picked.size + ' / ' + r.expectedCount; };
+      b.onclick = () => { if (b.disabled) return; const on = !picked.has(o.id); on ? picked.add(o.id) : picked.delete(o.id); b.setAttribute('aria-pressed', String(on)); tick.textContent = on ? '✓' : ''; count.textContent = picked.size + ' / ' + r.expectedCount; paintRing(); };
       tiles.set(o.id, { b, tick }); grid.append(b);
     });
     const count = el('span', '0 / ' + r.expectedCount, 'pill');
     const submit = el('button', 'تصحيح · Check tray', 'btn'), skip = el('button', 'إجراء آخر · Another procedure', 'btn sub');
     const actions = el('div', undefined, 'actions'); actions.append(count, submit, skip);
-    const result = el('div');
-    box.append(grid, result, actions);
-    body.replaceChildren(box);
+    const result = el('div', undefined, 'tray-result');
+    box.append(result, grid, actions);
+    body.replaceChildren(box); paintRing();
     skip.onclick = round;
     submit.onclick = async () => {
       submit.disabled = true;

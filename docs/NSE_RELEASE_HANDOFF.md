@@ -332,3 +332,11 @@ Owner decision: no paid AI subscription is required. Added free, content-bound f
 - `beginExam` in `v2/live.js` keeps all existing behaviour (server snapshots, answer saving, flags, per-question/whole-exam timers, heartbeat, pause on interruption, submit confirmation) and only changes structure: a header with title, answered-progress ("not your score") and a timer badge (`role="timer"`); two columns with the question and A–D lettered choices, and a side panel with the numbered question grid (answered / current / flagged, each with an accessible label), a colour key, submit and the English-only note.
 - Choices are still native radios (visually hidden, keyboard focus ring on the card). Phones stack the panel under the question, stack the header, and hide the bottom navigation bar while an attempt is open so a stray tap cannot pause it.
 - Styles in `v2/consistency.css`, light and dark. Tests: 99 pass.
+
+## 2026-11-12 — Stage D (part 1): tray, lesson reader, invite form, phone sizing
+
+- Tray practice: header with procedure and a counter ring (selected / required, accessible label); the result strip now appears above the tiles after grading; phones show three compact tiles per row and a two-row action bar.
+- Lesson reader (`v2/study-reader.js`): step dots with a counter, in-reader language chips (AR/EN/UR/ID reopen the same lesson in that language), larger lesson text, Previous/Next sticky at the bottom on phones; button labels and saving/completion behaviour unchanged (existing reader test passes).
+- `v2/choice-chips.js`: Role and Specialty in the invite form, and Specialty in the assign form, appear as radio chips (role="radiogroup", arrow keys); the hidden native select still holds and submits the value and picks up options filled later.
+- Phone sizing pass (≤480px) in `v2/consistency.css`: 16px form controls (prevents iOS zoom on focus), unified heading/body/small sizes, tighter card and hero padding, smaller tabs and page buttons, full-width form buttons, near-full-screen dialogs, colour menu hidden in the phone header (night-mode toggle stays).
+- Tests: 99 pass. Supervisor dashboard and card redesign are the remaining part of stage D.
