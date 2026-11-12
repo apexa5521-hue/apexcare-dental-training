@@ -326,3 +326,9 @@ Owner decision: no paid AI subscription is required. Added free, content-bound f
 - `v2/nav-layout.js`: side menu shows learner pages first, then an **Administration** group (team, studio, reports) for roles that have them. On phones (≤760px) the top menu strip is replaced by a fixed **bottom bar**: Home · Learn · Skills · Exams · More, with short labels in all four languages (full names kept as accessible labels). **More** opens a bottom sheet with the remaining pages, admin pages under their own heading; Esc, the scrim or Close dismiss it.
 - The bar and sheet click the existing side-menu buttons, so role filtering, translations and the leave-an-active-assessment confirmation are unchanged; the current page is mirrored from the menu's `selected` state. Re-syncs when the menu is rebuilt (language change, center switch).
 - Tests: 99 pass (admin group placement, bar order and labels, delegation to real buttons, current-page mirroring, sheet contents and close).
+
+## 2026-11-12 — Stage C: exam screen
+
+- `beginExam` in `v2/live.js` keeps all existing behaviour (server snapshots, answer saving, flags, per-question/whole-exam timers, heartbeat, pause on interruption, submit confirmation) and only changes structure: a header with title, answered-progress ("not your score") and a timer badge (`role="timer"`); two columns with the question and A–D lettered choices, and a side panel with the numbered question grid (answered / current / flagged, each with an accessible label), a colour key, submit and the English-only note.
+- Choices are still native radios (visually hidden, keyboard focus ring on the card). Phones stack the panel under the question, stack the header, and hide the bottom navigation bar while an attempt is open so a stray tap cannot pause it.
+- Styles in `v2/consistency.css`, light and dark. Tests: 99 pass.
