@@ -320,3 +320,9 @@ Owner decision: no paid AI subscription is required. Added free, content-bound f
 - **Home**: Today's Drill, Procedure Tray and Item of the Day share one row on screens ≥1100px (`window.nseArrangeHome`).
 - Fixed: filter clicks inside the notification panel closed it (detached-target outside-click check).
 - Tests: 98 pass (own-only list/read-all across users and centers; bell count, filters, mark-all, toast role).
+
+## 2026-11-12 — Stage B: navigation
+
+- `v2/nav-layout.js`: side menu shows learner pages first, then an **Administration** group (team, studio, reports) for roles that have them. On phones (≤760px) the top menu strip is replaced by a fixed **bottom bar**: Home · Learn · Skills · Exams · More, with short labels in all four languages (full names kept as accessible labels). **More** opens a bottom sheet with the remaining pages, admin pages under their own heading; Esc, the scrim or Close dismiss it.
+- The bar and sheet click the existing side-menu buttons, so role filtering, translations and the leave-an-active-assessment confirmation are unchanged; the current page is mirrored from the menu's `selected` state. Re-syncs when the menu is rebuilt (language change, center switch).
+- Tests: 99 pass (admin group placement, bar order and labels, delegation to real buttons, current-page mirroring, sheet contents and close).
