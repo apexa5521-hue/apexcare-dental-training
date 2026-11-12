@@ -179,3 +179,57 @@ window.nseMountRuleDrafts = ({ before, post, el, ctx, refresh }) => {
   };
   before.before(box);
 };
+
+// Claude-on-your-subscription bridge: build a prompt from catalog records, paste Claude's JSON reply back.
+window.nseMountBridge = ({ root, post, el, ctx, catalogue, refresh }) => {
+  const box = el('section', undefined, 'stack section'); box.id = 'claudeBridge';
+  box.append(el('h3', 'Claude على اشتراكك · Draft with Claude (no API key)'),
+    el('p', '١) اختاري التخصص وحتى ١٠ أدوات أو إجراءات. ٢) انسخي الطلب والصقيه في Claude. ٣) انسخي رد Claude والصقيه هنا. كل شي يدخل كمسودة تحتاج مراجعة سريرية ولغوية، وكل سؤال يُرفض إذا اقتباسه مو موجود حرفيًا في سجل الكتالوج.', 'muted'));
+  const lab = (title, node) => { const l = el('label', undefined, 'field'); l.append(el('span', title), node); box.append(l); return node; };
+  const spec = lab('التخصص · Specialty', el('select'));
+  ctx.specialties.forEach(s => { const o = el('option', s.label); o.value = s.id; spec.append(o); });
+  const kind = lab('المصدر · Source', el('select'));
+  [['tool', 'أدوات ومستهلكات · Instruments & supplies'], ['procedure', 'إجراءات · Procedures']].forEach(([v, t]) => { const o = el('option', t); o.value = v; kind.append(o); });
+  const want = lab('المطلوب · Draft', el('select'));
+  [['both', 'دروس وأسئلة · Lessons and questions'], ['lessons', 'دروس فقط · Lessons only'], ['questions', 'أسئلة فقط · Questions only']].forEach(([v, t]) => { const o = el('option', t); o.value = v; want.append(o); });
+  const filter = lab('بحث في الكتالوج · Filter', el('input')); filter.placeholder = 'mirror, probe, examination…';
+  const list = el('div', undefined, 'bridge-list'); list.style.cssText = 'max-height:260px;overflow:auto;border:1px solid var(--nse-line);border-radius:12px;padding:6px 10px';
+  const counter = el('p', '', 'small'); box.append(list, counter);
+  const chosen = new Set();
+  const paintList = () => {
+    const code = ctx.specialties.find(s => s.id === spec.value)?.code, f = filter.value.trim().toLowerCase();
+    const items = (kind.value === 'tool' ? catalogue.tools : catalogue.procedures).filter(x => String(x.specialtyId) === String(code) && (!f || String(x.nameEn || '').toLowerCase().includes(f) || String(x.nameAr || '').includes(filter.value.trim()))).slice(0, 150);
+    list.replaceChildren(...(items.length ? items.map(x => { const l = el('label', undefined, 'field'); l.style.cssText = 'display:flex;gap:8px;align-items:center;margin:4px 0;font-weight:500'; const c = el('input'); c.type = 'checkbox'; c.checked = chosen.has(String(x.id)); c.onchange = () => { if (c.checked && chosen.size >= 10) { c.checked = false; counter.textContent = 'الحد الأقصى ١٠ عناصر في الطلب الواحد.'; return; } c.checked ? chosen.add(String(x.id)) : chosen.delete(String(x.id)); counter.textContent = chosen.size + ' / 10'; }; const n = el('span', (x.nameEn || '') + (x.nameAr ? ' · ' + x.nameAr : '')); l.append(c, n); return l; }) : [el('p', 'ما فيه عناصر مطابقة في هذا التخصص.', 'small')]));
+    counter.textContent = chosen.size + ' / 10';
+  };
+  spec.onchange = kind.onchange = () => { chosen.clear(); paintList(); };
+  filter.oninput = paintList;
+  const msg = el('p', '', 'notice'); msg.setAttribute('aria-live', 'polite');
+  const make = el('button', 'إنشاء الطلب ونسخه · Build & copy prompt', 'btn'); make.type = 'button';
+  const promptBox = el('textarea'); promptBox.readOnly = true; promptBox.rows = 6; promptBox.hidden = true; promptBox.setAttribute('aria-label', 'Prompt for Claude'); promptBox.dir = 'ltr';
+  make.onclick = async () => {
+    if (!chosen.size) { msg.textContent = 'اختاري عنصرًا واحدًا على الأقل.'; return; }
+    make.disabled = true;
+    try {
+      const r = await post('/api/bridge/prompt', { specialtyId: spec.value, kind: kind.value, want: want.value, sourceIds: [...chosen] });
+      promptBox.value = r.prompt; promptBox.hidden = false;
+      try { await navigator.clipboard.writeText(r.prompt); msg.textContent = 'نُسخ الطلب. افتحي Claude والصقيه، ثم انسخي الرد كاملًا.'; } catch { promptBox.select(); msg.textContent = 'انسخي الطلب من المربع (تحديد الكل ثم نسخ)، والصقيه في Claude.'; }
+    } catch (e) { msg.textContent = e.message; } finally { make.disabled = false; }
+  };
+  const replyLabel = el('label', undefined, 'field'), reply = el('textarea'); replyLabel.append(el('span', 'الصقي رد Claude هنا · Paste Claude’s reply'), reply); reply.rows = 6; reply.dir = 'ltr'; reply.placeholder = '{ "lessons": [...], "questions": [...] }';
+  const imp = el('button', 'استيراد كمسودات · Import as drafts', 'btn sub'); imp.type = 'button';
+  imp.onclick = async () => {
+    imp.disabled = true;
+    try {
+      const r = await post('/api/bridge/import', { specialtyId: spec.value, reply: reply.value });
+      const reasons = r.rejected.length ? ' · مرفوض ' + r.rejected.length + ': ' + [...new Set(r.rejected.map(x => x.reason))].join(', ') : '';
+      msg.textContent = 'أُضيفت ' + r.lessonsCreated + ' مسودة درس و' + r.questionsCreated + ' مسودة سؤال للمراجعة' + reasons;
+      if (r.lessonsCreated || r.questionsCreated) { reply.value = ''; await refresh(); }
+    } catch (e) { msg.textContent = e.message === 'REPLY_IS_NOT_JSON' ? 'الرد مو بصيغة JSON. اطلبي من Claude: «أعد الرد بصيغة JSON فقط».' : e.message; } finally { imp.disabled = false; }
+  };
+  const row = el('div'); row.style.cssText = 'display:flex;gap:10px;flex-wrap:wrap'; row.append(make);
+  box.append(row, promptBox, replyLabel);
+  const row2 = el('div'); row2.style.cssText = 'display:flex;gap:10px;flex-wrap:wrap'; row2.append(imp);
+  box.append(row2, msg);
+  root.append(box); paintList();
+};

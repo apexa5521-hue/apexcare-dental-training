@@ -36,6 +36,7 @@
       tabs: [
         { id: 'readiness', label: 'نظرة عامة · Overview', icon: '📊', match: el => has(el, 'readiness', 'جاهزية') },
         { id: 'lessons', label: 'الدروس · Lessons', icon: '📘', match: el => el.id === 'moduleForm' || el.id === 'manageModules' || has(el, 'content studio', 'drafts and published', 'ابدأ من أداة', 'إدارة المسودات') },
+        { id: 'bridge', label: 'Claude · مسودات', icon: '🤝', match: el => el.id === 'claudeBridge' },
         { id: 'ai', label: 'اقتراحات التعديل · Edit proposals', icon: '✨', match: el => el.id === 'proposalStudio' },
         { id: 'questions', label: 'الأسئلة · Questions', icon: '❓', match: el => has(el, 'question', 'الأسئلة', 'catalog', 'الكتالوج') },
         { id: 'exams', label: 'الاختبارات · Exams', icon: '📝', match: el => has(el, 'assessment') },

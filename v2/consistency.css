@@ -216,3 +216,19 @@
  :root[data-theme] .view form.nse-2col>.btn,:root[data-theme] .view form.nse-2col>button{width:100%!important;justify-self:stretch}
 }
 :root[data-theme] .view form .nse-chips{margin-bottom:10px}
+
+/* Approved cards (round 2 · screen 11) */
+:root[data-theme] .real-passport.is-competency,:root[data-theme] .real-passport.is-knowledge{position:relative;overflow:hidden;border:0;border-radius:24px;padding:24px;color:#ffffff;box-shadow:0 18px 40px #0b5f4429}
+:root[data-theme] .real-passport.is-competency{background:linear-gradient(135deg,#0b5f44,#0f9d6e 60%,#34c08f)}
+:root[data-theme] .real-passport.is-knowledge{background:linear-gradient(135deg,#123e7a,#1d5fb8 60%,#4d8be0);box-shadow:0 18px 40px #123e7a29}
+:root[data-theme] .real-passport.is-revoked{filter:grayscale(1);opacity:.75}
+:root[data-theme] .real-passport.is-competency::after,:root[data-theme] .real-passport.is-knowledge::after{content:"";position:absolute;width:260px;height:260px;border-radius:50%;background:#ffffff12;top:-110px;inset-inline-end:-80px;pointer-events:none}
+:root[data-theme] .real-passport :is(h2,h3,strong,p,span,.small,.subtle){color:#ffffff!important}
+:root[data-theme] .real-passport .small,:root[data-theme] .real-passport .subtle{opacity:.85}
+:root[data-theme] .real-passport .pill{background:#ffffff26!important;color:#ffffff!important;border:0}
+:root[data-theme] .real-passport .passport-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+:root[data-theme] .real-passport .passport-heading strong{display:inline-grid;place-items:center;width:42px;height:42px;border-radius:12px;background:#ffffff;color:#0b5f44!important;font:700 13px Inter,sans-serif}
+:root[data-theme] .real-passport.is-knowledge .passport-heading strong{color:#123e7a!important}
+:root[data-theme] .real-passport h2{font-size:clamp(22px,4vw,28px);margin:14px 0 6px}
+:root[data-theme] .real-passport .stack.section{margin-top:12px;padding-top:12px;border-top:1px solid #ffffff33;gap:4px}
+:root[data-theme] .real-passport a{color:#ffffff;background:#ffffff26;padding:8px 14px;border-radius:10px;display:inline-block;margin-top:10px;font-weight:700;text-decoration:none}

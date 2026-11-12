@@ -434,6 +434,30 @@ test('notification list and mark-all-read only touch the caller own notification
  }finally{await db.query("delete from qib.notifications where body in ('Plan A','Plan B','Other user','Other center')")}
 });
 
+test('Claude bridge builds a catalog-bound prompt and imports only verifiable drafts; supervisor overview is role-gated',async()=>{
+ const rows=[['Tools','br1',{id:'br1',specialtyId:'dental',nameEn:'Bridge mirror',useEn:'Bridge synthetic indirect vision and retraction'}],['Tools','br2',{id:'br2',specialtyId:'dental',nameEn:'Bridge probe',useEn:'Bridge synthetic pocket depth measurement'}]];
+ for(const [s,id,p] of rows)await db.query('insert into qib.legacy_catalog(source_name,legacy_id,specialty_legacy_id,payload,content_hash) values($1,$2,$3,$4,$5)',[s,id,p.specialtyId,JSON.stringify(p),'synthetic-test-hash']);
+ try{
+  assert.equal((await call('/api/bridge/prompt',{body:{specialtyId:specialty,kind:'tool',sourceIds:['br1']}})).status,403);
+  assert.equal((await call('/api/supervisor/overview')).status,403);
+  const sup=await call('/api/supervisor/overview',{token:'supervisor'});assert.equal(sup.status,200);assert.ok(sup.body.nurses.some(n=>n.userId===ids.nurse));assert.ok(['ok','wait','help','card'].includes(sup.body.nurses[0].status));
+  await db.query("update qib.memberships set role='admin' where user_id=$1",[ids.supervisor]);
+  try{
+   const pr=await call('/api/bridge/prompt',{token:'supervisor',body:{specialtyId:specialty,kind:'tool',want:'both',sourceIds:['br1','br2']}});assert.equal(pr.status,200);assert.equal(pr.body.usesApiKey,false);assert.match(pr.body.prompt,/Bridge synthetic indirect vision/);assert.match(pr.body.prompt,/DRAFT/);
+   assert.equal((await call('/api/bridge/prompt',{token:'supervisor',body:{specialtyId:specialty,kind:'tool',sourceIds:[]}})).body.error,'SELECT_1_TO_10_RECORDS');
+   const reply={lessons:[{source_ref:'Tools:br1',title:{en:'Bridge mirror basics',ar:'أساسيات المرآة',ur:'',id:''},body:{en:'Objective\nUse the mirror.',ar:'الهدف\nاستخدام المرآة.',ur:'',id:''}},{source_ref:'Tools:nope',title:{en:'x'},body:{en:'y'}}],
+    questions:[{source_ref:'Tools:br1',source_quote:'synthetic indirect vision and retraction',prompt_en:'What is the documented purpose of the bridge mirror?',options_en:['Indirect vision and retraction','Pocket depth','Suction','Cutting'],answer_index:0,rationale_en:'The catalog documents indirect vision and retraction.',category:'instrument_use',difficulty:'foundation'},
+     {source_ref:'Tools:br2',source_quote:'invented fact not in the record',prompt_en:'Which statement about the probe is true?',options_en:['A','B','C','D'],answer_index:1,rationale_en:'Made up rationale text.',category:'instrument_use',difficulty:'foundation'}]};
+   const imp=await call('/api/bridge/import',{token:'supervisor',body:{specialtyId:specialty,reply:'```json\n'+JSON.stringify(reply)+'\n```'}});assert.equal(imp.status,200);assert.equal(imp.body.lessonsCreated,1);assert.equal(imp.body.questionsCreated,1);
+   assert.deepEqual(imp.body.rejected.map(r=>r.reason).sort(),['QUOTE_NOT_IN_SOURCE','UNKNOWN_SOURCE_REF']);
+   const m=(await db.query("select status,translations from qib.modules where slug like 'nse-claude-%'")).rows;assert.equal(m.length,1);assert.equal(m[0].status,'draft');assert.equal(m[0].translations._authoring.clinicalReview,'pending');assert.equal(m[0].translations.ur.body,'');
+   assert.equal((await db.query("select count(*)::int as n from qib.question_candidates where origin='claude_import' and status='draft'")).rows[0].n,1);
+   assert.equal((await call('/api/bridge/import',{token:'supervisor',body:{specialtyId:specialty,reply:JSON.stringify(reply)}})).body.questionsCreated,0);
+   assert.equal((await call('/api/bridge/import',{token:'supervisor',body:{specialtyId:specialty,reply:'not json'}})).body.error,'REPLY_IS_NOT_JSON');
+  }finally{await db.query("update qib.memberships set role='supervisor' where user_id=$1",[ids.supervisor])}
+ }finally{await db.query("delete from qib.question_candidates where origin='claude_import'");await db.query("delete from qib.content_revisions where module_id in (select id from qib.modules where slug like 'nse-claude-%')");await db.query("delete from qib.modules where slug like 'nse-claude-%'");await db.query("delete from qib.legacy_catalog where legacy_id=any($1::text[])",[rows.map(r=>r[1])])}
+});
+
 test('revoked Supabase session cannot reuse an unexpired token',async()=>{
  await db.query('delete from auth.sessions where id=$1',[sessions.nurse]);
  assert.equal((await call('/api/bootstrap')).status,401);
