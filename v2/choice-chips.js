@@ -61,12 +61,12 @@
 // Show catalog size next to specialty names so empty specialties are visible when assigning.
 window.nseAnnotateSpecialties = specialties => {
   const byId = new Map((specialties || []).map(s => [s.id, s]));
-  ['assignSpecialty', 'inviteSpecialty'].forEach(id => {
+  ['assignSpecialty', 'inviteSpecialty', 'moduleSpecialty', 'draftExamSpecialty'].forEach(id => {
     const sel = document.getElementById(id); if (!sel) return;
     [...sel.options].forEach(o => {
       const s = byId.get(o.value); if (!s) return;
       const base = o.dataset.base || o.textContent; o.dataset.base = base;
-      const text = base + ' · ' + s.tools + ' أداة' + (s.practiceReady ? '' : ' (غير جاهز)');
+      const text = base + ' — ' + s.tools + ' tools' + (s.practiceReady ? '' : ' (not practice-ready)');
       if (o.textContent !== text) o.textContent = text;
     });
   });

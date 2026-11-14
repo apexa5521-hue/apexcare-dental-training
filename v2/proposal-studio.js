@@ -1,4 +1,12 @@
 'use strict';
+// Fill a specialty <select> with item counts from the catalog, richest first, empty ones marked.
+window.nseFillSpecialties = (select, specialties, catalogue, el) => {
+  const cat = catalogue || { tools: [], procedures: [] };
+  const count = code => ({ tools: (cat.tools || []).filter(t => String(t.specialtyId) === String(code)).length, procedures: (cat.procedures || []).filter(p => String(p.specialtyId) === String(code)).length });
+  const rows = specialties.map(s => ({ s, n: count(s.code) })).sort((a, b) => (b.n.tools + b.n.procedures) - (a.n.tools + a.n.procedures) || a.s.label.localeCompare(b.s.label));
+  select.replaceChildren(...rows.map(({ s, n }) => { const o = el('option', s.label + (n.tools || n.procedures ? ' — ' + n.tools + ' tools, ' + n.procedures + ' procedures' : ' — empty (no catalog content)')); o.value = s.id; return o; }));
+  if (rows.length) select.value = rows[0].s.id;
+};
 // AI edit/translation proposals: generate a draft suggestion, compare it line by line,
 // accept or reject each change. Accepted text returns the lesson to draft for review.
 window.nseMountProposals = ({ root, request, post, el, ctx, modules, aiConfigured, refresh }) => {
@@ -154,13 +162,13 @@ window.nseMountProposals = ({ root, request, post, el, ctx, modules, aiConfigure
 };
 
 // Free, content-bound question drafting from the imported catalog (no AI provider).
-window.nseMountRuleDrafts = ({ before, post, el, ctx, refresh }) => {
+window.nseMountRuleDrafts = ({ before, post, el, ctx, refresh, catalogue }) => {
   const box = el('form', undefined, 'stack section');
   box.append(el('h3', 'توليد أسئلة من الكتالوج بدون ذكاء اصطناعي · Catalog question drafts (no AI)'),
     el('p', 'كل سؤال مبني على معلومة موثقة في الكتالوج: فائدة الأداة، قائمة تجهيز الإجراء، أو ترتيب خطوات مكافحة العدوى. تدخل قائمة المراجعة كمسودات، ولا تُعتمد إلا بمراجع مستقل.', 'muted'));
   const lab = (title, node) => { const l = el('label', undefined, 'field'); l.append(el('span', title), node); box.append(l); return node; };
   const spec = lab('التخصص · Specialty', el('select'));
-  ctx.specialties.forEach(s => { const o = el('option', s.label); o.value = s.id; spec.append(o); });
+  window.nseFillSpecialties(spec, ctx.specialties, catalogue, el);
   const count = lab('عدد الأسئلة · Number of drafts', el('input')); count.type = 'number'; count.min = 1; count.max = 50; count.value = 20;
   const cats = [['instrument_name', 'الفائدة ← اسم الأداة · Purpose → name'], ['instrument_use', 'الأداة ← فائدتها · Name → purpose'], ['procedure_preparation', 'تجهيز الإجراء · Procedure preparation'], ['sequence', 'ترتيب الخطوات · Step order']];
   const checks = cats.map(([id, title]) => { const l = el('label', undefined, 'field'), c = el('input'); c.type = 'checkbox'; c.checked = true; c.value = id; l.append(c, el('span', ' ' + title)); box.append(l); return c; });
@@ -187,7 +195,7 @@ window.nseMountBridge = ({ root, post, el, ctx, catalogue, refresh }) => {
     el('p', '١) اختاري التخصص وحتى ١٠ أدوات أو إجراءات. ٢) انسخي الطلب والصقيه في Claude. ٣) انسخي رد Claude والصقيه هنا. كل شي يدخل كمسودة تحتاج مراجعة سريرية ولغوية، وكل سؤال يُرفض إذا اقتباسه مو موجود حرفيًا في سجل الكتالوج.', 'muted'));
   const lab = (title, node) => { const l = el('label', undefined, 'field'); l.append(el('span', title), node); box.append(l); return node; };
   const spec = lab('التخصص · Specialty', el('select'));
-  ctx.specialties.forEach(s => { const o = el('option', s.label); o.value = s.id; spec.append(o); });
+  window.nseFillSpecialties(spec, ctx.specialties, catalogue, el);
   const kind = lab('المصدر · Source', el('select'));
   [['tool', 'أدوات ومستهلكات · Instruments & supplies'], ['procedure', 'إجراءات · Procedures']].forEach(([v, t]) => { const o = el('option', t); o.value = v; kind.append(o); });
   const want = lab('المطلوب · Draft', el('select'));
