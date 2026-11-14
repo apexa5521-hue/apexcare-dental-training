@@ -1,0 +1,20 @@
+-- Dedicated NSE only. All assets and question candidates are private to the API.
+begin;
+create table if not exists qib.content_assets(id uuid primary key default gen_random_uuid(),center_id uuid not null references qib.centers(id),module_id uuid references qib.modules(id),uploaded_by uuid not null,file_name text not null,mime_type text not null,byte_size integer not null check(byte_size>0),sha256 text not null,data bytea not null,sections jsonb not null default '[]',created_at timestamptz not null default now(),unique(center_id,sha256,module_id));
+create index if not exists content_assets_module on qib.content_assets(center_id,module_id);
+create table if not exists qib.question_candidates(id uuid primary key default gen_random_uuid(),center_id uuid not null references qib.centers(id),specialty_id uuid not null references qib.specialties(id),source_asset_id uuid references qib.content_assets(id),source_section integer,source_quote text,category text not null,difficulty text not null,question jsonb not null,origin text not null,created_by uuid not null,status text not null default 'draft' check(status in ('draft','adopted','rejected')),created_at timestamptz not null default now());
+create table if not exists qib.content_generation_runs(id uuid primary key default gen_random_uuid(),center_id uuid not null references qib.centers(id),asset_id uuid not null references qib.content_assets(id),actor_id uuid not null,model text not null,created_at timestamptz not null default now());
+alter table qib.questions add column if not exists category text not null default 'general';
+alter table qib.questions add column if not exists difficulty text not null default 'foundation';
+alter table qib.questions add column if not exists rationale_en text;
+alter table qib.questions add column if not exists provenance jsonb not null default '{}';
+alter table qib.content_assets enable row level security;
+alter table qib.question_candidates enable row level security;
+alter table qib.content_generation_runs enable row level security;
+revoke all on qib.content_assets,qib.question_candidates,qib.content_generation_runs from public,anon,authenticated;
+commit;
+begin;
+create table if not exists qib.study_sessions(user_id uuid not null,center_id uuid not null references qib.centers(id),module_id uuid not null references qib.modules(id),language text not null check(language in ('ar','en','ur','id')),version integer not null,step integer not null default 0,updated_at timestamptz not null default now(),primary key(user_id,center_id,module_id,language));
+alter table qib.study_sessions enable row level security;
+revoke all on qib.study_sessions from public,anon,authenticated;
+commit;

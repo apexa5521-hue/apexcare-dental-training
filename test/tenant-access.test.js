@@ -1,0 +1,15 @@
+"use strict";
+const {test}=require("node:test"),assert=require("node:assert/strict");
+const {requireAccess,assignNurse,redactEmployee}=require("../src/tenant-access.js");
+const nurse={id:"n1",authenticated:true,role:"nurse",centerIds:["c1"]};
+const supervisor={id:"s1",authenticated:true,role:"supervisor",centerIds:["c1"]};
+const admin={id:"a1",authenticated:true,role:"admin",centerIds:["c1"]};
+test("own user can access own record",()=>assert.equal(requireAccess(nurse,{centerId:"c1",permission:"assessment.own",userId:"n1"}),true));
+test("cross-center access denied",()=>assert.throws(()=>requireAccess(supervisor,{centerId:"c2",permission:"team.read"}),{code:"CENTER_FORBIDDEN"}));
+test("nurse cannot access supervisor review",()=>assert.throws(()=>requireAccess(nurse,{centerId:"c1",permission:"assessment.review"}),{code:"PERMISSION_DENIED"}));
+test("nurse cannot access another nurse result",()=>assert.throws(()=>requireAccess(nurse,{centerId:"c1",permission:"assessment.own",userId:"n2"}),{code:"USER_FORBIDDEN"}));
+test("admin can assign a supported specialty in own center",()=>assert.equal(assignNurse(admin,{userId:"n2",centerId:"c1",specialtyId:"derm"},["dental","derm"]).specialtyId,"derm"));
+test("admin cannot assign to another center",()=>assert.throws(()=>assignNurse(admin,{userId:"n2",centerId:"c2",specialtyId:"derm"},["derm"]),{code:"CENTER_FORBIDDEN"}));
+test("unknown specialty rejected",()=>assert.throws(()=>assignNurse(admin,{userId:"n2",centerId:"c1",specialtyId:"other"},["dental","derm"]),{code:"INVALID_ASSIGNMENT"}));
+test("redaction does not leak salary or credentials",()=>{const rec={userId:"n1",displayName:"Nurse",centerId:"c1",specialtyIds:["derm"],password:"sensitive",salary:1};const out=redactEmployee(rec,supervisor);assert.equal(out.password,undefined);assert.equal(out.salary,undefined)});
+test("unauthenticated identity rejected",()=>assert.throws(()=>requireAccess({...admin,authenticated:false},{centerId:"c1",permission:"team.write"}),{code:"AUTH_REQUIRED"}));
