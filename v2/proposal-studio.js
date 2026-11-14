@@ -262,5 +262,14 @@ window.nseMountCoverage = async ({ root, after, request, el, ctx }) => {
     const empty = r.specialties.filter(s => !s.practiceReady && s.assignedToMe);
     if (empty.length) box.append(el('p', 'أنتِ مسندة لتخصص بدون أدوات كافية (' + empty.map(s => s.label).join('، ') + '). من «فريق التمريض ← إسناد تخصص» اختاري تخصصًا جاهزًا للتدريب، أو أضيفي محتوى لهذا التخصص.', 'small'));
     box.append(el('p', 'التدريب اليومي والتري يحتاجان ٤ أدوات على الأقل بفائدة موثقة في التخصص المسند.', 'small'));
+    const diag = el('button', 'تشخيص المنصة · Platform diagnostics', 'btn sub'); diag.type = 'button';
+    const out = el('div', undefined, 'small'); out.style.cssText = 'white-space:pre-wrap;direction:ltr;text-align:left;font-family:ui-monospace,monospace;font-size:12px;margin-top:8px';
+    diag.onclick = async () => {
+      diag.disabled = true; out.textContent = '…';
+      try { const d = await request('/api/admin/selfcheck?centerId=' + encodeURIComponent(ctx.center)); out.textContent = d.results.map(x => (x.ok ? '✓ ' : '✗ ') + x.check + (x.ok ? '\n   ' + JSON.stringify(x.rows) : '\n   ' + x.error)).join('\n'); }
+      catch (e) { out.textContent = e.message === 'FORBIDDEN' ? 'التشخيص لمالك المنصة فقط.' : e.message; }
+      finally { diag.disabled = false; }
+    };
+    box.append(diag, out);
   } catch (e) { box.append(el('p', e.message, 'small')); }
 };

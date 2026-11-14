@@ -16,6 +16,7 @@ const dailyPractice=require("./daily-practice.js");
 const notificationsApi=require("./notifications.js");
 const supervisorApi=require("./supervisor.js");
 const contentBridge=require("./content-bridge.js");
+const selfcheck=require("./selfcheck.js");
 const contentIntake=require("./content-intake.js");
 const examWorkflows=require("./exam-workflows.js");
 const contentWorkflows=require("./content-workflows.js");
@@ -82,6 +83,7 @@ async function handler(req,res){
   const notes=await notificationsApi({req,url,body,c,userId,centerId,mustUUID,deny});if(notes.handled)return notes.data;
   const sup=await supervisorApi({req,url,c,centerId,role,deny});if(sup.handled)return sup.data;
   const bridge=await contentBridge({req,url,body,c,userId,centerId,role,mustUUID,deny});if(bridge.handled)return bridge.data;
+  const sc=await selfcheck({req,url,c,userId,centerId,deny});if(sc.handled)return sc.data;
   const intake=await contentIntake({req,url,body,c,userId,centerId,role,mustUUID,deny});if(intake.handled)return intake.data;
   const examFlow=await examWorkflows({req,url,body,c,userId,centerId,role,mustUUID,deny});if(examFlow.handled)return examFlow.data;
   if(req.method==="GET"&&url.pathname==="/api/bootstrap"){

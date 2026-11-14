@@ -469,6 +469,13 @@ test('catalog coverage shows which specialties have practice-ready content and w
  }finally{await db.query("delete from qib.legacy_catalog where legacy_id=any($1::text[])",[rows.map(r=>r[1])])}
 });
 
+test('platform diagnostics are owner-only and report each check without failing the request',async()=>{
+ assert.equal((await call('/api/admin/selfcheck',{token:'supervisor'})).status,403);
+ await db.query('insert into qib.platform_owners(user_id) values($1)',[ids.supervisor]);
+ try{const r=await call('/api/admin/selfcheck',{token:'supervisor'});assert.equal(r.status,200);const t=r.body.results.find(x=>x.check==='tables');assert.equal(t.ok,true);assert.equal(t.rows[0].missing,null);assert.ok(r.body.results.every(x=>x.ok),JSON.stringify(r.body.results.filter(x=>!x.ok)));
+ }finally{await db.query('delete from qib.platform_owners where user_id=$1',[ids.supervisor])}
+});
+
 test('revoked Supabase session cannot reuse an unexpired token',async()=>{
  await db.query('delete from auth.sessions where id=$1',[sessions.nurse]);
  assert.equal((await call('/api/bootstrap')).status,401);

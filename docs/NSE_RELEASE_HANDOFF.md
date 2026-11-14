@@ -355,3 +355,10 @@ Owner decision: no paid AI subscription is required. Added free, content-bound f
 - `GET /api/catalog/coverage` (admin/supervisor): per specialty tools, tools with documented use, tools with image, procedures, `practiceReady` (≥4 tools with use) and whether it is assigned to the caller. Shown as a table in Studio → Overview; Team specialty chips show "· N tools (not ready)".
 - Drill/tray errors now explain the cause and the fix. The dental pack can be prepared into the specialty selected in the lesson form (`specialtyId` on `/api/modules/prepare-foundations`).
 - Tests: 101 pass.
+
+## 2026-11-14 — Diagnosing a staging SERVER_ERROR in the studio
+
+- Staging was on `2b66f38` and the studio showed "SERVER_ERROR" with no detail; Render logs are not reachable from this session (connector bound to another account).
+- Client errors for HTTP ≥500 now include the request path (no response body or data), e.g. `SERVER_ERROR · /api/catalog/coverage`.
+- `GET /api/admin/selfcheck` (`api/selfcheck.js`, platform owners only, read-only, each check in its own savepoint): missing tables, catalog counts, specialties with tool/procedure counts, how tool rows key their specialty, the caller's assignments, module statuses, and the proposals/tray/drill/coverage queries. Button "Platform diagnostics" in Studio → Overview.
+- Tests: 102 pass.

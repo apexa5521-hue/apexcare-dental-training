@@ -47,6 +47,7 @@ jobs:
           node --check v2/choice-chips.js
           node --check api/supervisor.js
           node --check api/content-bridge.js
+          node --check api/selfcheck.js
           node --check v2/supervisor.js
           node --check v2/study-reader.js
           node --check api/clinic-practice.js

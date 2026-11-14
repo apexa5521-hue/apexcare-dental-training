@@ -15,7 +15,7 @@
  $("themeToggle").onclick=()=>{document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('nse-theme',document.documentElement.dataset.theme)}catch{}updateThemeLabel()};updateThemeLabel();
  async function request(route,options={}){
   const r=await fetch(route,{...options,headers:{"Authorization":"Bearer "+state.token,"Content-Type":"application/json",...(options.headers||{})}});
-  const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"API_ERROR");return d;
+  const d=await r.json().catch(()=>({}));if(!r.ok)throw Error((d.error||"API_ERROR")+(r.status>=500?" · "+route.split("?")[0]:""));return d;
  }
  const post=(route,body,opts={})=>request(route,{method:"POST",body:JSON.stringify({...body,centerId:state.center}),...opts});
  const contentStudio=window.initContentStudio({request,post,el,context:()=>state});
