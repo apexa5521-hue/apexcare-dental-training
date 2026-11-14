@@ -64,7 +64,7 @@ window.nseMountTray = ({ host, request, post, el, center, language }) => {
     body.replaceChildren(el('p', 'جارٍ تجهيز إجراء…', 'small'));
     if (!modal.open) modal.showModal();
     let r;
-    try { r = await post('/api/tray/start', {}); } catch (e) { body.replaceChildren(el('p', e.message === 'NO_ASSIGNED_SPECIALTY' ? 'لا يوجد تخصص مسند لك بعد. اطلبي من المشرفة إسناد تخصص.' : e.message, 'notice')); return; }
+    try { r = await post('/api/tray/start', {}); } catch (e) { body.replaceChildren(el('p', e.message === 'NO_ASSIGNED_SPECIALTY' ? 'لا يوجد تخصص مسند لك بعد. اطلبي من المشرفة إسناد تخصص.' : e.message === 'NO_TRAY_PROCEDURES_AVAILABLE' ? 'ما فيه إجراءات في كتالوج تخصصك فيها أدوات كافية للتدريب. اختاري تخصصًا جاهزًا من «فريق التمريض ← إسناد تخصص»، وتقدرين تشوفين الجاهزية في «الاستوديو ← نظرة عامة».' : e.message, 'notice')); return; }
     const box = el('div', undefined, 'nse-tray');
     const head = el('div', undefined, 'tray-head'), info = el('div', undefined, 'tray-info');
     const title = el('h2'); const en = el('span', r.procedure.names.en); en.lang = 'en'; en.dir = 'ltr'; title.append(en);

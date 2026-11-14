@@ -68,6 +68,19 @@ function balance(candidates, count) {
 }
 
 module.exports = async ({ req, url, body, c, userId, centerId, role, mustUUID, deny }) => {
+  if (req.method === 'GET' && url.pathname === '/api/catalog/coverage') {
+    // How much catalog material each specialty has, so admins can see why a drill or tray is empty.
+    if (!['admin', 'supervisor'].includes(role.role)) deny();
+    const rows = (await c.query(`select s.id,s.code,s.label,
+      count(*) filter (where l.source_name='Tools')::int as tools,
+      count(*) filter (where l.source_name='Tools' and coalesce(l.payload->>'useEn','')<>'')::int as tools_with_use,
+      count(*) filter (where l.source_name='Tools' and l.payload->>'imageUrl' like 'https://%')::int as tools_with_image,
+      count(*) filter (where l.source_name='Procedures')::int as procedures
+      from qib.specialties s left join qib.legacy_catalog l on l.specialty_legacy_id=s.code and l.source_name in ('Tools','Procedures')
+      group by s.id,s.code,s.label order by s.label`)).rows;
+    const assigned = (await c.query('select specialty_id from qib.assignments where user_id=$1 and center_id=$2', [userId, centerId])).rows.map(r => r.specialty_id);
+    return { handled: true, data: { specialties: rows.map(r => ({ id: r.id, code: r.code, label: r.label, tools: r.tools, toolsWithUse: r.tools_with_use, toolsWithImage: r.tools_with_image, procedures: r.procedures, practiceReady: r.tools_with_use >= 4, assignedToMe: assigned.includes(r.id) })) } };
+  }
   if (url.pathname !== '/api/content/rule-candidates' || req.method !== 'POST') return { handled: false };
   if (role.role !== 'admin') deny();
   const sid = mustUUID(body.specialtyId), count = body.count;

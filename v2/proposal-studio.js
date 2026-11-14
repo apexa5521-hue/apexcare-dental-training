@@ -233,3 +233,26 @@ window.nseMountBridge = ({ root, post, el, ctx, catalogue, refresh }) => {
   box.append(row2, msg);
   root.append(box); paintList();
 };
+
+// Catalog readiness by specialty: shows which specialties actually have tools/procedures.
+window.nseMountCoverage = async ({ root, after, request, el, ctx }) => {
+  const box = el('article', undefined, 'notice section'); box.id = 'catalogCoverage';
+  box.append(el('h3', 'جاهزية الكتالوج لكل تخصص · Catalog readiness by specialty'));
+  (after || root.firstChild)?.after ? (after || root.firstChild).after(box) : root.append(box);
+  try {
+    const r = await request('/api/catalog/coverage?centerId=' + encodeURIComponent(ctx.center));
+    window.nseAnnotateSpecialties?.(r.specialties);
+    const table = el('table'); table.style.cssText = 'width:100%;border-collapse:collapse;font-size:13.5px';
+    const head = el('tr'); ['التخصص · Specialty', 'أدوات', 'بفائدة موثقة', 'بصورة', 'إجراءات', 'جاهز للتدريب'].forEach(h => { const th = el('th', h); th.style.cssText = 'text-align:start;padding:6px 8px;border-bottom:1px solid var(--nse-line);font-size:12px'; head.append(th); });
+    table.append(head);
+    r.specialties.forEach(s => {
+      const tr = el('tr'), cell = (t, bold) => { const td = el('td', String(t)); td.style.cssText = 'padding:6px 8px;border-bottom:1px solid var(--nse-line)' + (bold ? ';font-weight:700' : ''); return td; };
+      tr.append(cell(s.label + (s.assignedToMe ? ' ← مسند لك' : ''), s.assignedToMe), cell(s.tools), cell(s.toolsWithUse), cell(s.toolsWithImage), cell(s.procedures), cell(s.practiceReady ? '✓ نعم' : '✗ لا — بدون محتوى كافٍ'));
+      table.append(tr);
+    });
+    const wrap = el('div'); wrap.style.cssText = 'overflow-x:auto'; wrap.append(table); box.append(wrap);
+    const empty = r.specialties.filter(s => !s.practiceReady && s.assignedToMe);
+    if (empty.length) box.append(el('p', 'أنتِ مسندة لتخصص بدون أدوات كافية (' + empty.map(s => s.label).join('، ') + '). من «فريق التمريض ← إسناد تخصص» اختاري تخصصًا جاهزًا للتدريب، أو أضيفي محتوى لهذا التخصص.', 'small'));
+    box.append(el('p', 'التدريب اليومي والتري يحتاجان ٤ أدوات على الأقل بفائدة موثقة في التخصص المسند.', 'small'));
+  } catch (e) { box.append(el('p', e.message, 'small')); }
+};

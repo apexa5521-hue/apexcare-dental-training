@@ -458,6 +458,17 @@ test('Claude bridge builds a catalog-bound prompt and imports only verifiable dr
  }finally{await db.query("delete from qib.question_candidates where origin='claude_import'");await db.query("delete from qib.content_revisions where module_id in (select id from qib.modules where slug like 'nse-claude-%')");await db.query("delete from qib.modules where slug like 'nse-claude-%'");await db.query("delete from qib.legacy_catalog where legacy_id=any($1::text[])",[rows.map(r=>r[1])])}
 });
 
+test('catalog coverage shows which specialties have practice-ready content and which one is assigned',async()=>{
+ const rows=Array.from({length:5},(_,i)=>['Tools','cov'+i,{id:'cov'+i,specialtyId:'dental',nameEn:'Coverage item '+i,useEn:i<4?'Coverage use '+i:''}]);
+ for(const [s,id,p] of rows)await db.query('insert into qib.legacy_catalog(source_name,legacy_id,specialty_legacy_id,payload,content_hash) values($1,$2,$3,$4,$5)',[s,id,p.specialtyId,JSON.stringify(p),'synthetic-test-hash']);
+ try{
+  assert.equal((await call('/api/catalog/coverage')).status,403);
+  const r=await call('/api/catalog/coverage',{token:'supervisor'});assert.equal(r.status,200);
+  const dental=r.body.specialties.find(s=>s.code==='dental'),derm=r.body.specialties.find(s=>s.code==='dermatology');
+  assert.ok(dental.tools>=5);assert.ok(dental.toolsWithUse>=4);assert.equal(dental.practiceReady,true);assert.equal(derm.practiceReady,false);
+ }finally{await db.query("delete from qib.legacy_catalog where legacy_id=any($1::text[])",[rows.map(r=>r[1])])}
+});
+
 test('revoked Supabase session cannot reuse an unexpired token',async()=>{
  await db.query('delete from auth.sessions where id=$1',[sessions.nurse]);
  assert.equal((await call('/api/bootstrap')).status,401);

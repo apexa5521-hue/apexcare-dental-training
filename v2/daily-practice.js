@@ -84,7 +84,7 @@ window.nseMountDaily = ({ host, request, post, el, center, language }) => {
     body.replaceChildren(el('p', '…', 'small')); if (!modal.open) modal.showModal();
     let d;
     try { d = await post('/api/daily/drill/start', {}); }
-    catch (e) { body.replaceChildren(el('p', e.message === 'NO_ASSIGNED_SPECIALTY' ? 'لا يوجد تخصص مسند لك بعد.' : e.message === 'NOT_ENOUGH_CATALOG_CONTENT' ? 'محتوى الكتالوج لتخصصك لا يكفي لتدريب اليوم بعد.' : e.message, 'notice')); return; }
+    catch (e) { body.replaceChildren(el('p', e.message === 'NO_ASSIGNED_SPECIALTY' ? 'لا يوجد تخصص مسند لك بعد.' : e.message === 'NOT_ENOUGH_CATALOG_CONTENT' ? 'التخصص المسند لك ما فيه أدوات كافية في الكتالوج (يلزم ٤ أدوات على الأقل بفائدة موثقة). الحل: من «فريق التمريض ← إسناد تخصص» اختاري تخصصًا يظهر بجانبه عدد أدوات، أو أضيفي أدوات لهذا التخصص. تقدرين تشوفين الجاهزية في «الاستوديو ← نظرة عامة».' : e.message, 'notice')); return; }
     let score = d.answers.filter(a => a.correct).length;
     const show = i => {
       const box = el('div', undefined, 'nse-drill');

@@ -348,3 +348,10 @@ Owner decision: no paid AI subscription is required. Added free, content-bound f
 - **Claude bridge** (`api/content-bridge.js`, admin): `POST /api/bridge/prompt` builds a catalog-bound prompt (≤10 tools or procedures of one specialty, exact JSON reply format, draft-only instructions, records treated as data). `POST /api/bridge/import` accepts the pasted reply (code fences allowed): lessons become draft modules with clinical/language review pending; questions are validated, de-duplicated and accepted only when `source_quote` appears verbatim in the cited catalog record (`origin='claude_import'`). No API key and no server-side model call. Studio tab "Claude · مسودات".
 - `docs/NSE_CONTENT_FEEDING_GUIDE.md`: how to feed content from the catalog, from official sources, and with Claude on the owner's subscription.
 - Tests: 100 pass (bridge prompt/import with rejected unknown refs and non-verbatim quotes, duplicates, non-JSON; supervisor overview role gate).
+
+## 2026-11-14 — Empty-specialty diagnosis
+
+- Owner saw "Not enough catalog content" in Today's Drill after sign-in. Likely cause: `deploy/schema.sql` seeds `dental` / `dermatology` specialties that have no catalog rows, next to the 8 imported specialties keyed by their legacy ids; an assignment to a seeded specialty finds no tools. (Not confirmed against the database: the Supabase connector in this session belongs to another organization, "Zone Org", and was not used.)
+- `GET /api/catalog/coverage` (admin/supervisor): per specialty tools, tools with documented use, tools with image, procedures, `practiceReady` (≥4 tools with use) and whether it is assigned to the caller. Shown as a table in Studio → Overview; Team specialty chips show "· N tools (not ready)".
+- Drill/tray errors now explain the cause and the fix. The dental pack can be prepared into the specialty selected in the lesson form (`specialtyId` on `/api/modules/prepare-foundations`).
+- Tests: 101 pass.

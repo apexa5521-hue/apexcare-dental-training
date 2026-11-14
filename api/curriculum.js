@@ -11,9 +11,9 @@ function validate(pack){
 }
 const PACKS={foundations:'nse-foundations.json',dental:'nse-dental.json'};
 const load=(name='foundations')=>{if(!PACKS[name])throw Object.assign(Error('UNKNOWN_CURRICULUM_PACK'),{status:400});return validate(JSON.parse(fs.readFileSync(path.join(__dirname,'../content',PACKS[name]),'utf8')))};
-async function prepare(c,{centerId,userId,pack:packName='foundations'}){
+async function prepare(c,{centerId,userId,pack:packName='foundations',specialtyId:overrideSpecialty=null}){
  const pack=load(packName);await c.query('select id from qib.centers where id=$1 for update',[centerId]);let created=0,existing=0;
- let specialtyId=null;if(pack.specialtyCode){const s=(await c.query('select id from qib.specialties where code=$1',[pack.specialtyCode])).rows[0];if(!s)throw Object.assign(Error('SPECIALTY_NOT_FOUND'),{status:409});specialtyId=s.id}
+ let specialtyId=null;if(overrideSpecialty){const s=(await c.query('select id from qib.specialties where id=$1',[overrideSpecialty])).rows[0];if(!s)throw Object.assign(Error('INVALID_SPECIALTY'),{status:400});specialtyId=s.id}else if(pack.specialtyCode){const s=(await c.query('select id from qib.specialties where code=$1',[pack.specialtyCode])).rows[0];if(!s)throw Object.assign(Error('SPECIALTY_NOT_FOUND'),{status:409});specialtyId=s.id}
  for(const m of pack.modules){const translations=Object.fromEntries(['ar','en','ur','id'].map(l=>[l,{title:m.translations[l].title,body:m.translations[l].body+'\n\nSources:\n'+m.sourceUrls.join('\n')} ]));
  const r=await c.query("insert into qib.modules(center_id,specialty_id,slug,translations,status) values($1,$2,$3,$4,'draft') on conflict(center_id,slug) do nothing returning id,version",[centerId,specialtyId,m.slug,JSON.stringify(translations)]);
  if(r.rowCount){created++;await c.query('insert into qib.content_revisions(module_id,editor_id,version,snapshot) values($1,$2,$3,$4)',[r.rows[0].id,userId,r.rows[0].version,JSON.stringify({action:packName+'_draft_prepared',sourceUrls:m.sourceUrls,review:m.review,packVersion:pack.version})])}else existing++;
