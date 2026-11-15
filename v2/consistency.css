@@ -232,3 +232,220 @@
 :root[data-theme] .real-passport h2{font-size:clamp(22px,4vw,28px);margin:14px 0 6px}
 :root[data-theme] .real-passport .stack.section{margin-top:12px;padding-top:12px;border-top:1px solid #ffffff33;gap:4px}
 :root[data-theme] .real-passport a{color:#ffffff;background:#ffffff26;padding:8px 14px;border-radius:10px;display:inline-block;margin-top:10px;font-weight:700;text-decoration:none}
+
+/* Design polish — 715b0fa baseline. Presentation only; keep emerald and existing states. */
+:root[data-theme]{
+ --nse-gap:24px;--nse-gap-sm:14px;--nse-radius:20px;--nse-pad:24px;
+ --nse-h-card:19px;--nse-body:14px;--nse-small:13px;
+ --nse-on-green:#fff;--nse-muted:#4b6358;
+ --nse-elevation:0 2px 4px #102e2010,0 12px 30px #102e2005;
+ --nse-elevation-raised:0 6px 24px #102e2012;
+ --nse-danger:#a72e39;--nse-danger-soft:#fff0f1;
+ --nse-warning:#805000;--nse-warning-soft:#fff5df;
+ --nse-motion:160ms;--nse-ease:cubic-bezier(.2,.7,.3,1);
+}
+:root[data-theme="dark"]{
+ --nse-on-green:#082b20;--nse-muted:#adc7ba;
+ --nse-elevation:0 2px 4px #0002,0 12px 30px #0001;
+ --nse-elevation-raised:0 6px 24px #0003;
+ --nse-danger:#ffb4ba;--nse-danger-soft:#3b2028;
+ --nse-warning:#ffce7e;--nse-warning-soft:#342c1c;
+}
+:root[data-palette="emerald"][data-theme="light"]{--nse-bg:#f4f8f6;--nse-line:#dce8e1;--nse-muted:#4b6358;--nse-green:#08734f;--focus:#086747}
+:root[data-palette="emerald"][data-theme="dark"]{--nse-bg:#0e1915;--nse-surface:#16261f;--nse-line:#30483c;--nse-muted:#adc7ba;--focus:#66ebba}
+
+/* Readable type and comfortable rhythm, without changing content hierarchy. */
+:root[data-theme] body{line-height:1.7;-webkit-font-smoothing:antialiased}
+:root[data-theme] :is(button,input,select,textarea){font-family:inherit}
+:root[data-theme] :is(h1,h2,h3,h4){text-wrap:balance}
+:root[data-theme] :is(p,li,.muted,.small,.subtle){overflow-wrap:anywhere}
+:root[data-theme] :is(.main,.view,.card,.two>*,.grid>*,.grow){min-inline-size:0}
+:root[data-theme] .main{padding-block:32px 48px}
+:root[data-theme] .top{align-items:center;gap:24px;padding-bottom:24px;margin-bottom:24px}
+:root[data-theme] #heading{line-height:1.4;letter-spacing:-.7px;margin-block:8px}
+:root[data-theme] .over,:root[data-theme] .eyebrow{font-size:11px;font-weight:650;letter-spacing:1.15px;line-height:1.6}
+:root[dir="rtl"][data-theme] :is(h1,h2,h3,h4,.over,.eyebrow,.pill,.tagline){letter-spacing:0}
+:root[data-theme] .field{font-size:13px;line-height:1.6;gap:8px}
+:root[data-theme] :is(.muted,.small,.subtle,.skill-row small){color:var(--nse-muted)}
+:root[data-theme] .metric{font-variant-numeric:tabular-nums;letter-spacing:-.7px}
+:root[data-theme] .grid{gap:18px}
+
+/* Quiet surfaces; elevation is reserved for cards and overlays. */
+:root[data-theme] :is(.card,.daily-task){border:1px solid var(--nse-line);border-radius:var(--nse-radius);background:var(--nse-surface);box-shadow:var(--nse-elevation)}
+:root[data-theme] .card .card{box-shadow:none;border-radius:14px}
+:root[data-theme] .daily-task{border-inline-start:4px solid var(--nse-green);gap:20px;padding:26px}
+:root[data-theme] .daily-task .task-orbit{width:64px;height:64px;border-radius:20px;transform:none}
+:root[data-theme] .grid>.card:has(>.metric){padding:22px;gap:6px 14px}
+:root[data-theme] .grid>.card:has(>.metric)>.over{font-size:11px;letter-spacing:.65px}
+:root[data-theme] .grid>.card:has(>.metric)>.metric{font-size:32px}
+:root[data-theme] .pill{line-height:1.5;font-size:12px;border-radius:8px;padding:5px 10px;overflow-wrap:anywhere}
+:root[data-theme] :is(.notice,.warning){padding:16px 18px;border-radius:14px}
+:root[data-theme] :is(.error,.nse-tray .fb.bad){color:var(--nse-danger)}
+:root[data-theme] .good{color:var(--nse-green)}
+
+/* White copy stays readable across the full emerald hero and passport gradients. */
+:root[data-palette="emerald"][data-theme] .hero{background:radial-gradient(ellipse at 90% 5%,#ffffff0b,transparent 58%),linear-gradient(115deg,#07583e,#0b704d 72%,#0b684b);border-radius:24px;padding:32px;box-shadow:0 12px 30px #07583e14}
+:root[data-palette="emerald"][data-theme="dark"] .hero{background:radial-gradient(ellipse at 90% 5%,#63d7b80d,transparent 58%),linear-gradient(115deg,#10372a,#164b37)}
+:root[data-theme] .hero h2{color:#fff;line-height:1.35;letter-spacing:-.65px}
+:root[data-theme] .hero :is(p,.muted,.over,.small){color:#e5f8ef!important}
+:root[data-theme] .hero .progress{background:#ffffff26}
+:root[data-theme] .real-passport.is-competency{background:linear-gradient(125deg,#084f3a,#0b704d);box-shadow:var(--nse-elevation-raised)}
+:root[data-theme] .real-passport.is-knowledge{background:linear-gradient(125deg,#173d67,#235c96);box-shadow:var(--nse-elevation-raised)}
+:root[data-theme] .real-passport :is(.small,.subtle){opacity:1}
+:root[data-theme] .real-passport a{min-height:44px;display:inline-flex;align-items:center;border:1px solid #ffffff5c;background:#ffffff12;line-height:1.5}
+:root[data-theme] .real-passport .pill{background:#ffffff12!important}
+
+/* Inputs and every actionable control retain visible keyboard/touch affordances. */
+:root[data-theme] :is(button,.btn,.link-button,a.preview-link,summary){min-height:44px}
+:root[data-theme] :is(button,.btn){min-inline-size:44px}
+:root[data-theme] .btn{line-height:1.5;padding:11px 17px;border-radius:12px;color:var(--nse-on-green);box-shadow:0 2px 3px #102e2010;transition:background-color var(--nse-motion),border-color var(--nse-motion),box-shadow var(--nse-motion)}
+:root[data-theme] .btn.sub{color:var(--nse-ink);box-shadow:none}
+:root[data-theme] .btn.warn{color:var(--nse-danger);background:var(--nse-danger-soft);border-color:var(--nse-danger)}
+:root[data-theme] :is(.controls .input,.controls .btn){height:auto;min-height:44px}
+:root[data-theme] :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea){min-height:46px;border-radius:12px;line-height:1.5;transition:border-color var(--nse-motion),box-shadow var(--nse-motion)}
+:root[data-theme] input::placeholder,:root[data-theme] textarea::placeholder{color:var(--nse-muted);opacity:1}
+:root[data-theme] :is(button,a,input,select,textarea,summary,[tabindex]):focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+:root[data-theme] .option:has(input:focus-visible){outline:3px solid var(--focus);outline-offset:3px}
+:root[data-theme] .btn:disabled{opacity:1;color:var(--nse-muted);background:var(--nse-bg);border:1px solid var(--nse-line);box-shadow:none;transform:none;filter:none}
+:root[data-theme] .link-button,:root[data-theme] .preview-link{line-height:1.6;text-underline-offset:4px}
+:root[data-theme] a.preview-link{display:inline-flex;align-items:center}
+:root[data-theme] :is(label.option,label.skill-row){min-height:48px}
+
+/* Navigation keeps its existing destinations, bottom-bar breakpoint and selected state. */
+:root[data-theme] .nav{gap:6px}
+:root[data-theme] .nav button{border-radius:12px;padding:12px 14px;line-height:1.6}
+:root[data-theme] .nav button.selected{background:var(--nse-soft);box-shadow:inset 3px 0 var(--nse-green)}
+:root[dir="rtl"][data-theme] .nav button.selected{box-shadow:inset -3px 0 var(--nse-green)}
+:root[data-theme] .nav .nse-nav-group{font-size:11.5px;letter-spacing:.6px;margin-block:18px 6px}
+:root[data-theme] .page-navigation{gap:8px;flex-wrap:wrap;margin-block:0 20px}
+:root[data-theme] .page-navigation .btn{min-height:44px}
+:root[data-theme] .nse-tabs{padding:6px;gap:4px;background:var(--nse-bg);border:1px solid var(--nse-line);border-radius:15px;max-inline-size:100%}
+:root[data-theme] .nse-tab{min-height:44px;line-height:1.5;border-radius:10px;color:var(--nse-muted);font-weight:600}
+:root[data-theme] .nse-tab[aria-selected="true"]{color:var(--nse-ink)}
+:root[data-theme] .nse-tabs-glider{top:6px;bottom:6px;border-radius:10px;background:var(--nse-surface);box-shadow:0 2px 5px #102e2010}
+:root[data-theme] .nse-sheet{box-shadow:0 -16px 50px #071c2330;border-radius:24px 24px 0 0}
+:root[data-theme] .nse-sheet .nse-sheet-grid button{line-height:1.6;border-radius:14px}
+:root[data-theme] .nse-bottom button{min-inline-size:0}
+:root[data-theme] .nse-bottom button[aria-current="page"]{background:var(--nse-soft)}
+
+/* Purposeful daily practice cards; instrument photos stay uncropped. */
+:root[data-theme] :is(#nseTrayCard,#nseDrillCard,#nseItemCard){border-radius:var(--nse-radius);transition:border-color var(--nse-motion),box-shadow var(--nse-motion)}
+:root[data-theme] :is(#nseTrayCard,#nseDrillCard) .icon{width:46px;height:46px;flex-basis:46px;border-radius:14px}
+:root[data-theme] :is(#nseTrayCard,#nseDrillCard) .grow{min-width:0}
+:root[data-theme] #nseItemCard :is(img,.ph){object-fit:contain;border:1px solid var(--nse-line);padding:6px;border-radius:14px}
+:root[data-theme] .nse-home-row .dots{gap:6px}
+:root[data-theme] .nse-tray .item{border-width:1px;border-radius:16px;padding:14px;gap:10px;transition:background-color var(--nse-motion),border-color var(--nse-motion),box-shadow var(--nse-motion)}
+:root[data-theme] .nse-tray .item img{object-fit:contain;padding:6px}
+:root[data-theme] .nse-tray .item[aria-pressed="true"]{border-color:var(--nse-green);background:var(--nse-soft);box-shadow:inset 0 0 0 1px var(--nse-green)}
+:root[data-theme] .nse-tray .item :is(.nm,small){overflow-wrap:anywhere}
+:root[data-theme] .nse-tray .item .tick{color:var(--nse-green)}
+:root[data-theme] :is(.nse-tray .item,.nse-drill .opt).ok{border-color:var(--nse-green);background:var(--nse-soft)}
+:root[data-theme] :is(.nse-tray .item,.nse-drill .opt).bad{border-color:var(--nse-danger);background:var(--nse-danger-soft)}
+:root[data-theme] .nse-tray .item.miss{border-color:var(--nse-warning);background:var(--nse-warning-soft);border-style:dashed}
+:root[data-theme] .nse-drill .fb.ok{background:var(--nse-soft);color:var(--nse-ink)}
+:root[data-theme] .nse-drill .fb.bad{background:var(--nse-danger-soft);color:var(--nse-danger)}
+:root[data-theme] .nse-tray .actions{gap:10px;border-top:1px solid var(--nse-line);padding-block:14px 8px}
+:root[data-theme] .nse-drill .opt{font-size:16px;line-height:1.7;border-width:1px;border-radius:14px}
+
+/* Search, supervisor reporting and notifications share the same surface vocabulary. */
+:root[data-theme] #nseSearch .hit{grid-template-columns:64px minmax(0,1fr);padding:16px;gap:16px;border-radius:16px;background:var(--nse-bg)}
+:root[data-theme] #nseSearch .hit img{object-fit:contain;padding:4px;background:var(--nse-surface)}
+:root[data-theme] #nseSearch .hit :is(h4,p,span){overflow-wrap:anywhere}
+:root[data-theme] #nseSearch .hit h4{font-size:15px;line-height:1.6}
+:root[data-theme] #nseSearch .missing{font-size:12px;line-height:1.7}
+:root[data-theme] #nseSupervisor{gap:24px}
+:root[data-theme] #nseSupervisor :is(.kpi,.panel){border-radius:var(--nse-radius);box-shadow:var(--nse-elevation)}
+:root[data-theme] #nseSupervisor .kpi{padding:20px}
+:root[data-theme] #nseSupervisor .panel{padding:22px}
+:root[data-theme] #nseSupervisor .kpi strong{font-size:30px;line-height:1.45;font-variant-numeric:tabular-nums}
+:root[data-theme] #nseSupervisor .who span{white-space:normal;overflow-wrap:anywhere;line-height:1.6}
+:root[data-theme] #nseSupervisor .row{padding-block:14px}
+:root[data-theme] #nseSupervisor .st{line-height:1.6;white-space:normal;border-radius:8px}
+:root[data-theme="dark"] #nseSupervisor .st.s-ok{background:#163e2d;color:#a3efd0}
+:root[data-theme="dark"] #nseSupervisor .st.s-wait{background:#3c301c;color:#ffce7e}
+:root[data-theme="dark"] #nseSupervisor .st.s-help{background:#3b2028;color:#ffb4ba}
+:root[data-theme="dark"] #nseSupervisor .st.s-card{background:#1d344d;color:#b5d6ff}
+:root[data-theme] .nse-bell{width:44px;height:44px;border-radius:12px}
+:root[data-theme] .nse-notes{box-shadow:0 20px 60px #071c2333;border-radius:20px}
+:root[data-theme] .nse-notes header{padding:20px 20px 12px;flex-wrap:wrap}
+:root[data-theme] .nse-notes :is(.link,.filters button){min-height:44px}
+:root[data-theme] .nse-notes .filters{gap:8px;padding-inline:20px;padding-bottom:14px}
+:root[data-theme] .nse-notes .filters button{border-radius:10px}
+:root[data-theme] .nse-notes .item{padding:16px 20px;line-height:1.7}
+:root[data-theme] .nse-notes .txt small{font-size:12px}
+:root[data-theme] .nse-toast{padding:16px;border-radius:16px;box-shadow:var(--nse-elevation-raised)}
+:root[data-theme] .nse-toast button{min-height:44px;line-height:1.5}
+
+/* Exam and reader polish preserves all answer, timer and flagged states. */
+:root[data-theme] .exam-head{padding:20px;border-radius:18px}
+:root[data-theme] .exam-timer{min-height:44px}
+:root[data-theme] .exam-top .btn{min-height:44px}
+:root[data-theme] .exam-grid{grid-template-columns:repeat(auto-fit,minmax(44px,1fr))}
+:root[data-theme] .exam-jump{min-height:44px;height:44px}
+:root[data-theme] .exam-jump[data-answered="true"]{color:var(--nse-on-green)}
+:root[data-theme] .exam-focus .option:has(input:checked) .option-key{color:var(--nse-on-green)}
+:root[data-theme] .reader-lang{height:auto;min-height:44px;padding:8px}
+:root[data-theme] #modal{border-radius:22px;box-shadow:0 24px 80px #071c2340}
+:root[data-theme] #modal::backdrop{background:#071c2380;backdrop-filter:blur(4px)}
+
+/* Sign-in stays calm and readable, retaining the existing wave and layout. */
+:root[data-theme] .login form{border:1px solid var(--nse-line);border-radius:22px;box-shadow:var(--nse-elevation-raised)}
+:root[data-theme] .login form h2{line-height:1.35;letter-spacing:-.5px}
+:root[data-theme] .login form .field{margin-block:20px}
+:root[data-theme] .login input{min-height:50px}
+:root[data-theme] .login-story :is(p,.eyebrow,.login-values){color:#e5f8ef}
+:root[data-theme] .login-story .brand{color:#fff}
+
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+ :root[data-theme] :is(#nseDrillCard,#nseTrayCard,.specialty-cover):hover{border-color:var(--nse-green);box-shadow:var(--nse-elevation-raised);transform:translateY(-2px)}
+ :root[data-theme] .btn:not(:disabled):hover{box-shadow:var(--nse-elevation);filter:none}
+ :root[data-theme] .btn.sub:not(:disabled):hover{background:var(--nse-soft)}
+}
+@media(max-width:1100px){:root[data-theme] .main{padding-inline:24px}}
+@media(max-width:760px){
+ :root{--nse-gap:18px;--nse-pad:18px;--nse-radius:17px;--nse-h-card:18px}
+ :root[data-theme] .main{padding:20px 16px 32px}
+ :root[data-theme] .top{gap:16px;padding-bottom:20px;margin-bottom:20px}
+ :root[data-theme] .controls{gap:8px}
+ :root[data-theme] .controls .nse-bell{height:44px}
+ :root[data-theme] .controls :is(.input,.btn){min-height:44px}
+ :root[data-theme] :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea,.input){font-size:16px!important}
+ :root[data-theme] .view>.grid{gap:12px}
+ :root[data-theme] :is(.card,.daily-task){padding:18px!important;border-radius:17px!important}
+ :root[data-theme] .daily-task{gap:14px}
+ :root[data-theme] .daily-task .task-orbit{width:52px;height:52px;border-radius:16px}
+ :root[data-theme] .daily-task>.btn{width:100%}
+ :root[data-theme] .grid>.card:has(>.metric){padding:16px!important}
+ :root[data-theme] .grid>.card:has(>.metric)>.metric{font-size:28px}
+ :root[data-theme] .grid>.card:has(>.metric)>.over{letter-spacing:0;line-height:1.6}
+ :root[data-theme] .hero{padding:24px!important}
+ :root[data-theme] .hero h2{font-size:26px!important;line-height:1.4}
+ :root[data-theme] :is(.page-navigation .btn,.nse-tab){min-height:44px}
+ :root[data-theme] .nse-tabs{scroll-padding-inline:8px}
+ :root[data-theme] .nse-bottom{padding-top:8px;box-shadow:0 -4px 20px #071c2310}
+ :root[data-theme] .nse-bottom button{min-height:52px}
+ :root[data-theme] .nse-notes{border-radius:22px 22px 0 0}
+ :root[data-theme] .nse-sheet .nse-sheet-grid{gap:10px}
+ :root[data-theme] #nseSearch form{flex-wrap:wrap}
+ :root[data-theme] #nseSearch input[type="search"]{flex:1 1 160px;min-inline-size:0}
+ :root[data-theme] #nseSearch .hit{padding:12px;gap:12px;grid-template-columns:52px minmax(0,1fr)}
+ :root[data-theme] #nseSearch .hit :is(img,.noimg){width:52px;height:52px}
+ :root[data-theme] #nseItemCard{flex-wrap:wrap}
+ :root[data-theme] #nseItemCard .grow{flex:1 1 150px}
+ :root[data-theme] .nse-tray .tray-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ :root[data-theme] .nse-tray .item{padding:12px;gap:8px}
+ :root[data-theme] .nse-tray .item :is(img,.ph){max-width:96px}
+ :root[data-theme] .nse-tray .actions{padding-bottom:max(12px,env(safe-area-inset-bottom))}
+ :root[data-theme] .nse-tray .actions .btn.sub{min-height:44px}
+ :root[data-theme] .exam-focus .question{padding:20px 16px}
+ :root[data-theme] .exam-focus .option{font-size:16px;line-height:1.65;padding:14px 12px;gap:10px}
+ :root[data-theme] .exam-nav .btn{min-width:0;flex:1}
+ :root[data-theme] .exam-head{padding:16px}
+ :root[data-theme] #nseSupervisor .kpi{padding:16px}
+ :root[data-theme] #nseSupervisor .panel{padding:16px}
+ :root[data-theme] .login form{padding:26px!important}
+ :root[data-theme] .real-passport .passport-heading{flex-wrap:wrap}
+}
+@media(prefers-reduced-motion:reduce){
+ :root[data-theme] *, :root[data-theme] *::before, :root[data-theme] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
