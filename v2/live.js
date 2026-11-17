@@ -50,7 +50,7 @@
  function updateLanguage(){
   const l=$("language").value;document.documentElement.lang=l;document.documentElement.dir=["ar","ur"].includes(l)?"rtl":"ltr";
   const items=allowed();$("nav").replaceChildren(...items.map(([id,label])=>{const index=nav.findIndex(n=>n[0]===id),b=el("button",titles[l]?.[index]||label);b.dataset.page=id;b.onclick=()=>displayPage(id);return b}));
-  renderJourney();setText("learningHeading",titles[l]?.[1]||"Learning library");setText("learningHelp",help[l]);renderModules();const active=Array.from(document.querySelectorAll(".view")).find(v=>!v.hidden)?.dataset.page||"home";displayPage(active);
+  if(state.catalog)renderCatalog();renderJourney();setText("learningHeading",titles[l]?.[1]||"Learning library");setText("learningHelp",help[l]);renderModules();const active=Array.from(document.querySelectorAll(".view")).find(v=>!v.hidden)?.dataset.page||"home";displayPage(active);
  }
  function fill(select,items){const prev=select.value;select.replaceChildren(...items.map(o=>{const op=el("option",o.name);op.value=o.id;return op}));if(items.some(o=>o.id===prev))select.value=prev}
  async function init(){
@@ -168,16 +168,21 @@
    if(!data.ipcModules.length)root.append(el("p","No infection control modules imported yet.","muted"));
  }
  function renderCatalog(){
+   const arabic=$("language").value==='ar',view=document.querySelector('.view[data-page="catalog"]');
+   if(view){const left=view.querySelector('.two>.card'),right=view.querySelector('.two>.card+.card');
+    if(left){left.querySelector('h2').textContent=arabic?'01 · اختاري التخصص':'01 · Choose a specialty';left.querySelector('h3').textContent=arabic?'02 · اختاري الإجراء':'02 · Choose a procedure';}
+    const heading=right?.querySelector('h3');if(heading)heading.textContent=arabic?'اكتشفي الأدوات وفوائدها':'Explore tools and their purpose';
+   }
    if(!state.catalog)return;const cat=state.catalog,sp=$("catalogSpecialty").value,search=$("catalogSearch").value.toLowerCase().trim();
    const procs=cat.procedures.filter(x=>x.specialtyId===sp);
    const tools=cat.tools.filter(x=>x.specialtyId===sp);
    const list=$("catalogProceduresList");list.replaceChildren();
    procs.filter(p=>translated(p).name.toLowerCase().includes(search)).forEach(p=>{
-      const b=el("button",translated(p).name,"btn sub");b.style.textAlign="start";b.onclick=()=>{state.selectedProcedure=p;renderProcedure()};list.append(b);
+      const b=el("button",translated(p).name,"btn sub");b.style.textAlign="start";b.dataset.procedureId=String(p.id);b.setAttribute("aria-pressed",String(state.selectedProcedure?.id===p.id));b.onclick=()=>{state.selectedProcedure=p;renderProcedure()};list.append(b);
    });
    if(!list.childElementCount)list.append(el("p","No procedures found.","small"));
    const toolList=$("catalogToolList");toolList.replaceChildren();
-   tools.filter(t=>translated(t).name.toLowerCase().includes(search)).forEach(t=>{
+   tools.filter(t=>[translated(t).name,translated(t).use,t.nameEn,t.nameAr].some(v=>String(v||" ").toLowerCase().includes(search))).forEach(t=>{
       const card=el("div",undefined,"skill-row");
       if(t.imageUrl&&/^https:\/\//i.test(t.imageUrl)){const img=el("img");img.src=t.imageUrl;img.loading="lazy";img.alt=translated(t).name;const zoom=el("button",undefined,"tool-image-button");zoom.type="button";zoom.setAttribute("aria-label","View image: "+translated(t).name);zoom.append(img);zoom.onclick=()=>{const body=$("modalBody");body.replaceChildren(el("h2",translated(t).name));const large=el("img");large.src=t.imageUrl;large.alt=translated(t).name;large.className="tool-zoom";body.append(large,el("p",translated(t).use,"muted"));$("modal").showModal()};card.append(zoom)}
       const block=el("div");block.append(el("strong",translated(t).name),el("small",translated(t).use));card.append(block);toolList.append(card)
@@ -189,6 +194,7 @@
  function asIds(v){if(Array.isArray(v))return v.map(String);if(typeof v==="string"){try{const x=JSON.parse(v);return Array.isArray(x)?x.map(String):[]}catch{return []}}return []}
  function renderProcedure(){
   const p=state.selectedProcedure,root=$("procedureChecklist");root.replaceChildren();
+  document.querySelectorAll("#catalogProceduresList [data-procedure-id]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.procedureId===String(p?.id))));
   if(!p){setText("procedureHeading","Procedure preparation");setText("procedureDetail","Choose a procedure.");return}
   setText("procedureHeading",translated(p).name);
   const tools=state.catalog.tools,tid=asIds(p.toolIds),cid=asIds(p.consumableIds),all=[...new Set([...tid,...cid])];
@@ -201,7 +207,12 @@
     const label=el("label",undefined,"skill-row"),cb=el("input");cb.type="checkbox";cb.className="skill-checkbox";
     cb.onchange=()=>{if(cb.checked)checked.add(id);else checked.delete(id);progress.textContent=checked.size+" / "+all.length+" checked"+(all.length&&checked.size===all.length?" · Great work!":"")};
     const text=el("div");text.append(el("strong",translated(item).name),el("small",(cid.includes(id)?"Consumable · ":"Instrument · ")+translated(item).use));
-    label.append(cb,text);root.append(label);
+    label.append(cb);
+    if(item.imageUrl&&/^https:\/\//i.test(item.imageUrl)){
+     const image=el('img');image.src=item.imageUrl;image.alt=translated(item).name;image.loading='lazy';image.className='checklist-tool-image';
+     image.onerror=()=>{image.hidden=true;};label.append(image);
+    }else{const missing=el('span',$("language").value==='ar'?'الصورة غير متاحة':'Image unavailable','tool-image-missing');label.append(missing);}
+    label.append(text);root.append(label);
   });
   if(!all.length)root.append(el("p","No curated tools assigned to this procedure yet.","muted"));
  }
