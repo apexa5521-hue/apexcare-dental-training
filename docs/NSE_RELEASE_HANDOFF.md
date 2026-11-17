@@ -362,3 +362,12 @@ Owner decision: no paid AI subscription is required. Added free, content-bound f
 - Client errors for HTTP ≥500 now include the request path (no response body or data), e.g. `SERVER_ERROR · /api/catalog/coverage`.
 - `GET /api/admin/selfcheck` (`api/selfcheck.js`, platform owners only, read-only, each check in its own savepoint): missing tables, catalog counts, specialties with tool/procedure counts, how tool rows key their specialty, the caller's assignments, module statuses, and the proposals/tray/drill/coverage queries. Button "Platform diagnostics" in Studio → Overview.
 - Tests: 102 pass.
+
+## 2026-11-17 — Automatic Arabic-to-English editor draft translation
+
+- Work branch: `feature/nse-auto-translation`, based on `design/chatgpt-polish` at `ab8c9d7`. No changes to main/base branches or databases.
+- Added admin-only, center-authenticated `/api/proposals/translate-preview` for unsaved Arabic snapshots. Consent, language and bounded source validation precede provider access; results are drafts, with no database writes or publication.
+- Editor opts in to sending educational text only; translation starts after a 1.2-second pause. Existing English stays untouched and the proposed text is shown before explicit application. Source edits, manual English edits, disabling translation, submitting the form, and changed center/session discard stale results.
+- Reuses existing server-only provider credentials and structured translation service. No credentials added to client or repository. Translation remains clinically/language reviewable, never guarantees correctness or awards competency.
+- Validation: npm ci and full API suite, including mocked-provider authorization/input checks and DOM tests for automatic fill, explicit replacement, stale responses and manual edits. No real provider call or authenticated browser acceptance yet.
+- Render connector exposes only workspace `tea-d7c39bfavr4c73e99vag`, not the previously approved second NSE workspace. No Render resource or environment changed. Live service configuration and deployment remain unverified.
