@@ -91,6 +91,18 @@ module.exports = async ({ req, url, body, c, userId, centerId, role, mustUUID, d
     return m;
   };
 
+  // Translate an unsaved editor snapshot. No database writes, publication or automatic approval.
+  if (req.method === 'POST' && route === '/api/proposals/translate-preview') {
+    if (body.confirmEducationalOnly !== true) fail('EDUCATIONAL_CONTENT_CONFIRMATION_REQUIRED');
+    if (body.sourceLanguage !== 'ar' || body.language !== 'en') fail('INVALID_SOURCE_LANGUAGE');
+    const source = body.source;
+    if (!source || typeof source.title !== 'string' || typeof source.body !== 'string' ||
+        !source.title.trim() || !source.body.trim() || source.title.length > 300 || source.body.length > 12000) fail('INVALID_TRANSLATION_SOURCE', 422);
+    const translation = await propose({ mode: 'translate', sourceLang: 'ar', targetLang: 'en',
+      source, current: { title: '', body: '' }, specialty: 'Nursing education' });
+    return done({ translation, status: 'draft', clinicalReviewRequired: true, languageReviewRequired: true });
+  }
+
   if (req.method === 'GET' && route === '/api/proposals') {
     const m = await loadModule(mustUUID(url.searchParams.get('moduleId')));
     const rows = await c.query('select * from qib.module_proposals where module_id=$1 and center_id=$2 order by created_at desc limit 20', [m.id, centerId]);

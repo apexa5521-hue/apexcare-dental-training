@@ -311,6 +311,47 @@
  $("assignmentForm").onsubmit=async e=>{e.preventDefault();try{await post("/api/assign",{userId:$("assignUser").value,specialtyId:$("assignSpecialty").value});await loadTeam();alert("Specialty assigned")}catch(ex){showError(ex)}};
  $("moduleForm").onsubmit=async e=>{e.preventDefault();const tr={};for(const lang of ["en","ar","ur","id"]){const title=$("title"+lang[0].toUpperCase()+lang.slice(1)).value,body=$("body"+lang[0].toUpperCase()+lang.slice(1)).value;if(title||body)tr[lang]={title,body}};
  try{await post("/api/modules/save",{specialtyId:$("moduleSpecialty").value,slug:$("moduleSlug").value,translations:tr});await loadStudio();alert("Draft saved for review")}catch(ex){showError(ex)}};
+ // Opt-in automatic Arabic → English draft translation; never publish or overwrite manual edits.
+ {
+  const form=$("moduleForm"),arTitle=$("titleAr"),arBody=$("bodyAr"),enTitle=$("titleEn"),enBody=$("bodyEn");
+  const label=el('label',undefined,'field'),enabled=el('input');enabled.type='checkbox';
+  label.append(enabled,el('span','ترجمة العربية إلى الإنجليزية تلقائيًا · النص تعليمي وخالٍ من بيانات المرضى والموظفات، وأوافق على إرساله لخدمة AI'));
+  const message=el('p','','notice');message.setAttribute('aria-live','polite');
+  const apply=el('button','تطبيق الترجمة المقترحة · Apply translation','btn sub');apply.type='button';apply.hidden=true;
+  const proposed=el('div',undefined,'section');proposed.dir='ltr';proposed.hidden=true;
+  form.prepend(label,message,proposed,apply);
+  let timer,revision=0,pending=null;
+  const snapshot=()=>({title:arTitle.value,body:arBody.value});
+  const target=()=>({title:enTitle.value,body:enBody.value});
+  const same=(a,b)=>a.title===b.title&&a.body===b.body;
+  const invalidate=()=>{revision++;clearTimeout(timer);pending=null;apply.hidden=true;proposed.hidden=true;};
+  const translate=async()=>{
+   if(!enabled.checked||!snapshot().title.trim()||!snapshot().body.trim())return;
+   const version=revision,source=snapshot(),before=target(),center=state.center,token=state.token;
+   message.textContent='جارٍ ترجمة المسودة… · Translating draft…';
+   try{
+    const r=await post('/api/proposals/translate-preview',{source,sourceLanguage:'ar',language:'en',confirmEducationalOnly:true});
+    if(version!==revision||center!==state.center||token!==state.token||!enabled.checked||!same(source,snapshot())||!form.isConnected)return;
+    if(!same(before,target()))return;
+    pending={source,before,translation:r.translation};
+    if(!before.title.trim()&&!before.body.trim()){
+     enTitle.value=r.translation.title;enBody.value=r.translation.body;pending=null;
+     message.textContent='أُضيفت ترجمة مسودة؛ راجعي المصطلحات قبل الحفظ والاعتماد. · Draft translation added; review before approval.';
+    }else{
+     apply.hidden=false;proposed.hidden=false;proposed.replaceChildren(el('strong',r.translation.title),el('p',r.translation.body));
+     message.textContent='الترجمة جاهزة. حُفظ نصك الإنجليزي دون تغيير؛ تطبيق الاقتراح يستبدل حقلي الإنجليزية. · Translation ready; existing English preserved.';
+    }
+   }catch(error){if(version===revision)message.textContent='تعذرت الترجمة؛ النص محفوظ في الحقول دون تغيير. · Translation unavailable: '+error.message;}
+  };
+  const schedule=()=>{invalidate();message.textContent=enabled.checked?'تغيّرت العربية؛ الترجمة تحتاج تحديثًا ومراجعة. · English needs updating.':'';if(enabled.checked)timer=setTimeout(translate,1200);};
+  arTitle.addEventListener('input',schedule);arBody.addEventListener('input',schedule);
+  [enTitle,enBody].forEach(input=>input.addEventListener('input',()=>{invalidate();message.textContent='تعديل إنجليزي يدوي محفوظ؛ لن يُستبدل تلقائيًا. · Manual English edit preserved.';}));
+  enabled.onchange=schedule;
+  apply.onclick=()=>{if(!pending||!same(pending.source,snapshot())||!same(pending.before,target())){invalidate();return;}
+   enTitle.value=pending.translation.title;enBody.value=pending.translation.body;invalidate();message.textContent='طُبّقت ترجمة المسودة وتحتاج مراجعة سريرية ولغوية. · Draft applied; review required.';};
+  form.addEventListener('submit',()=>{invalidate();});
+ }
+
  let clientReady,workspaceOpening;
  let passwordSetupRequired=['invite','recovery'].includes(new URLSearchParams(location.hash.slice(1)).get('type'));
  function openWorkspace(){
