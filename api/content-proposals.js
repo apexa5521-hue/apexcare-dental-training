@@ -98,9 +98,7 @@ module.exports = async ({ req, url, body, c, userId, centerId, role, mustUUID, d
     const source = body.source;
     if (!source || typeof source.title !== 'string' || typeof source.body !== 'string' ||
         !source.title.trim() || !source.body.trim() || source.title.length > 300 || source.body.length > 12000) fail('INVALID_TRANSLATION_SOURCE', 422);
-    const translation = await propose({ mode: 'translate', sourceLang: 'ar', targetLang: 'en',
-      source, current: { title: '', body: '' }, specialty: 'Nursing education' });
-    return done({ translation, status: 'draft', clinicalReviewRequired: true, languageReviewRequired: true });
+    fail('PAID_AUTO_TRANSLATION_DISABLED', 503);
   }
 
   if (req.method === 'GET' && route === '/api/proposals') {
