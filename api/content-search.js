@@ -62,6 +62,9 @@ function search({ q, tools, procedures, ipcModules, ipcSteps, lessons }) {
 
 module.exports = async ({ req, url, c, userId, centerId, role }) => {
   if (req.method !== 'GET' || url.pathname !== '/api/search') return { handled: false };
+  // Global user lock: switching center or pausing an exam must not unlock Lucy.
+  const examination = await c.query("select 1 from qib.attempts where user_id=$1 and status=any($2::text[]) limit 1", [userId, ['active', 'paused_review']]);
+  if (examination.rows.length) fail('NURSE_LUCY_UNAVAILABLE_DURING_ASSESSMENT', 409);
   const q = String(url.searchParams.get('q') || '').slice(0, 80);
   const [catalog, modules] = await Promise.all([
     c.query("select source_name,payload from qib.legacy_catalog where source_name=any($1::text[])", [['Tools', 'Procedures', 'IPC_Modules', 'IPC_Steps']]),

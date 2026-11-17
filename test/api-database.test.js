@@ -340,6 +340,10 @@ test('rule-based drafting and content search respect roles, centers and specialt
    const rowsOut=(await db.query("select * from qib.question_candidates where origin='catalog_rule_draft' and center_id=$1",[ids.center])).rows;assert.equal(rowsOut.length,made.body.created);assert.ok(rowsOut.every(r=>r.status==='draft'&&r.category==='instrument_use'&&r.source_quote));
    assert.equal((await call('/api/content/rule-candidates',{token:'supervisor',body:{specialtyId:specialty,count:50,categories:['instrument_use']}})).body.created,0);
   }finally{await db.query("update qib.memberships set role='supervisor' where user_id=$1",[ids.supervisor])}
+  const examLock=await call('/api/search?q=mirror');
+  assert.equal(examLock.status,409);assert.equal(examLock.body.error,'NURSE_LUCY_UNAVAILABLE_DURING_ASSESSMENT');
+  // End unfinished synthetic attempts from preceding test scenarios before testing learning access.
+  await db.query("update qib.attempts set status='void' where user_id=$1 and status=any($2::text[])",[ids.nurse,['active','paused_review']]);
   const nurse=await call('/api/search?q='+encodeURIComponent('synthetic mirror'));assert.equal(nurse.status,200);assert.equal(nurse.body.tools[0].id,'rt0');
   assert.equal((await call('/api/search?q=laser')).body.tools.length,0);
   assert.equal((await call('/api/search?q=laser',{token:'supervisor'})).body.tools.length,1);

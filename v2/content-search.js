@@ -21,8 +21,8 @@ window.nseMountSearch = ({ host, request, el, center, language, openLesson }) =>
 #nseSearch .notice:empty{display:none}`;
     document.head.append(style);
   }
-  const L = { ar: { title: 'اسأل المنصة', hint: 'ابحث عن أداة أو إجراء أو خطوة مكافحة عدوى أو درس. النتائج من محتوى المنصة فقط.', go: 'بحث', tools: 'الأدوات والمستهلكات', procs: 'الإجراءات', ipc: 'مكافحة العدوى', lessons: 'الدروس', none: 'ما فيه نتائج في محتوى المنصة. جرّب كلمة ثانية أو اسم الأداة بالإنجليزي.', usedIn: 'يُستخدم في:', needs: 'يحتاج:', missing: 'الترجمة غير متوفرة — معروض بالإنجليزية', open: 'افتح الدرس', unresolved: 'عناصر بدون ربط موثق' },
-    en: { title: 'Ask the platform', hint: 'Search an instrument, procedure, infection-prevention step or lesson. Results come only from NSE content.', go: 'Search', tools: 'Instruments & supplies', procs: 'Procedures', ipc: 'Infection prevention', lessons: 'Lessons', none: 'No results in NSE content. Try another word or the English instrument name.', usedIn: 'Used in:', needs: 'Needs:', missing: 'Translation not available — shown in English', open: 'Open lesson', unresolved: 'items without a verified link' } };
+  const L = { ar: { title: 'Nurse Lucy · اسألي لوسي', hint: 'ابحث عن أداة أو إجراء أو خطوة مكافحة عدوى أو درس. النتائج من محتوى المنصة فقط.', go: 'بحث', tools: 'الأدوات والمستهلكات', procs: 'الإجراءات', ipc: 'مكافحة العدوى', lessons: 'الدروس', none: 'ما فيه نتائج في محتوى المنصة. جرّب كلمة ثانية أو اسم الأداة بالإنجليزي.', usedIn: 'يُستخدم في:', needs: 'يحتاج:', missing: 'الترجمة غير متوفرة — معروض بالإنجليزية', open: 'افتح الدرس', unresolved: 'عناصر بدون ربط موثق' },
+    en: { title: 'Nurse Lucy · Ask Lucy', hint: 'Search an instrument, procedure, infection-prevention step or lesson. Results come only from NSE content.', go: 'Search', tools: 'Instruments & supplies', procs: 'Procedures', ipc: 'Infection prevention', lessons: 'Lessons', none: 'No results in NSE content. Try another word or the English instrument name.', usedIn: 'Used in:', needs: 'Needs:', missing: 'Translation not available — shown in English', open: 'Open lesson', unresolved: 'items without a verified link' } };
   const lang = () => language() || 'en', t = k => (L[lang()] || L.en)[k] || L.en[k];
   const text = names => { const l = lang(); return names[l] ? { value: names[l], fallback: false } : { value: names.en || names.ar || '', fallback: l !== 'en' }; };
   const label = names => { const r = text(names), span = el('span', r.value); if (r.fallback) { span.lang = 'en'; span.dir = 'ltr'; } return [span, r.fallback]; };
@@ -53,10 +53,11 @@ window.nseMountSearch = ({ host, request, el, center, language, openLesson }) =>
   form.onsubmit = async e => {
     e.preventDefault();
     const q = input.value.trim(); if (q.length < 2) return;
-    const mine = ++ticket; btn.disabled = true; msg.textContent = ''; hits.replaceChildren();
+    const mine = ++ticket; btn.disabled = true; msg.textContent = lang() === 'ar' ? 'لوسي تبحث في محتوى المنصة…' : 'Lucy is searching NSE content…'; hits.replaceChildren();
     try {
       const r = await request('/api/search?centerId=' + encodeURIComponent(center()) + '&q=' + encodeURIComponent(q));
       if (mine !== ticket) return;
+      msg.textContent = '';
       const add = (name, list, render) => { if (!list.length) return; hits.append(el('p', t(name), 'group')); list.forEach(x => hits.append(render(x))); };
       add('tools', r.tools, x => row(label(x.names), [text(x.uses).value], x.imageUrl, chips(t('usedIn'), x.procedures.map(p => p.names))));
       add('procs', r.procedures, x => row(label(x.names), [x.unresolvedItems ? x.unresolvedItems + ' ' + t('unresolved') : ''], null, chips(t('needs'), x.tools.map(i => i.names))));
