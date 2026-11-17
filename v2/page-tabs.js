@@ -61,15 +61,17 @@
       b.type = 'button'; b.className = 'nse-tab'; b.setAttribute('role', 'tab'); b.dataset.tab = t.id;
       const icon = document.createElement('span'); icon.className = 'nse-tab-icon'; icon.textContent = t.icon; icon.setAttribute('aria-hidden', 'true');
       const label = document.createElement('span'); label.textContent = t.label;
-      b.append(icon, label);
-      b.onclick = () => { active = t.id; store.set('nse-tab-' + name, active); apply(); b.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' }); };
+      b.append(icon, label); b.dataset.label = t.label;
+      b.onclick = () => { active = t.id; store.set('nse-tab-' + name, active); apply(); b.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); };
       bar.append(b); return b;
     });
     bar.addEventListener('keydown', e => {
-      const i = buttons.findIndex(b => b.dataset.tab === active), dir = getComputedStyle(bar).direction === 'rtl' ? -1 : 1;
+      const available = buttons.filter(b => !b.hidden);
+      const i = available.findIndex(b => b.dataset.tab === active), dir = getComputedStyle(bar).direction === 'rtl' ? -1 : 1;
       const step = e.key === 'ArrowRight' ? dir : e.key === 'ArrowLeft' ? -dir : 0;
-      if (!step) return; e.preventDefault();
-      const next = buttons[(i + step + buttons.length) % buttons.length]; next.click(); next.focus();
+      if (!step && !['Home','End'].includes(e.key)) return; e.preventDefault();
+      const next = e.key === 'Home' ? available[0] : e.key === 'End' ? available[available.length - 1] : available[(i + step + available.length) % available.length];
+      if (next) { next.click(); next.focus(); }
     });
     const nav = view.querySelector(':scope > .page-navigation');
     nav ? nav.after(bar) : view.prepend(bar);
@@ -98,6 +100,11 @@
           card.classList.toggle('nse-tab-off', kids.length === 0);
         });
         buttons.forEach(b => {
+          const lang = document.getElementById('language')?.value || 'en';
+          const parts = b.dataset.label.split(' · ');
+          const arabic = parts.find(p => /[\u0600-\u06ff]/.test(p));
+          const english = parts.find(p => !/[\u0600-\u06ff]/.test(p));
+          b.lastElementChild.textContent = lang === 'ar' ? (arabic || b.dataset.label) : (english || b.dataset.label);
           const on = b.dataset.tab === active;
           b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1;
           b.hidden = counts[b.dataset.tab] === 0 && !on;
@@ -111,6 +118,7 @@
     new MutationObserver(() => { if (queued || busy) return; queued = true; requestAnimationFrame(() => { queued = false; apply(); }); })
       .observe(view, { childList: true, subtree: true });
     if ('ResizeObserver' in window) new ResizeObserver(() => apply()).observe(bar);
+    document.getElementById('language')?.addEventListener('change', apply);
     apply();
   }
 
@@ -118,7 +126,7 @@
   style.textContent = `
 .nse-tabs{position:relative;display:flex;gap:4px;padding:5px;margin:0 0 20px;background:color-mix(in srgb,var(--nse-ink,#182b3b) 6%,transparent);border-radius:16px;overflow-x:auto;scrollbar-width:none;isolation:isolate}
 .nse-tabs::-webkit-scrollbar{display:none}
-.nse-tab{position:relative;z-index:1;flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;border:0;background:none;color:var(--nse-muted,#637589);font:inherit;font-size:13.5px;font-weight:650;padding:10px 14px;border-radius:12px;cursor:pointer;white-space:nowrap;min-height:42px;transition:color .2s}
+.nse-tab{position:relative;z-index:1;flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;border:0;background:none;color:var(--nse-muted,#637589);font:inherit;font-size:13.5px;font-weight:650;padding:10px 14px;border-radius:12px;cursor:pointer;white-space:nowrap;min-height:44px;transition:color .2s}
 .nse-tab:hover{color:var(--nse-ink,#182b3b)}
 .nse-tab[aria-selected=true]{color:var(--nse-ink,#182b3b)}
 .nse-tab:focus-visible{outline:2px solid var(--nse-green,#127b69);outline-offset:2px}

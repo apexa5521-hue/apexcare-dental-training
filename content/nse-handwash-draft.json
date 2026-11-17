@@ -1,0 +1,116 @@
+{
+  "id": "handwashing-poster-draft",
+  "version": 1,
+  "status": "draft",
+  "source": {
+    "file": "HAND WASH POSTER.pdf",
+    "libraryFileId": "libfile_b12476380fc08191a7d9ee83bf4739f7",
+    "page": 1,
+    "extraction": "visually transcribed and paraphrased; source artwork retained in original PDF"
+  },
+  "review": {
+    "clinical": "pending",
+    "translation": "pending",
+    "localPolicy": "pending"
+  },
+  "missingLanguages": [
+    "ur",
+    "id"
+  ],
+  "publishable": false,
+  "practicalCompetencyAwarded": false,
+  "title": {
+    "ar": "غسل اليدين بالماء والصابون",
+    "en": "Handwashing with soap and water"
+  },
+  "entireProcedureSeconds": {
+    "min": 40,
+    "max": 60,
+    "sourcePage": 1
+  },
+  "steps": [
+    {
+      "id": "handwash-1",
+      "sourceDiagramNumber": 0,
+      "ar": "بلّلي اليدين بالماء",
+      "en": "Wet hands with water."
+    },
+    {
+      "id": "handwash-2",
+      "sourceDiagramNumber": 1,
+      "ar": "ضعي كمية صابون تغطي جميع أسطح اليدين",
+      "en": "Apply enough soap to cover all hand surfaces."
+    },
+    {
+      "id": "handwash-3",
+      "sourceDiagramNumber": 2,
+      "ar": "افركي راحتي اليدين ببعضهما",
+      "en": "Rub hands palm to palm."
+    },
+    {
+      "id": "handwash-4",
+      "sourceDiagramNumber": 3,
+      "ar": "افركي راحة اليد فوق ظهر الأخرى مع تشبيك الأصابع، ثم بدّلي",
+      "en": "Rub each palm over the opposite dorsum with fingers interlaced."
+    },
+    {
+      "id": "handwash-5",
+      "sourceDiagramNumber": 4,
+      "ar": "افركي راحة لراحة مع تشبيك الأصابع",
+      "en": "Rub palm to palm with fingers interlaced."
+    },
+    {
+      "id": "handwash-6",
+      "sourceDiagramNumber": 5,
+      "ar": "افركي ظهور الأصابع مقابل راحة اليد الأخرى مع تعشيقها",
+      "en": "Rub backs of fingers to opposing palms with fingers interlocked."
+    },
+    {
+      "id": "handwash-7",
+      "sourceDiagramNumber": 6,
+      "ar": "افركي كل إبهام بحركة دورانية داخل راحة اليد الأخرى",
+      "en": "Rub each thumb rotationally in the opposite palm."
+    },
+    {
+      "id": "handwash-8",
+      "sourceDiagramNumber": 7,
+      "ar": "افركي أطراف الأصابع بحركة دورانية ذهابًا وإيابًا في راحة اليد الأخرى",
+      "en": "Rub fingertips rotationally, backwards and forwards, in the opposite palm."
+    },
+    {
+      "id": "handwash-9",
+      "sourceDiagramNumber": 8,
+      "ar": "اشطفي اليدين بالماء",
+      "en": "Rinse hands with water."
+    },
+    {
+      "id": "handwash-10",
+      "sourceDiagramNumber": 9,
+      "ar": "جفّفي اليدين جيدًا بمنشفة للاستعمال مرة واحدة",
+      "en": "Dry hands thoroughly with a single-use towel."
+    },
+    {
+      "id": "handwash-11",
+      "sourceDiagramNumber": 10,
+      "ar": "استخدمي المنشفة لإغلاق الصنبور",
+      "en": "Use the towel to turn off the faucet."
+    }
+  ],
+  "questions": [
+    {
+      "id": "handwash-duration",
+      "language": "en",
+      "status": "draft",
+      "prompt": "What is the duration of the entire handwashing procedure shown on the poster?",
+      "options": [
+        "10–20 seconds",
+        "20–30 seconds",
+        "40–60 seconds"
+      ],
+      "correctOptionIndex": 2,
+      "sourcePage": 1,
+      "clinicalReviewRequired": true
+    }
+  ],
+  "usage": "Authoring source only. Do not serve answer keys to learners. Completion of this lesson or its questions is not observed practical competency."
+}
