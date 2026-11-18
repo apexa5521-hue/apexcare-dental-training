@@ -234,7 +234,7 @@
   try{
    const data=await post("/api/exams/start",{assessmentId:a.id});setText("examMessage","");
    if(data.status!=="active"){$("examPanel").replaceChildren(el("p","Assessment "+data.status.replace("_"," ")+" — contact your supervisor.","warning"));return}
-   state.attempt=data.attemptId;const root=$("examPanel");root.replaceChildren();
+   state.attempt=data.attemptId;window.nseLockLucy?.();const root=$("examPanel");root.replaceChildren();
    root.className="exam-focus";root.dir="ltr";const examProgress=el("progress"),examPercent=el("p",undefined,"exam-progress-label");examProgress.max=data.questions.length;examProgress.value=0;const timer=el("p",undefined,"exam-timer"),position=el("p",undefined,"exam-position"),questionHost=el("div",undefined,"exam-question-host"),nav=el("div",undefined,"exam-nav"),jump=el("div",undefined,"exam-grid");timer.setAttribute("role","timer");const examHead=el("div",undefined,"exam-head"),examHeadText=el("div",undefined,"exam-head-text");examHeadText.append(el("strong",a.title||"Clinical assessment","exam-title"),examPercent,examProgress);examHead.append(examHeadText,timer);root.append(examHead);
    const previous=el("button","Previous","btn sub"),next=el("button","Next","btn sub"),flag=el("button","Flag for review","btn sub");
    let cursor=0,pendingSaves=0;const flags=new Set(data.questions.map((q,i)=>data.flags?.[q.id]?i:null).filter(i=>i!==null)),panels=[],jumpButtons=[];

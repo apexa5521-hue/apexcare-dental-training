@@ -1,0 +1,495 @@
+{
+  "source": "Local previously imported snapshot; NOT live database verification",
+  "specialties": 8,
+  "tools": 443,
+  "procedures": 300,
+  "missingLinks": [
+    {
+      "procedureId": "408513c7fdde4ed5",
+      "procedure": "Root Canal Treatment (RCT)",
+      "field": "toolIds",
+      "missingId": "w01i6mqzn0"
+    },
+    {
+      "procedureId": "d46529449f0b4b71",
+      "procedure": "Scaling & Professional Cleaning",
+      "field": "toolIds",
+      "missingId": "13503c4c558142d6"
+    },
+    {
+      "procedureId": "d46529449f0b4b71",
+      "procedure": "Scaling & Professional Cleaning",
+      "field": "toolIds",
+      "missingId": "8c0987aa2c314fb0"
+    },
+    {
+      "procedureId": "d46529449f0b4b71",
+      "procedure": "Scaling & Professional Cleaning",
+      "field": "toolIds",
+      "missingId": "d25fe53075a34727"
+    },
+    {
+      "procedureId": "d46529449f0b4b71",
+      "procedure": "Scaling & Professional Cleaning",
+      "field": "toolIds",
+      "missingId": "4f6e134b8a594538"
+    },
+    {
+      "procedureId": "d46529449f0b4b71",
+      "procedure": "Scaling & Professional Cleaning",
+      "field": "toolIds",
+      "missingId": "e2228079b8ef4df9"
+    },
+    {
+      "procedureId": "d46529449f0b4b71",
+      "procedure": "Scaling & Professional Cleaning",
+      "field": "toolIds",
+      "missingId": "6cb34e0f2221450a"
+    },
+    {
+      "procedureId": "d46529449f0b4b71",
+      "procedure": "Scaling & Professional Cleaning",
+      "field": "toolIds",
+      "missingId": "8ab1b428686f4481"
+    },
+    {
+      "procedureId": "d46529449f0b4b71",
+      "procedure": "Scaling & Professional Cleaning",
+      "field": "toolIds",
+      "missingId": "ee5744c87df7477a"
+    },
+    {
+      "procedureId": "075b771328ee471e",
+      "procedure": "Direct Composite Restoration",
+      "field": "toolIds",
+      "missingId": "0df77563f28b4408"
+    },
+    {
+      "procedureId": "075b771328ee471e",
+      "procedure": "Direct Composite Restoration",
+      "field": "toolIds",
+      "missingId": "82f438b2b956401c"
+    },
+    {
+      "procedureId": "075b771328ee471e",
+      "procedure": "Direct Composite Restoration",
+      "field": "toolIds",
+      "missingId": "6470d5bb15b34c00"
+    },
+    {
+      "procedureId": "075b771328ee471e",
+      "procedure": "Direct Composite Restoration",
+      "field": "toolIds",
+      "missingId": "6e62c0264931404a"
+    },
+    {
+      "procedureId": "da6351915ba5488c",
+      "procedure": "Final Restoration & Post & Core Build-up",
+      "field": "toolIds",
+      "missingId": "717a7232a021471a"
+    },
+    {
+      "procedureId": "da6351915ba5488c",
+      "procedure": "Final Restoration & Post & Core Build-up",
+      "field": "toolIds",
+      "missingId": "9162e0ce3d534a43"
+    },
+    {
+      "procedureId": "da6351915ba5488c",
+      "procedure": "Final Restoration & Post & Core Build-up",
+      "field": "toolIds",
+      "missingId": "07d6ec8eb17446ab"
+    },
+    {
+      "procedureId": "da6351915ba5488c",
+      "procedure": "Final Restoration & Post & Core Build-up",
+      "field": "toolIds",
+      "missingId": "42c037b0e98b4597"
+    },
+    {
+      "procedureId": "da6351915ba5488c",
+      "procedure": "Final Restoration & Post & Core Build-up",
+      "field": "toolIds",
+      "missingId": "e64d7728b8da48ee"
+    },
+    {
+      "procedureId": "da6351915ba5488c",
+      "procedure": "Final Restoration & Post & Core Build-up",
+      "field": "toolIds",
+      "missingId": "8ff3d51a16754b4d"
+    },
+    {
+      "procedureId": "da6351915ba5488c",
+      "procedure": "Final Restoration & Post & Core Build-up",
+      "field": "consumableIds",
+      "missingId": "07d6ec8eb17446ab"
+    },
+    {
+      "procedureId": "da6351915ba5488c",
+      "procedure": "Final Restoration & Post & Core Build-up",
+      "field": "consumableIds",
+      "missingId": "717a7232a021471a"
+    },
+    {
+      "procedureId": "da6351915ba5488c",
+      "procedure": "Final Restoration & Post & Core Build-up",
+      "field": "consumableIds",
+      "missingId": "9162e0ce3d534a43"
+    },
+    {
+      "procedureId": "da6351915ba5488c",
+      "procedure": "Final Restoration & Post & Core Build-up",
+      "field": "consumableIds",
+      "missingId": "42c037b0e98b4597"
+    },
+    {
+      "procedureId": "da6351915ba5488c",
+      "procedure": "Final Restoration & Post & Core Build-up",
+      "field": "consumableIds",
+      "missingId": "0df77563f28b4408"
+    },
+    {
+      "procedureId": "b50f8d6651fb41a6",
+      "procedure": "Crown Preparation",
+      "field": "toolIds",
+      "missingId": "6e62c0264931404a"
+    },
+    {
+      "procedureId": "807dec93d74b425a",
+      "procedure": "Crown Cementation",
+      "field": "toolIds",
+      "missingId": "0df77563f28b4408"
+    },
+    {
+      "procedureId": "807dec93d74b425a",
+      "procedure": "Crown Cementation",
+      "field": "toolIds",
+      "missingId": "6e62c0264931404a"
+    },
+    {
+      "procedureId": "bb3f80d7e58c4963",
+      "procedure": "Teeth Bleaching",
+      "field": "toolIds",
+      "missingId": "aaa29b105d15441a"
+    },
+    {
+      "procedureId": "bb3f80d7e58c4963",
+      "procedure": "Teeth Bleaching",
+      "field": "consumableIds",
+      "missingId": "aaa29b105d15441a"
+    },
+    {
+      "procedureId": "fa0deeb9c8444472",
+      "procedure": "Tooth Extraction",
+      "field": "toolIds",
+      "missingId": "1eaf7da76fce4100"
+    },
+    {
+      "procedureId": "a1b2c3d4e5f60016",
+      "procedure": "Panoramic X-Ray",
+      "field": "toolIds",
+      "missingId": "ee5744c87df7477a"
+    },
+    {
+      "procedureId": "e2717f20159c4ae4",
+      "procedure": "Invisalign Clear Aligners",
+      "field": "toolIds",
+      "missingId": "ae7cf04af9264c69"
+    },
+    {
+      "procedureId": "3aafc909e7ee4349",
+      "procedure": "Pediatric Restorative Filling",
+      "field": "toolIds",
+      "missingId": "7c7f4c7565db4873"
+    },
+    {
+      "procedureId": "3aafc909e7ee4349",
+      "procedure": "Pediatric Restorative Filling",
+      "field": "consumableIds",
+      "missingId": "7c7f4c7565db4873"
+    },
+    {
+      "procedureId": "c77aa55f3ad1490e",
+      "procedure": "Crown or Veneer Preparation",
+      "field": "toolIds",
+      "missingId": "7d08e5e640634900"
+    },
+    {
+      "procedureId": "c77aa55f3ad1490e",
+      "procedure": "Crown or Veneer Preparation",
+      "field": "toolIds",
+      "missingId": "481376593ca9424e"
+    },
+    {
+      "procedureId": "c77aa55f3ad1490e",
+      "procedure": "Crown or Veneer Preparation",
+      "field": "toolIds",
+      "missingId": "27bb31bdb2084477"
+    },
+    {
+      "procedureId": "f98aaabd25e048eb",
+      "procedure": "Conventional Crown/Veneer Impression",
+      "field": "toolIds",
+      "missingId": "7d08e5e640634900"
+    },
+    {
+      "procedureId": "573f9260f1834abe",
+      "procedure": "Digital Impression (ITERO Scan)",
+      "field": "toolIds",
+      "missingId": "7d08e5e640634900"
+    },
+    {
+      "procedureId": "ab830d16183940ef",
+      "procedure": "Crown or Veneer Delivery & Cementation",
+      "field": "toolIds",
+      "missingId": "7d08e5e640634900"
+    },
+    {
+      "procedureId": "ab830d16183940ef",
+      "procedure": "Crown or Veneer Delivery & Cementation",
+      "field": "toolIds",
+      "missingId": "27bb31bdb2084477"
+    },
+    {
+      "procedureId": "cf01bc8deb464c86",
+      "procedure": "Implant Crown or Implant Bridge",
+      "field": "toolIds",
+      "missingId": "7d08e5e640634900"
+    },
+    {
+      "procedureId": "cf01bc8deb464c86",
+      "procedure": "Implant Crown or Implant Bridge",
+      "field": "toolIds",
+      "missingId": "481376593ca9424e"
+    },
+    {
+      "procedureId": "cf01bc8deb464c86",
+      "procedure": "Implant Crown or Implant Bridge",
+      "field": "toolIds",
+      "missingId": "27bb31bdb2084477"
+    },
+    {
+      "procedureId": "cf01bc8deb464c86",
+      "procedure": "Implant Crown or Implant Bridge",
+      "field": "toolIds",
+      "missingId": "82d06d355b8b481c"
+    },
+    {
+      "procedureId": "7cddd68e4f1645be",
+      "procedure": "Removable Partial Denture (RPD) Impression",
+      "field": "toolIds",
+      "missingId": "7d08e5e640634900"
+    },
+    {
+      "procedureId": "fd663f7a687044a6",
+      "procedure": "RPD Delivery & Adjustment",
+      "field": "toolIds",
+      "missingId": "7d08e5e640634900"
+    },
+    {
+      "procedureId": "fd663f7a687044a6",
+      "procedure": "RPD Delivery & Adjustment",
+      "field": "toolIds",
+      "missingId": "481376593ca9424e"
+    },
+    {
+      "procedureId": "a1b2c3d4e5f60009",
+      "procedure": "Complete Denture Impression",
+      "field": "toolIds",
+      "missingId": "7d08e5e640634900"
+    },
+    {
+      "procedureId": "a1b2c3d4e5f60010",
+      "procedure": "Complete Denture Delivery",
+      "field": "toolIds",
+      "missingId": "7d08e5e640634900"
+    },
+    {
+      "procedureId": "225d3f1c21954d93",
+      "procedure": "Surgical Extraction (Lower Wisdom Tooth)",
+      "field": "consumableIds",
+      "missingId": "32202778d41e4826"
+    },
+    {
+      "procedureId": "a4220fa65c6a4f71",
+      "procedure": "Dental Implant Placement",
+      "field": "consumableIds",
+      "missingId": "32202778d41e4826"
+    },
+    {
+      "procedureId": "4704f6b572b84401",
+      "procedure": "Simple extraction premolar tooth",
+      "field": "consumableIds",
+      "missingId": "32202778d41e4826"
+    },
+    {
+      "procedureId": "45a287a298b840c8",
+      "procedure": "Simple extraction upper wisdom",
+      "field": "consumableIds",
+      "missingId": "32202778d41e4826"
+    },
+    {
+      "procedureId": "a1b2c3d4e5f60031",
+      "procedure": "Gum Grafting",
+      "field": "consumableIds",
+      "missingId": "45bad0b697a94f05"
+    },
+    {
+      "procedureId": "a1b2c3d4e5f60032",
+      "procedure": "Primary Impression",
+      "field": "toolIds",
+      "missingId": "7d08e5e640634900"
+    },
+    {
+      "procedureId": "a1b2c3d4e5f60033",
+      "procedure": "Dental Implant Bridge Delivery",
+      "field": "toolIds",
+      "missingId": "7d08e5e640634900"
+    },
+    {
+      "procedureId": "a1b2c3d4e5f60035",
+      "procedure": "Cervical Restoration",
+      "field": "toolIds",
+      "missingId": "grlzo35x26"
+    },
+    {
+      "procedureId": "a2eeb454d134955a",
+      "procedure": "Thread Face Lift (per thread)",
+      "field": "consumableIds",
+      "missingId": "6d275c92f2004f76"
+    },
+    {
+      "procedureId": "5edfe6a4aabc4b3a",
+      "procedure": "Cosmetic Botox Injection (one area)",
+      "field": "consumableIds",
+      "missingId": "86b1145a24164074"
+    },
+    {
+      "procedureId": "7e38e74319cd75aa",
+      "procedure": "Botox for Facial Muscle Pain (one side)",
+      "field": "consumableIds",
+      "missingId": "86b1145a24164074"
+    },
+    {
+      "procedureId": "996fafb893ccb491",
+      "procedure": "Surgical Chin Augmentation (GA)",
+      "field": "consumableIds",
+      "missingId": "626a5062269d4cde"
+    },
+    {
+      "procedureId": "92be8f6688437717",
+      "procedure": "Silicone Chin Augmentation (local anesthesia)",
+      "field": "consumableIds",
+      "missingId": "626a5062269d4cde"
+    },
+    {
+      "procedureId": "713daf3405dff69a",
+      "procedure": "Silicone Cheek Augmentation",
+      "field": "consumableIds",
+      "missingId": "626a5062269d4cde"
+    },
+    {
+      "procedureId": "912715d51cf59109",
+      "procedure": "Silicone Jaw Contouring",
+      "field": "consumableIds",
+      "missingId": "626a5062269d4cde"
+    },
+    {
+      "procedureId": "fa02eb2c6d6f8a9a",
+      "procedure": "Impacted Canine Invisalign",
+      "field": "consumableIds",
+      "missingId": "4c79c131e1754300"
+    },
+    {
+      "procedureId": "405fb85b4830ad82",
+      "procedure": "Invisalign Comprehensive (both jaws)",
+      "field": "consumableIds",
+      "missingId": "4c79c131e1754300"
+    },
+    {
+      "procedureId": "82feb1f5b5833701",
+      "procedure": "Invisalign Full (both jaws)",
+      "field": "consumableIds",
+      "missingId": "4c79c131e1754300"
+    },
+    {
+      "procedureId": "071fbc451d7a7da8",
+      "procedure": "Invisalign Moderate (both jaws)",
+      "field": "consumableIds",
+      "missingId": "4c79c131e1754300"
+    },
+    {
+      "procedureId": "2b31571c2e99a2e0",
+      "procedure": "Invisalign Lite (both jaws)",
+      "field": "consumableIds",
+      "missingId": "4c79c131e1754300"
+    },
+    {
+      "procedureId": "b6997ebf6740d07b",
+      "procedure": "Invisalign Moderate (one jaw)",
+      "field": "consumableIds",
+      "missingId": "4c79c131e1754300"
+    },
+    {
+      "procedureId": "0a0c9367df148217",
+      "procedure": "Invisalign Lite (one jaw)",
+      "field": "consumableIds",
+      "missingId": "4c79c131e1754300"
+    },
+    {
+      "procedureId": "dbe234c21d4798ac",
+      "procedure": "Invisalign Express (both jaws)",
+      "field": "consumableIds",
+      "missingId": "4c79c131e1754300"
+    },
+    {
+      "procedureId": "7bc19850ce73e343",
+      "procedure": "Bonded Retainer (one jaw)",
+      "field": "consumableIds",
+      "missingId": "4c79c131e1754300"
+    },
+    {
+      "procedureId": "01746cb282026e42",
+      "procedure": "Bonded Retainer (both jaws)",
+      "field": "consumableIds",
+      "missingId": "4c79c131e1754300"
+    },
+    {
+      "procedureId": "a31e15dcf0cd5b65",
+      "procedure": "Replace Missing Brackets/Bands",
+      "field": "consumableIds",
+      "missingId": "4c79c131e1754300"
+    },
+    {
+      "procedureId": "f7f92c143e556641",
+      "procedure": "Cleaning & Polishing Primary Teeth (with calculus)",
+      "field": "toolIds",
+      "missingId": "r53q7es1nm"
+    },
+    {
+      "procedureId": "d2d648a22cca8e0d",
+      "procedure": "Fluoride Gel Application (both arches)",
+      "field": "consumableIds",
+      "missingId": "g1con8s2bp"
+    },
+    {
+      "procedureId": "95e1d763f588b265",
+      "procedure": "One-Surface Restoration",
+      "field": "toolIds",
+      "missingId": "59fecc2d65a94227"
+    },
+    {
+      "procedureId": "d69534f07c37e255",
+      "procedure": "Two-Surface Restoration",
+      "field": "toolIds",
+      "missingId": "59fecc2d65a94227"
+    }
+  ],
+  "missingToolImages": 2,
+  "missingEnglishPurpose": 28,
+  "missingArabicPurpose": 104,
+  "invalidToolSpecialty": 0,
+  "invalidProcedureSpecialty": 0,
+  "duplicateToolIds": [],
+  "duplicateProcedureIds": []
+}

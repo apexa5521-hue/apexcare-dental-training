@@ -68,6 +68,13 @@ function balance(candidates, count) {
 }
 
 module.exports = async ({ req, url, body, c, userId, centerId, role, mustUUID, deny }) => {
+  if (req.method === 'GET' && url.pathname === '/api/catalog/integrity') {
+    if (!['admin', 'supervisor'].includes(role.role)) deny();
+    const rows = (await c.query("select source_name,payload from qib.legacy_catalog where source_name=any($1::text[])", [['Tools', 'Procedures', 'Specialties']])).rows;
+    const get = name => rows.filter(r => r.source_name === name).map(r => r.payload);
+    return { handled: true, data: require('./catalog-audit').auditCatalog({ tools: get('Tools'), procedures: get('Procedures'), specialties: get('Specialties') }) };
+  }
+
   if (req.method === 'GET' && url.pathname === '/api/catalog/coverage') {
     // How much catalog material each specialty has, so admins can see why a drill or tray is empty.
     if (!['admin', 'supervisor'].includes(role.role)) deny();

@@ -271,5 +271,23 @@ window.nseMountCoverage = async ({ root, after, request, el, ctx }) => {
       finally { diag.disabled = false; }
     };
     box.append(diag, out);
+    const integrity = el('button', 'مراجعة نقص المحتوى والروابط · Content integrity', 'btn sub'); integrity.type = 'button';
+    const integrityOut = el('div');
+    integrity.onclick = async () => {
+      integrity.disabled = true; integrityOut.textContent = '…';
+      try {
+        const audit = await request('/api/catalog/integrity?centerId=' + encodeURIComponent(ctx.center));
+        integrityOut.replaceChildren(el('p', audit.totals.tools + ' tools · ' + audit.totals.procedures + ' procedures · ' + audit.totalIssues + ' content issues', 'small'));
+        const details = el('details'), summary = el('summary', 'تفاصيل النواقص · Missing content details'); details.append(summary);
+        const list = el('ul');
+        Object.entries(audit.counts).forEach(([kind,count]) => list.append(el('li', kind + ': ' + count)));
+        details.append(list); integrityOut.append(details);
+        const records = el('details'); records.append(el('summary', 'السجلات المتأثرة · Affected records'));
+        const recordList = el('ul'); audit.issues.forEach(i => recordList.append(el('li', [i.source, i.id, i.name, i.kind, i.detail].join(' · ')))); records.append(recordList); integrityOut.append(records);
+        integrityOut.append(el('p', 'قراءة فقط؛ لا يتم تعديل المصدر أو اعتماد المحتوى. فحص الصور يتحقق من الرابط، وليس من مطابقة الصورة أو توفرها. Read-only; no clinical approval or source changes.', 'small'));
+        if (audit.detailsTruncated) integrityOut.append(el('p', 'معروضة أول 200 ملاحظة؛ الأعداد تشمل جميع السجلات. First 200 details; totals cover all records.', 'small'));
+      } catch(e) { integrityOut.textContent = e.message; } finally { integrity.disabled = false; }
+    };
+    box.append(integrity, integrityOut);
   } catch (e) { box.append(el('p', e.message, 'small')); }
 };

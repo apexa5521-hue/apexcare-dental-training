@@ -371,3 +371,13 @@ Owner decision: no paid AI subscription is required. Added free, content-bound f
 - Reuses existing server-only provider credentials and structured translation service. No credentials added to client or repository. Translation remains clinically/language reviewable, never guarantees correctness or awards competency.
 - Validation: npm ci and full API suite, including mocked-provider authorization/input checks and DOM tests for automatic fill, explicit replacement, stale responses and manual edits. No real provider call or authenticated browser acceptance yet.
 - Render connector exposes only workspace `tea-d7c39bfavr4c73e99vag`, not the previously approved second NSE workspace. No Render resource or environment changed. Live service configuration and deployment remain unverified.
+
+## 2026-11-18 — Lucy conversation and catalog integrity draft
+
+- Work remains on `feature/nurse-lucy-draft`; no production merge or live deployment in this round.
+- Lucy now has the approved modest illustrated portrait with Nurse Lucy badge, conversation bubbles, page-language defaults, an Arabic/English switch retaining message history, source record IDs and published lesson navigation. It is deterministic catalog search without a model/API provider, not unrestricted natural-language AI.
+- Search is server-blocked for active or paused-review assessments across centers. Starting an exam clears local Lucy results and invalidates pending answers. Local UI checks verify that a late response cannot reappear after locking.
+- Admin/supervisor-only, read-only `/api/catalog/integrity` reports missing translations, image URLs, unresolved links, malformed lists and duplicate IDs. Detail output is capped, counts are complete. It neither changes source data nor verifies image availability/clinical correctness.
+- Snapshot audit (not live): 8 specialties, 443 tools, 300 procedures, 80 missing tool associations, 2 absent image URLs, 104 missing Arabic purposes and 28 missing English purposes. No guessed repairs or credential imports.
+- Verified: clean dependency install; 114 automated tests; JavaScript syntax and whitespace checks. These are local checks, not deployed multi-role/device acceptance.
+- Live browser reaches the NSE sign-in page after Render free-instance wake-up. No application user session is currently present. Supabase connector denies access to the dedicated NSE project. Authenticated acceptance, live data reconciliation, independent clinical/language review, staff identity verification and deployment remain blocked/pending. Do not report platform ready or issue practical competency from theory.
