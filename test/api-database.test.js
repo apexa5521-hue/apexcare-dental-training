@@ -489,5 +489,6 @@ test('approved Lucy portrait is served as a JPEG without exposing arbitrary file
  const response=await nativeFetch(base+'/assets/nurse-lucy.jpg');
  assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'image/jpeg');
  const bytes=new Uint8Array(await response.arrayBuffer());assert.equal(bytes[0],255);assert.equal(bytes[1],216);
+ const logo=await nativeFetch(base+'/assets/nse-logo.webp');assert.equal(logo.status,200);assert.equal(logo.headers.get('content-type'),'image/webp');assert.ok((await logo.arrayBuffer()).byteLength>1000);
  const unknown=await nativeFetch(base+'/assets/unknown.jpg');assert.equal(unknown.status,401);
 });
