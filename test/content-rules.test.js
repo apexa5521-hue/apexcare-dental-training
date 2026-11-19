@@ -32,3 +32,10 @@ test('search card labels missing translations instead of presenting English as t
  assert.match(asked,/\/api\/search\?centerId=c1&q=mirror/);assert.match(d.querySelector('#nseSearch').textContent,/Translation not available/);assert.equal(d.querySelector('#nseSearch h4 span').lang,'en');
  [...d.querySelectorAll('#nseSearch button')].find(b=>b.textContent==='Open lesson').click();assert.equal(opened,'l1');w.close();
 });
+
+test('Lucy recognizes bounded question introductions without inventing absent answers',()=>{
+ const context={tools,procedures,ipcModules,ipcSteps,lessons:[]};
+ const r=search({...context,q:'What is the purpose of the mouth mirror?'});assert.equal(r.tools[0].id,'t0');assert.equal(r.aiUsed,false);
+ assert.equal(search({...context,q:'وش فائدة مرآة الفم؟'}).tools[0].id,'t0');
+ const missing=search({...context,q:'Tell me about a nonexistent instrument'});assert.equal(missing.tools.length,0);
+});

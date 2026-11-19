@@ -1,44 +1,46 @@
 'use strict';
 // Content-bound search card ("ask the platform"): results come only from the NSE catalog and
 // published lessons. Missing translations are labelled, never filled with invented text.
-window.nseMountSearch = ({ host, request, el, center, language, openLesson }) => {
+window.nseMountSearch = ({ host, request, el, center, language, openLesson, displayName = () => '' }) => {
   if (!host) return;
+  window.nseUnmountLucy?.();
   document.getElementById('nseSearch')?.remove();
   if (!document.getElementById('nseSearchStyle')) {
     const style = document.createElement('style');
     style.id = 'nseSearchStyle';
     style.textContent = `
-#nseSearch .lucy-log{display:flex;flex-direction:column;gap:14px;margin-block:18px}
-#nseSearch .lucy-message{padding:14px 16px;border-radius:18px 4px 18px 18px;background:var(--nse-soft);max-width:94%;align-self:flex-start;overflow-wrap:anywhere}
-#nseSearch .lucy-question{align-self:flex-end;border-radius:4px 18px 18px 18px;border:1px solid var(--nse-line);padding:12px 16px;max-width:90%;white-space:pre-wrap}
-#nseSearch .lucy-language{margin-inline-start:auto;min-height:44px;max-width:100%;font:inherit}
-#nseSearch .lucy-online{font-size:.85rem;color:var(--nse-muted)}
-#nseSearch .lucy-header{display:flex;align-items:center;gap:18px;margin-bottom:18px}
-#nseSearch .lucy-avatar{width:100px;height:110px;object-fit:cover;object-position:center;border-radius:24px;flex-shrink:0}
-#nseSearch .lucy-header h3{margin:0 0 8px}
-#nseSearch .lucy-header p{margin:0;max-width:58ch}
-#nseSearch .lucy-prompts{display:flex;flex-wrap:wrap;gap:8px;margin-block:14px}
-#nseSearch button,#nseSearch input{min-height:44px}
-#nseSearch .hit>div{min-width:0;overflow-wrap:anywhere}
-#nseSearch .lucy-source{color:var(--nse-muted,#637589);font-size:.85rem;margin-top:10px}
-#nseSearch[aria-busy=true] .notice:before{content:'•••';display:inline-block;letter-spacing:3px;margin-inline-end:8px}
-@media(max-width:480px){#nseSearch .lucy-avatar{width:72px;height:88px}#nseSearch input{font-size:16px}#nseSearch .lucy-log{display:flex;flex-direction:column;gap:14px;margin-block:18px}
-#nseSearch .lucy-message{padding:14px 16px;border-radius:18px 4px 18px 18px;background:var(--nse-soft);max-width:94%;align-self:flex-start;overflow-wrap:anywhere}
-#nseSearch .lucy-question{align-self:flex-end;border-radius:4px 18px 18px 18px;border:1px solid var(--nse-line);padding:12px 16px;max-width:90%;white-space:pre-wrap}
-#nseSearch .lucy-language{margin-inline-start:auto;min-height:44px;max-width:100%;font:inherit}
-#nseSearch .lucy-online{font-size:.85rem;color:var(--nse-muted)}
-#nseSearch .lucy-header{gap:12px}}
-#nseSearch form{display:flex;gap:8px;flex-wrap:wrap}
-#nseSearch input[type=search]{flex:1 1 220px;min-width:0}
-#nseSearch .hits{display:grid;gap:10px;margin-top:12px}
-#nseSearch .hit{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;border:1px solid var(--nse-line,#e4eaf1);border-radius:14px;padding:12px}
-#nseSearch .hit img{width:64px;height:64px;object-fit:cover;border-radius:10px;background:var(--nse-soft,#eaf7f3)}
-#nseSearch .hit .noimg{width:64px;height:64px;border-radius:10px;background:var(--nse-soft,#eaf7f3);display:grid;place-items:center;font-size:1.4rem}
-#nseSearch .hit h4{margin:0 0 4px}
-#nseSearch .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-#nseSearch .missing{font-size:.75rem;color:var(--nse-muted,#637589)}
-#nseSearch .group{font-weight:700;margin:14px 0 2px}
-#nseSearch .notice:empty{display:none}`;
+#nseLucyWidget{position:fixed;inset-inline-end:22px;bottom:22px;z-index:100;display:flex;flex-direction:column;align-items:flex-end;gap:12px;max-width:calc(100vw - 24px);color:var(--nse-ink)}
+#nseLucyWidget[hidden],#nseLucyWidget #nseSearch[hidden],body:has(#login:not([hidden])) #nseLucyWidget{display:none!important}
+#nseLucyWidget .lucy-launcher{width:64px;height:64px;padding:0;border:2px solid var(--nse-line);border-radius:50%;background:var(--nse-surface);box-shadow:0 6px 22px #142b4b30;overflow:hidden}
+#nseLucyWidget .lucy-launcher img{width:100%;height:100%;object-fit:cover;object-position:center 30%;display:block}
+#nseLucyWidget #nseSearch{width:420px;max-width:calc(100vw - 24px);height:min(610px,calc(100dvh - 112px));display:flex;flex-direction:column;padding:0!important;margin:0!important;background:var(--nse-surface);border:1px solid var(--nse-line);border-radius:22px!important;box-shadow:0 14px 50px #10243f30;overflow:hidden}
+#nseLucyWidget .lucy-header{display:flex;align-items:center;gap:10px;padding:14px;background:var(--nse-surface);border-bottom:1px solid var(--nse-line);flex-wrap:wrap}
+#nseLucyWidget .lucy-avatar{width:44px;height:44px;border-radius:50%;object-fit:cover;object-position:center 30%}
+#nseLucyWidget .lucy-header h3{font-size:15px;margin:0;line-height:1.5}
+#nseLucyWidget .lucy-header p{margin:0;font-size:12px;color:var(--nse-muted)}
+#nseLucyWidget .lucy-language{width:92px;min-height:44px;margin-inline-start:auto;font-size:14px}
+#nseLucyWidget .lucy-window-control{width:44px;min-height:44px;padding:0;font-size:20px;background:var(--nse-surface);color:var(--nse-ink);border:1px solid var(--nse-line);border-radius:12px}
+#nseLucyWidget .lucy-log{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:12px;padding:16px;background:var(--nse-bg)}
+#nseLucyWidget .lucy-message{align-self:flex-start;background:var(--nse-soft);padding:12px;border-radius:16px 4px 16px 16px;max-width:96%;overflow-wrap:anywhere}
+#nseLucyWidget .lucy-question{align-self:flex-end;border:1px solid var(--nse-line);background:var(--nse-surface);padding:10px 14px;border-radius:4px 16px 16px 16px;max-width:88%;overflow-wrap:anywhere}
+#nseLucyWidget .lucy-prompts{display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px}
+#nseLucyWidget .lucy-prompts button{font-size:12px;min-height:44px;padding:6px 10px}
+#nseLucyWidget form{display:flex;flex-wrap:nowrap;gap:8px;padding:10px 12px;border-top:1px solid var(--nse-line)}
+#nseLucyWidget input[type=search]{min-width:0;flex:1;font-size:16px;min-height:44px}
+#nseLucyWidget form button{min-height:44px;padding:8px 14px}
+#nseLucyWidget .lucy-source,#nseLucyWidget .notice{font-size:12px;color:var(--nse-muted);margin:0;padding:6px 12px}
+#nseLucyWidget .notice:empty{display:none}
+#nseLucyWidget .hits{display:grid;gap:10px;margin:0}
+#nseLucyWidget .hit{display:block;border:0;border-top:1px solid var(--nse-line);padding:10px 0;background:transparent}
+#nseLucyWidget .hit img,#nseLucyWidget .noimg{width:66px;height:66px;object-fit:contain;float:inline-start;margin-inline-end:10px;border-radius:8px}
+#nseLucyWidget .noimg{display:none}
+#nseLucyWidget .hit h4{font-size:14px;margin:0 0 6px}
+#nseLucyWidget .hit p,#nseLucyWidget .hit li{font-size:13px;line-height:1.7;white-space:pre-wrap}
+#nseLucyWidget .group{font-size:13px;font-weight:600;margin:4px 0}
+#nseLucyWidget .chips{display:flex;gap:5px;flex-wrap:wrap}
+#nseLucyWidget :focus-visible{outline:3px solid var(--nse-bright);outline-offset:3px}
+@media(max-width:760px){#nseLucyWidget{bottom:calc(88px + env(safe-area-inset-bottom));inset-inline-end:12px}#nseLucyWidget #nseSearch{height:min(560px,calc(100dvh - 180px))}#nseLucyWidget .lucy-launcher{width:56px;height:56px}}
+@media(prefers-reduced-motion:no-preference){#nseLucyWidget #nseSearch{animation:lucy-open .18s ease-out}@keyframes lucy-open{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}}`;
     document.head.append(style);
   }
   const L = { ar: { title: 'Nurse Lucy · اسألي لوسي', hint: 'ابحث عن أداة أو إجراء أو خطوة مكافحة عدوى أو درس. النتائج من محتوى المنصة فقط.', go: 'بحث', tools: 'الأدوات والمستهلكات', procs: 'الإجراءات', ipc: 'مكافحة العدوى', lessons: 'الدروس', none: 'ما فيه نتائج في محتوى المنصة. جرّب كلمة ثانية أو اسم الأداة بالإنجليزي.', usedIn: 'يُستخدم في:', needs: 'يحتاج:', missing: 'الترجمة غير متوفرة — معروض بالإنجليزية', open: 'افتح الدرس', unresolved: 'عناصر بدون ربط موثق' },
@@ -48,9 +50,17 @@ window.nseMountSearch = ({ host, request, el, center, language, openLesson }) =>
   const text = names => { const l = lang(); return names[l] ? { value: names[l], fallback: false } : { value: names.en || names.ar || '', fallback: l !== 'en' }; };
   const label = names => { const r = text(names), span = el('span', r.value); if (r.fallback) { span.lang = 'en'; span.dir = 'ltr'; } return [span, r.fallback]; };
 
-  const card = el('section', undefined, 'card section'); card.id = 'nseSearch';
+  const widget=el('div');widget.id='nseLucyWidget';
+  const card = el('section'); card.id = 'nseSearch';card.hidden=true;card.dataset.lucyPortal='true';card.setAttribute('role','dialog');card.setAttribute('aria-labelledby','nseLucyTitle');
+  const launcher=el('button',undefined,'lucy-launcher');launcher.type='button';launcher.setAttribute('aria-controls','nseSearch');launcher.setAttribute('aria-expanded','false');
+  const launcherImage=el('img');launcherImage.src='/assets/nurse-lucy.jpg';launcherImage.alt='';launcher.append(launcherImage);
+  const close=el('button','×','lucy-window-control');close.type='button';
+  const minimize=el('button','−','lucy-window-control');minimize.type='button';
+  const setOpen = open => {card.hidden=!open;launcher.setAttribute('aria-expanded',String(open));if(open){input.focus();log.scrollTop=log.scrollHeight}else launcher.focus()};
+  launcher.onclick=()=>{if(form.dataset.assessmentLocked!=='true')setOpen(card.hidden)};close.onclick=minimize.onclick=()=>setOpen(false);
   const head = el('h3', t('title')), hint = el('p', t('hint'), 'muted');
   const form = el('form'), input = el('input', undefined, 'input'), btn = el('button', t('go'), 'btn');
+  head.id='nseLucyTitle';
   input.type = 'search'; input.placeholder = 'مرآة · Mouth mirror · Five Moments'; input.setAttribute('aria-label', t('title')); input.maxLength = 80;
   form.append(input, btn);
   const msg = el('p', '', 'notice'); msg.setAttribute('aria-live', 'polite');
@@ -58,11 +68,11 @@ window.nseMountSearch = ({ host, request, el, center, language, openLesson }) =>
   const greeting = el('div', undefined, 'lucy-message'); log.append(greeting);
   let hits = el('div', undefined, 'hits');
   const header = el('div', undefined, 'lucy-header'), avatar = el('img');
-  avatar.src = 'assets/nurse-lucy.jpg'; avatar.alt = 'Nurse Lucy'; avatar.className = 'lucy-avatar';
+  avatar.src = '/assets/nurse-lucy.jpg'; avatar.alt = 'Nurse Lucy'; avatar.className = 'lucy-avatar';
   const intro = el('div'), presence = el('p', '', 'lucy-online'); intro.append(head, presence); header.append(avatar, intro);
   const picker = el('select', undefined, 'input lucy-language');
   [['ar','العربية'],['en','English']].forEach(([value,name]) => {const o=el('option',name);o.value=value;picker.append(o)});
-  header.append(picker);
+  header.append(picker,minimize,close);
   const prompts = el('div', undefined, 'lucy-prompts');
   const renderPrompts = () => {
     prompts.replaceChildren();
@@ -72,12 +82,14 @@ window.nseMountSearch = ({ host, request, el, center, language, openLesson }) =>
   const boundary = el('p', lang() === 'ar' ? 'بحث في محتوى NSE فقط · غير متاحة أثناء الاختبار أو انتظار مراجعة المحاولة' : 'NSE content search only · Unavailable during assessments or attempt review', 'lucy-source');
   card.append(header, log, prompts, form, msg, boundary);
   const refreshLanguage = () => {
+    widget.dir=lang()==='ar'?'rtl':'ltr';
     card.lang = lang(); card.dir = lang() === 'ar' ? 'rtl' : 'ltr'; picker.value = lang();
     picker.setAttribute('aria-label', lang() === 'ar' ? 'لغة المحادثة' : 'Conversation language');
-    head.textContent = t('title'); hint.textContent = t('hint'); btn.textContent = lang() === 'ar' ? 'إرسال' : 'Send';
+    head.textContent = 'Nurse Lucy';launcher.setAttribute('aria-label',lang()==='ar'?'افتحي محادثة لوسي':'Open Nurse Lucy chat');close.setAttribute('aria-label',lang()==='ar'?'إغلاق المحادثة':'Close chat');minimize.setAttribute('aria-label',lang()==='ar'?'تصغير المحادثة':'Minimize chat'); hint.textContent = t('hint'); btn.textContent = lang() === 'ar' ? 'إرسال' : 'Send';
     input.placeholder = lang() === 'ar' ? 'اكتبي اسم أداة أو إجراء…' : 'Type an instrument or procedure…'; input.setAttribute('aria-label',t('title'));
     presence.textContent = lang() === 'ar' ? 'متصلة · مساعدة تعليمية' : 'Online · Learning assistant';
-    greeting.textContent = lang() === 'ar' ? 'هلا فيك، أنا لوسي. وش تخصصك وأي إجراء أو أداة ودك نراجعها اليوم؟' : "Hello, I’m Lucy. What is your specialty, and which procedure or instrument would you like to review today?";
+    const name=String(displayName()||'').trim().slice(0,80);
+    greeting.textContent = lang() === 'ar' ? 'هلا'+(name?' '+name:'')+'، أنا لوسي 👋 وش ودك نتعلم اليوم؟ اكتبي سؤالك عن أداة أو إجراء أو مكافحة العدوى.' : 'Hello'+(name?' '+name:'')+', I’m Lucy 👋 What would you like to learn today? Ask about an instrument, procedure or infection prevention.';
     boundary.textContent = lang() === 'ar' ? 'من محتوى NSE فقط · غير متاحة أثناء الاختبارات أو مراجعة المحاولة' : 'NSE content only · Unavailable during assessments or attempt review';
     renderPrompts();
     if (form.dataset.assessmentLocked === 'true' && window.nseLockLucy) window.nseLockLucy();
@@ -89,8 +101,7 @@ window.nseMountSearch = ({ host, request, el, center, language, openLesson }) =>
   pageLanguage?.addEventListener('change', followPage);
   window.nseLucyLanguageCleanup = () => pageLanguage?.removeEventListener('change', followPage);
   refreshLanguage();
-  const anchor = host.querySelector('.hero');
-  anchor ? anchor.after(card) : host.prepend(card);
+  widget.append(card,launcher);document.body.append(widget);
 
   const row = (titleNodes, lines, img, extra, sourceId) => {
     const box = el('article', undefined, 'hit');
@@ -107,7 +118,7 @@ window.nseMountSearch = ({ host, request, el, center, language, openLesson }) =>
   let ticket = 0;
   window.nseLockLucy = () => {
     ++ticket;
-    log.replaceChildren();
+    log.replaceChildren();widget.hidden=true;launcher.disabled=true;close.disabled=minimize.disabled=true;
     form.dataset.assessmentLocked = 'true';
     input.disabled = true; btn.disabled = true;
     prompts.querySelectorAll('button').forEach(b => b.disabled = true);
@@ -121,7 +132,7 @@ window.nseMountSearch = ({ host, request, el, center, language, openLesson }) =>
     const q = input.value.trim(); if (q.length < 2 || btn.disabled || form.dataset.assessmentLocked === 'true') return;
     const question = el('div',q,'lucy-question');question.dir='auto';log.append(question);
     hits = el('div',undefined,'hits lucy-message');hits.lang=lang();hits.dir=card.dir;log.append(hits);input.value='';
-    const mine = ++ticket; picker.disabled = true; btn.disabled = true; card.setAttribute('aria-busy', 'true'); msg.textContent = lang() === 'ar' ? 'لوسي تبحث في محتوى المنصة…' : 'Lucy is searching NSE content…'; hits.replaceChildren();
+    const mine = ++ticket; picker.disabled = true; btn.disabled = true; card.setAttribute('aria-busy', 'true'); presence.textContent=lang()==='ar'?'تكتب…':'Typing…'; msg.textContent = lang() === 'ar' ? 'لوسي تبحث في محتوى المنصة…' : 'Lucy is searching NSE content…'; hits.replaceChildren();
     try {
       const r = await request('/api/search?centerId=' + encodeURIComponent(center()) + '&q=' + encodeURIComponent(q));
       if (mine !== ticket) return;
@@ -138,6 +149,9 @@ window.nseMountSearch = ({ host, request, el, center, language, openLesson }) =>
         msg.textContent = locked ? (lang() === 'ar' ? 'لوسي غير متاحة أثناء الاختبار أو انتظار مراجعة المحاولة. أكملي إجراءات المحاولة أولاً.' : 'Lucy is unavailable during an assessment or while an attempt awaits review.') : (lang() === 'ar' ? 'تعذر الوصول إلى المحتوى. حاولي مرة أخرى.' : 'Content could not be loaded. Please try again.');
         if (locked) window.nseLockLucy();
       }
-    } finally { if (mine === ticket) { picker.disabled = false; btn.disabled = form.dataset.assessmentLocked === 'true'; card.setAttribute('aria-busy', 'false'); } }
+    } finally { if (mine === ticket) { picker.disabled = false; presence.textContent=lang()==='ar'?'متصلة · مساعدة تعليمية':'Online · Learning assistant'; log.scrollTop=log.scrollHeight; btn.disabled = form.dataset.assessmentLocked === 'true'; card.setAttribute('aria-busy', 'false'); } }
   };
+  const escape = e => {if(e.key==='Escape'&&!card.hidden){e.preventDefault();setOpen(false)}};
+  document.addEventListener('keydown',escape);
+  window.nseUnmountLucy = () => {++ticket;window.nseLucyLanguageCleanup?.();document.removeEventListener('keydown',escape);widget.remove();window.nseLockLucy=undefined;};
 };

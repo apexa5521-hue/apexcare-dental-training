@@ -68,3 +68,16 @@ test('Lucy discards an in-flight result when an assessment starts and exposes re
   assert.match(doc.querySelector('.notice').textContent,/unavailable/);
   dom.window.close();
 });
+
+test('Lucy opens as a named floating conversation, keeps history when minimized, and cleans up on sign-out', async()=>{
+ const dom=new JSDOM('<main></main>',{runScripts:'outside-only'}),w=dom.window,doc=w.document;
+ w.eval(fs.readFileSync(require.resolve('../v2/content-search.js'),'utf8'));
+ w.nseMountSearch({host:doc.querySelector('main'),center:()=> 'center',language:()=> 'en',displayName:()=> 'Rifka',el:(tag,text,cls)=>{const e=doc.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e;},request:async()=>({tools:[],procedures:[],infectionPrevention:[],lessons:[]}),openLesson:()=>{}});
+ const panel=doc.getElementById('nseSearch'),launcher=doc.querySelector('.lucy-launcher');
+ assert.equal(panel.hidden,true);assert.equal(doc.querySelector('main #nseSearch'),null);assert.match(panel.textContent,/Hello Rifka/);
+ launcher.click();assert.equal(panel.hidden,false);assert.equal(doc.activeElement,panel.querySelector('input'));assert.equal(launcher.getAttribute('aria-expanded'),'true');
+ panel.querySelector('input').value='mirror';await panel.querySelector('form').onsubmit({preventDefault(){}});
+ panel.querySelector('[aria-label="Minimize chat"]').click();assert.equal(panel.hidden,true);launcher.click();assert.equal(panel.querySelector('.lucy-question').textContent,'mirror');
+ doc.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape'}));assert.equal(panel.hidden,true);assert.equal(doc.activeElement,launcher);
+ w.nseUnmountLucy();assert.equal(doc.getElementById('nseLucyWidget'),null);assert.equal(w.nseLockLucy,undefined);dom.window.close();
+});

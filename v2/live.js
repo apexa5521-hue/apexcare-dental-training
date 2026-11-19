@@ -72,7 +72,7 @@
   const [p,exams]=await Promise.all([request("/api/progress?centerId="+encodeURIComponent(state.center)),request("/api/exams?centerId="+encodeURIComponent(state.center))]);
   state.completed=new Set((p.completedModules||[]).map(x=>x.module_id));state.certificates=p.certificates||[];state.exams=exams.assessments||[];
   setText("connection",state.centers.find(c=>c.id===state.center)?.name+" · "+state.role);
-  renderDashboard();renderModules();renderAchievements();if(window.nseMountSearch)window.nseMountSearch({host:document.querySelector('section.view[data-page="home"]'),request,el,center:()=>state.center,language:()=>$("language").value,openLesson:id=>{const m=state.modules.find(x=>x.id===id);if(m)openLesson(m)}});if(window.nseMountDaily)window.nseMountDaily({host:document.querySelector('section.view[data-page="home"]'),request,post,el,center:()=>state.center,language:()=>$("language").value});if(window.nseMountNotifications)window.nseMountNotifications({request,post,center:()=>state.center,language:()=>$("language").value,initial:data.notifications||[]});if(window.nseMountTray)window.nseMountTray({host:document.querySelector('section.view[data-page="home"]'),request,post,el,center:()=>state.center,language:()=>$("language").value});if(window.nseArrangeHome)window.nseArrangeHome(document.querySelector('section.view[data-page="home"]'));fill($("assignSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("moduleSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("draftExamSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("inviteSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));updateLanguage();displayPage("home");
+  renderDashboard();renderModules();renderAchievements();if(window.nseMountSearch)window.nseMountSearch({host:document.querySelector('section.view[data-page="home"]'),request,el,center:()=>state.center,language:()=>$("language").value,displayName:()=>state.displayName,openLesson:id=>{const m=state.modules.find(x=>x.id===id);if(m)openLesson(m)}});if(window.nseMountDaily)window.nseMountDaily({host:document.querySelector('section.view[data-page="home"]'),request,post,el,center:()=>state.center,language:()=>$("language").value});if(window.nseMountNotifications)window.nseMountNotifications({request,post,center:()=>state.center,language:()=>$("language").value,initial:data.notifications||[]});if(window.nseMountTray)window.nseMountTray({host:document.querySelector('section.view[data-page="home"]'),request,post,el,center:()=>state.center,language:()=>$("language").value});if(window.nseArrangeHome)window.nseArrangeHome(document.querySelector('section.view[data-page="home"]'));fill($("assignSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("moduleSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("draftExamSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("inviteSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));updateLanguage();displayPage("home");
  }
  function renderJourney(){
   const root=$("learningJourney"),ar=$("language").value==="ar";root.replaceChildren();const grid=el("div",undefined,"journey-grid"),path=el("article",undefined,"card"),aside=el("article",undefined,"card journey-aside");
@@ -173,20 +173,48 @@
     if(left){left.querySelector('h2').textContent=arabic?'01 · اختاري التخصص':'01 · Choose a specialty';left.querySelector('h3').textContent=arabic?'02 · اختاري الإجراء':'02 · Choose a procedure';}
     const heading=right?.querySelector('h3');if(heading)heading.textContent=arabic?'اكتشفي الأدوات وفوائدها':'Explore tools and their purpose';
    }
+   if(view && !view.querySelector('.catalog-mode-controls')){
+    const right=view.querySelector('.two>.card+.card'),left=view.querySelector('.two>.card');
+    if(right){
+     const modes=el('div',undefined,'catalog-mode-controls');modes.setAttribute('role','group');
+     const preparation=el('section'),explorer=el('section');preparation.id='catalogProcedurePanel';explorer.id='catalogExplorePanel';
+     ['procedureHeading','procedureDetail','procedureChecklist'].forEach(id=>preparation.append($(id)));
+     const title=right.querySelector('h3');if(title)explorer.append(title);explorer.append($('catalogToolList'));
+     for(const mode of ['procedure','explore']){const button=el('button','', 'btn sub');button.type='button';button.dataset.catalogMode=mode;button.onclick=()=>{
+      right.dataset.activeCatalogMode=mode;preparation.hidden=mode!=='procedure';explorer.hidden=mode!=='explore';
+      modes.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+      if(left){$('catalogProceduresList').hidden=mode==='explore';left.querySelector('h3').hidden=mode==='explore';}
+     };modes.append(button);}
+     right.prepend(modes);right.append(preparation,explorer);modes.querySelector('button').click();
+    }
+   }
+   if(view){view.querySelectorAll('.catalog-mode-controls [data-catalog-mode]').forEach(b=>b.textContent=b.dataset.catalogMode==='procedure'?(arabic?'أدوات الإجراء المختار':'Selected procedure tools'):(arabic?'جميع أدوات التخصص':'All specialty tools'));
+    const spName=$('catalogSpecialty').selectedOptions?.[0]?.textContent||'';
+    const h=view.querySelector('#catalogExplorePanel h3');if(h)h.textContent=(arabic?'تصفح أدوات التخصص — ليست قائمة إجراء':'Browse specialty tools — not a procedure checklist')+(spName?' · '+spName:'');
+   }
    if(!state.catalog)return;const cat=state.catalog,sp=$("catalogSpecialty").value,search=$("catalogSearch").value.toLowerCase().trim();
    const procs=cat.procedures.filter(x=>x.specialtyId===sp);
    const tools=cat.tools.filter(x=>x.specialtyId===sp);
    const list=$("catalogProceduresList");list.replaceChildren();
    procs.filter(p=>translated(p).name.toLowerCase().includes(search)).forEach(p=>{
-      const b=el("button",translated(p).name,"btn sub");b.style.textAlign="start";b.dataset.procedureId=String(p.id);b.setAttribute("aria-pressed",String(state.selectedProcedure?.id===p.id));b.onclick=()=>{state.selectedProcedure=p;renderProcedure()};list.append(b);
+      const b=el("button",translated(p).name,"btn sub");b.style.textAlign="start";b.dataset.procedureId=String(p.id);b.setAttribute("aria-pressed",String(state.selectedProcedure?.id===p.id));b.onclick=()=>{state.selectedProcedure=p;view?.querySelector('[data-catalog-mode="procedure"]')?.click();renderProcedure()};list.append(b);
    });
    if(!list.childElementCount)list.append(el("p","No procedures found.","small"));
    const toolList=$("catalogToolList");toolList.replaceChildren();
-   tools.filter(t=>[translated(t).name,translated(t).use,t.nameEn,t.nameAr].some(v=>String(v||" ").toLowerCase().includes(search))).forEach(t=>{
+   const filteredTools=tools.filter(t=>[translated(t).name,translated(t).use,t.nameEn,t.nameAr].some(v=>String(v||" ").toLowerCase().includes(search)));
+   if(view && view.dataset.toolSignature!==sp+'|'+search){view.dataset.toolSignature=sp+'|'+search;view.dataset.toolsPage='0';}
+   const page=Number(view?.dataset.toolsPage||0),pageSize=4;
+   filteredTools.slice(page*pageSize,(page+1)*pageSize).forEach(t=>{
       const card=el("div",undefined,"skill-row");
       if(t.imageUrl&&/^https:\/\//i.test(t.imageUrl)){const img=el("img");img.src=t.imageUrl;img.loading="lazy";img.alt=translated(t).name;const zoom=el("button",undefined,"tool-image-button");zoom.type="button";zoom.setAttribute("aria-label","View image: "+translated(t).name);zoom.append(img);zoom.onclick=()=>{const body=$("modalBody");body.replaceChildren(el("h2",translated(t).name));const large=el("img");large.src=t.imageUrl;large.alt=translated(t).name;large.className="tool-zoom";body.append(large,el("p",translated(t).use,"muted"));$("modal").showModal()};card.append(zoom)}
       const block=el("div");block.append(el("strong",translated(t).name),el("small",translated(t).use));card.append(block);toolList.append(card)
    });
+   if(filteredTools.length>pageSize){const pager=el('div',undefined,'catalog-tool-pages');
+    const previous=el('button',arabic?'السابق':'Previous','btn sub'),next=el('button',arabic?'التالي':'Next','btn sub'),count=el('span',(page+1)+' / '+Math.ceil(filteredTools.length/pageSize),'small');
+    previous.type=next.type='button';previous.disabled=page===0;next.disabled=(page+1)*pageSize>=filteredTools.length;
+    previous.onclick=()=>{if(view){view.dataset.toolsPage=String(page-1);renderCatalog()}};next.onclick=()=>{if(view){view.dataset.toolsPage=String(page+1);renderCatalog()}};
+    pager.append(previous,count,next);toolList.append(pager);
+   }
    if(!toolList.childElementCount)toolList.append(el("p","No tools found.","small"));
    if(!state.selectedProcedure||state.selectedProcedure.specialtyId!==sp)state.selectedProcedure=procs[0]||null;
    renderProcedure();
@@ -345,7 +373,7 @@
    state.client=supabase.createClient(state.auth.supabaseUrl,state.auth.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
    state.client.auth.onAuthStateChange((event,session)=>{
     state.token=session?.access_token||null;
-    if(!session){clearInterval(state.heartbeat);state.attempt=null;state.center=null;state.user=null;workspace.inert=true;$("login").hidden=false;return}
+    if(!session){window.nseUnmountLucy?.();clearInterval(state.heartbeat);state.attempt=null;state.center=null;state.user=null;workspace.inert=true;$("login").hidden=false;return}
     if(event==='PASSWORD_RECOVERY')passwordSetupRequired=true;
     if(passwordSetupRequired){showPasswordSetup();return}
     if((event==='INITIAL_SESSION'||event==='SIGNED_IN')&&!state.center)setTimeout(()=>openWorkspace(),0);

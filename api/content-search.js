@@ -31,8 +31,19 @@ function snippet(body, terms) {
   return (start ? '…' : '') + text.slice(start, start + 220) + (text.length > start + 220 ? '…' : '');
 }
 
+// Recognize a bounded set of question introductions; never generate clinical facts.
+function querySubject(q) {
+  const original=norm(q);
+  const subject=original
+    .replace(/^(?:what is|what are) (?:the )?(?:use|uses|purpose|function) of (?:the )?/, '')
+    .replace(/^(?:tell me about|explain|how do i use) (?:the )?/, '')
+    .replace(/^(?:وش|ايش|ما هي|ما هو|ما) (?:فائده|فايده|فوائد|استخدام|وظيفه) /, '')
+    .replace(/^(?:اشرح لي|علمني عن|كيف استخدم) /, '')
+    .replace(/ please$/, '').trim();
+  return subject.length>=2?subject:original;
+}
 function search({ q, tools, procedures, ipcModules, ipcSteps, lessons }) {
-  const phrase = norm(q), terms = phrase.split(' ').filter(Boolean);
+  const phrase = querySubject(q), terms = phrase.split(' ').filter(Boolean);
   if (phrase.length < 2 || terms.length > 8) fail('INVALID_SEARCH');
   const toolById = new Map(tools.map(t => [String(t.id), t]));
   const toolHits = top(tools.map(t => {
@@ -83,3 +94,5 @@ module.exports = async ({ req, url, c, userId, centerId, role }) => {
 };
 module.exports.search = search;
 module.exports.norm = norm;
+
+module.exports.querySubject = querySubject;

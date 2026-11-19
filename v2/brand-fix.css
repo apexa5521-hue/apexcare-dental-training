@@ -1,2 +1,8 @@
 /* Approved NSE identity: separate, verifiable image asset; follows both themes. */
 :root{--nse-brand-image:url('/assets/nse-logo.webp')}
+/* Separate procedure learning from the broad specialty catalogue. */
+.catalog-mode-controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.catalog-mode-controls button{min-height:44px;flex:1}
+.catalog-mode-controls button[aria-pressed=true]{background:var(--nse-green);color:var(--nse-on-green,#fff)}
+#catalogProcedurePanel[hidden],#catalogExplorePanel[hidden]{display:none!important}
+.catalog-tool-pages{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 0}
