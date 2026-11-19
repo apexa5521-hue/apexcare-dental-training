@@ -484,3 +484,10 @@ test('revoked Supabase session cannot reuse an unexpired token',async()=>{
  await db.query('delete from auth.sessions where id=$1',[sessions.nurse]);
  assert.equal((await call('/api/bootstrap')).status,401);
 });
+
+test('approved Lucy portrait is served as a JPEG without exposing arbitrary files',async()=>{
+ const response=await nativeFetch(base+'/assets/nurse-lucy.jpg');
+ assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'image/jpeg');
+ const bytes=new Uint8Array(await response.arrayBuffer());assert.equal(bytes[0],255);assert.equal(bytes[1],216);
+ const unknown=await nativeFetch(base+'/assets/unknown.jpg');assert.equal(unknown.status,401);
+});
