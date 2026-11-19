@@ -392,3 +392,10 @@ Owner decision: no paid AI subscription is required. Added free, content-bound f
 - Build audited 60 packages and reported zero vulnerabilities. Startup: `NSE exam schema ready; historical attempt counts and score totals unchanged.` followed by `NSE API ready`.
 - Live browser `/health` returned `{"ok":true,"service":"NSE","status":"ready"}`. The portrait `/assets/nurse-lucy.jpg` rendered at 1863x844. Public sign-in page loads.
 - Application administration session remains absent in the cloud browser. Authenticated Lucy, specialty tools, lesson publishing/review, nurse/supervisor isolation, exam-to-practical-to-card acceptance, and phone/iPad browser acceptance are not yet verified. Deployment success is not full release acceptance.
+
+## 2026-11-19 — Owner requested content publication; source comparison correction
+
+- Owner explicitly requested publication. The NSE application still displays its login form, so no authenticated module publication action has been performed and no clinical sign-off has been recorded.
+- Compared the dental instrument package-check passage with CDC Dental Sterilization and Sterilization/Disinfection guidance. Corrected all four language versions to distinguish reusable heat-tolerant instruments from single-use devices, reject wet/torn/punctured packaging, require the applicable monitoring results, and state that chemical indicator colour change alone does not prove sterility. Updated the associated English question/options/rationale.
+- Added source-verification metadata that explicitly describes AI-assisted source comparison and retains clinical, translation and local-policy reviews as pending. Existing live drafts were not overwritten; publication must compare their versions and apply corrections through the authenticated editor before review/publication. The preparation endpoint is idempotent and does not update existing modules.
+- 115 local automated tests passed after the correction. This is a repository draft correction, not a published lesson or complete review of all live scientific content.
