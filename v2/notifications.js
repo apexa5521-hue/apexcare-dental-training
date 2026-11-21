@@ -6,7 +6,7 @@
   const KINDS = {
     learning_plan: { cat: 'tasks', glyph: '✓', tone: 'ok', ar: 'خطة تطوير جديدة', en: 'New learning plan' },
     support_plan: { cat: 'tasks', glyph: '!', tone: 'warn', ar: 'خطة دعم من المشرفة', en: 'Support plan from your supervisor' },
-    training_reminder: { cat: 'tasks', glyph: '⏰', tone: 'info', ar: 'تذكير بخطوة اليوم', en: "Today's step reminder" },
+    training_reminder: { cat: 'tasks', glyph: '●', tone: 'info', ar: 'تذكير بخطوة اليوم', en: "Today's step reminder" },
     plan_completed: { cat: 'results', glyph: '★', tone: 'ok', ar: 'اكتملت خطوات الخطة', en: 'Plan steps completed' },
     certificate_revoked: { cat: 'results', glyph: '✕', tone: 'bad', ar: 'تم إلغاء بطاقة', en: 'A card was revoked' }
   };

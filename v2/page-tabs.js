@@ -19,11 +19,11 @@
       },
       always: el => el.matches('.card > h2:first-child') || el.matches('.card > h2:first-child + p'),
       tabs: [
-        { id: 'members', label: 'الفريق · Team', icon: '👥', match: el => el.id === 'teamList' || has(el, 'onboarding', 'readiness', 'جاهزية') },
-        { id: 'invite', label: 'دعوة · Invite', icon: '✉️', match: el => el.id === 'inviteArea' || has(el, 'invite') },
-        { id: 'assign', label: 'إسناد تخصص · Assign', icon: '🏷️', match: el => el.id === 'assignmentForm' || has(el, 'assign specialty') },
-        { id: 'history', label: 'السجل السابق · History', icon: '🗂️', match: el => el.id === 'legacyLinkArea' || has(el, 'historic', 'legacy') },
-        { id: 'development', label: 'التطوير والتقييم · Development', icon: '📈', match: el => el.id === 'developmentAdmin' || has(el, 'development', 'practical') }
+        { id: 'members', label: 'الفريق · Team', icon: 'users', match: el => el.id === 'teamList' || has(el, 'onboarding', 'readiness', 'جاهزية') },
+        { id: 'invite', label: 'دعوة · Invite', icon: 'mail', match: el => el.id === 'inviteArea' || has(el, 'invite') },
+        { id: 'assign', label: 'إسناد تخصص · Assign', icon: 'tag', match: el => el.id === 'assignmentForm' || has(el, 'assign specialty') },
+        { id: 'history', label: 'السجل السابق · History', icon: 'archive', match: el => el.id === 'legacyLinkArea' || has(el, 'historic', 'legacy') },
+        { id: 'development', label: 'التطوير والتقييم · Development', icon: 'trend', match: el => el.id === 'developmentAdmin' || has(el, 'development', 'practical') }
       ]
     },
     studio: {
@@ -34,13 +34,13 @@
       always: el => el.matches('#contentIntake > p.notice'),
       hide: el => el.matches('#contentIntake > h2'),
       tabs: [
-        { id: 'readiness', label: 'نظرة عامة · Overview', icon: '📊', match: el => has(el, 'readiness', 'جاهزية') },
-        { id: 'lessons', label: 'الدروس · Lessons', icon: '📘', match: el => el.id === 'moduleForm' || el.id === 'manageModules' || has(el, 'content studio', 'drafts and published', 'ابدأ من أداة', 'إدارة المسودات') },
-        { id: 'bridge', label: 'Claude · مسودات', icon: '🤝', match: el => el.id === 'claudeBridge' },
-        { id: 'ai', label: 'اقتراحات التعديل · Edit proposals', icon: '✨', match: el => el.id === 'proposalStudio' },
-        { id: 'questions', label: 'الأسئلة · Questions', icon: '❓', match: el => has(el, 'question', 'الأسئلة', 'catalog', 'الكتالوج') },
-        { id: 'exams', label: 'الاختبارات · Exams', icon: '📝', match: el => has(el, 'assessment') },
-        { id: 'media', label: 'الملفات · Media', icon: '🖼️', match: el => has(el, 'upload', 'sources & media', 'ارفع محتوى') }
+        { id: 'readiness', label: 'نظرة عامة · Overview', icon: 'chart', match: el => has(el, 'readiness', 'جاهزية') },
+        { id: 'lessons', label: 'الدروس · Lessons', icon: 'book', match: el => el.id === 'moduleForm' || el.id === 'manageModules' || has(el, 'content studio', 'drafts and published', 'ابدأ من أداة', 'إدارة المسودات') },
+        { id: 'bridge', label: 'Claude · مسودات', icon: 'message', match: el => el.id === 'claudeBridge' },
+        { id: 'ai', label: 'اقتراحات التعديل · Edit proposals', icon: 'pen', match: el => el.id === 'proposalStudio' },
+        { id: 'questions', label: 'الأسئلة · Questions', icon: 'help', match: el => has(el, 'question', 'الأسئلة', 'catalog', 'الكتالوج') },
+        { id: 'exams', label: 'الاختبارات · Exams', icon: 'file', match: el => has(el, 'assessment') },
+        { id: 'media', label: 'الملفات · Media', icon: 'image', match: el => has(el, 'upload', 'sources & media', 'ارفع محتوى') }
       ]
     }
   };
@@ -59,7 +59,7 @@
     const buttons = cfg.tabs.map(t => {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'nse-tab'; b.setAttribute('role', 'tab'); b.dataset.tab = t.id;
-      const icon = document.createElement('span'); icon.className = 'nse-tab-icon'; icon.textContent = t.icon; icon.setAttribute('aria-hidden', 'true');
+      const icon = document.createElement('span'); icon.className = 'nse-tab-icon'; icon.innerHTML = window.nseLineIcon ? window.nseLineIcon(t.icon, 16) : ''; icon.setAttribute('aria-hidden', 'true');
       const label = document.createElement('span'); label.textContent = t.label;
       b.append(icon, label); b.dataset.label = t.label;
       b.onclick = () => { active = t.id; store.set('nse-tab-' + name, active); apply(); b.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); };
@@ -130,7 +130,7 @@
 .nse-tab:hover{color:var(--nse-ink,#182b3b)}
 .nse-tab[aria-selected=true]{color:var(--nse-ink,#182b3b)}
 .nse-tab:focus-visible{outline:2px solid var(--nse-green,#127b69);outline-offset:2px}
-.nse-tab-icon{font-size:15px;line-height:1}
+.nse-tab-icon{display:inline-flex;line-height:0;color:var(--nse-muted)}.nse-tab[aria-selected=true] .nse-tab-icon{color:var(--nse-green)}
 .nse-tabs-glider{position:absolute;z-index:0;top:5px;bottom:5px;left:0;border-radius:12px;background:var(--nse-surface,#fff);box-shadow:0 1px 3px #0f2a3a1f,0 1px 1px #0f2a3a0f;transition:transform .28s cubic-bezier(.3,.7,.2,1),width .28s cubic-bezier(.3,.7,.2,1)}
 @media (prefers-reduced-motion:reduce){.nse-tabs-glider{transition:none}}
 .nse-tab-off{display:none!important}

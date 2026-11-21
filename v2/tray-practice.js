@@ -51,7 +51,7 @@ window.nseMountTray = ({ host, request, post, el, center, language }) => {
   const card = el('section', undefined, 'card section'); card.id = 'nseTrayCard'; card.tabIndex = 0; card.setAttribute('role', 'button');
   const stats = el('p', lang() === 'ar' ? 'اختاري أدوات الإجراء الصحيحة من بين أدوات متنوعة' : 'Pick the right tools for a procedure', 'small');
   const grow = el('div', undefined, 'grow'); grow.append(el('h3', 'تجهيز التري · Procedure Tray'), stats);
-  card.append(el('span', '🧺', 'icon'), grow, el('span', '›', 'pill'));
+  const tIcon = el('span', undefined, 'icon'); tIcon.innerHTML = (window.nseLineIcon?window.nseLineIcon('tray'):''); const chev = el('span', undefined, 'pill tray-chevron'); chev.innerHTML = (window.nseLineIcon?window.nseLineIcon('chevron'):''); card.append(tIcon, grow, chev);
   const anchor = host.querySelector('#nseSearch') || host.querySelector('.hero');
   anchor ? anchor.after(card) : host.prepend(card);
   const refreshStats = () => request('/api/tray/history?centerId=' + encodeURIComponent(center())).then(h => {
@@ -80,7 +80,7 @@ window.nseMountTray = ({ host, request, post, el, center, language }) => {
     const grid = el('div', undefined, 'tray-grid'), picked = new Set(), tiles = new Map();
     r.options.forEach(o => {
       const b = el('button', undefined, 'item'); b.type = 'button'; b.setAttribute('aria-pressed', 'false');
-      if (o.imageUrl) { const i = el('img'); i.src = o.imageUrl; i.alt = ''; i.loading = 'lazy'; b.append(i); } else b.append(el('span', '🦷', 'ph'));
+      if (o.imageUrl) { const i = el('img'); i.src = o.imageUrl; i.alt = ''; i.loading = 'lazy'; b.append(i); } else b.append(Object.assign(el('span', undefined, 'ph'), { innerHTML: (window.nseLineIcon?window.nseLineIcon('image'):'') }));
       const n = el('span', o.names.en, 'nm'); n.lang = 'en'; n.dir = 'ltr';
       const tick = el('span', '', 'tick');
       b.append(n, tick);
@@ -103,7 +103,7 @@ window.nseMountTray = ({ host, request, post, el, center, language }) => {
         mark(g.correct, 'ok', '✓ صح'); mark(g.missed, 'miss', '! ناقصة'); mark(g.wrong, 'bad', '✗ غلط');
         const sum = el('div', undefined, 'summary');
         sum.append(el('div', '✓ ' + g.correct.length + ' صح', 's-ok'), el('div', '! ' + g.missed.length + ' ناقصة', 's-miss'), el('div', '✗ ' + g.wrong.length + ' غلط', 's-bad'));
-        result.replaceChildren(el('h3', g.perfect ? 'ممتاز! التري كامل وصحيح 🎉' : 'النتيجة ' + g.score + '%'), sum);
+        result.replaceChildren(el('h3', g.perfect ? 'التري كامل وصحيح' : 'النتيجة ' + g.score + '%'), sum);
         const explain = (heading, list) => { if (!list.length) return; result.append(el('h4', heading)); list.forEach(x => { const p = el('p', undefined, 'fb'); const n = el('strong', x.names.en); n.lang = 'en'; p.append(n); if (local(x.names)) p.append(document.createTextNode(' · ' + local(x.names))); const use = local(x.uses) || x.uses.en; if (use) p.append(el('br'), document.createTextNode(use)); result.append(p); }); };
         explain('أدوات ناقصة ما اخترتيها · Missed items', g.missed);
         explain('أدوات اخترتيها وهي مو من هذا الإجراء · Not part of this procedure', g.wrong);

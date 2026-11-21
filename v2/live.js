@@ -36,7 +36,7 @@
   if(id!==activePage){if(fromBack)pageTrail.pop();else pageTrail.push(activePage);activePage=id}renderPageNavigation();
   document.querySelectorAll(".view").forEach(v=>v.hidden=v.dataset.page!==id);
   document.querySelectorAll("#nav button").forEach(v=>v.classList.toggle("selected",v.dataset.page===id));
-  const index=nav.findIndex(n=>n[0]===id),l=$("language").value;setText("heading",titles[l]?.[index]||nav[index][1]);setText("breadcrumb","WORKSPACE / "+id.toUpperCase());
+  const index=nav.findIndex(n=>n[0]===id),l=$("language").value;setText("heading",titles[l]?.[index]||nav[index][1]);setText("breadcrumb",(l==="ar"?"مساحة العمل":"Workspace")+" / "+(titles[l]?.[index]||nav[index][1]));
   if(id==="clinic")clinicPractice.load();
   if(id==="catalog")loadCatalog().catch(showError);
   if(id==="ipc")loadIPC().catch(showError);

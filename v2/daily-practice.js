@@ -44,7 +44,7 @@ window.nseMountDaily = ({ host, request, post, el, center, language }) => {
   const drillText = el('p', ar() ? '3 أسئلة سريعة لمراجعة الأدوات' : '3 quick questions to review instruments', 'small');
   const dots = el('span', undefined, 'dots');
   const g1 = el('div', undefined, 'grow'); g1.append(el('h3', ar() ? 'تدريب اليوم' : "Today's Drill"), drillText);
-  drillCard.append(el('span', '🎯', 'icon'), g1, dots);
+  const dIcon = el('span', undefined, 'icon'); dIcon.innerHTML = (window.nseLineIcon?window.nseLineIcon('target'):''); drillCard.append(dIcon, g1, dots);
   const paintDots = (answers = [], size = 3) => { dots.replaceChildren(...Array.from({ length: size }, (_, i) => el('i', undefined, i < answers.length ? 'on' : ''))); };
   paintDots();
 
@@ -57,7 +57,7 @@ window.nseMountDaily = ({ host, request, post, el, center, language }) => {
   const refreshDrill = () => request('/api/daily/drill' + q()).then(r => {
     const d = r.drill, done = d?.completed, score = d ? d.answers.filter(a => a.correct).length : 0;
     paintDots(d?.answers || [], r.size);
-    const st = r.streak ? (ar() ? ' · 🔥 ' + r.streak + ' يوم متتالي' : ' · 🔥 ' + r.streak + '-day streak') : '';
+    const st = r.streak ? (ar() ? ' · ' + r.streak + ' أيام متتالية' : ' · ' + r.streak + '-day streak') : '';
     drillText.textContent = done ? (ar() ? 'خلّصتِ تدريب اليوم: ' + score + ' من ' + r.size : "Today's drill done: " + score + '/' + r.size) + st
       : d ? (ar() ? 'كمّلي من حيث وقفتِ' : 'Continue where you left off') + st
       : (ar() ? '3 أسئلة سريعة لمراجعة الأدوات' : '3 quick questions to review instruments') + st;
@@ -66,9 +66,9 @@ window.nseMountDaily = ({ host, request, post, el, center, language }) => {
 
   request('/api/daily/item' + q()).then(r => {
     const it = r.item; if (!it) return;
-    const media = it.imageUrl ? Object.assign(el('img'), { src: it.imageUrl, alt: it.names.en, loading: 'lazy' }) : el('span', '🦷', 'ph');
+    const media = it.imageUrl ? Object.assign(el('img'), { src: it.imageUrl, alt: it.names.en, loading: 'lazy' }) : Object.assign(el('span', undefined, 'ph'), { innerHTML: (window.nseLineIcon?window.nseLineIcon('image'):'') });
     const g = el('div', undefined, 'grow');
-    g.append(el('span', ar() ? '☀️ أداة اليوم' : '☀️ ITEM OF THE DAY', 'over'));
+    g.append(el('span', ar() ? 'أداة اليوم' : 'Item of the day', 'over'));
     const h = el('h3'); h.append(enSpan(it.names.en)); g.append(h);
     if (local(it.names)) g.append(el('p', local(it.names), 'muted'));
     const use = local(it.uses) || it.uses.en; if (use) g.append(el('p', use, 'small'));
@@ -90,7 +90,7 @@ window.nseMountDaily = ({ host, request, post, el, center, language }) => {
       const box = el('div', undefined, 'nse-drill');
       box.append(el('span', ar() ? 'تدريب غير مقيّم · Practice only' : 'Practice only — not an official assessment', 'pill'));
       if (i >= d.questions.length) {
-        box.append(el('div', score === d.questions.length ? '🎉' : score ? '👏' : '💪', 'big'), el('h2', (ar() ? 'النتيجة ' : 'Score ') + score + ' / ' + d.questions.length),
+        box.append(el('h2', (ar() ? 'النتيجة ' : 'Score ') + score + ' / ' + d.questions.length),
           el('p', ar() ? 'رجعي بكرة لتدريب جديد وحافظي على سلسلة الأيام.' : 'Come back tomorrow for a new drill and keep your streak.', 'muted'));
         const close = el('button', ar() ? 'تم' : 'Done', 'btn'); close.onclick = () => modal.close(); box.append(close);
         body.replaceChildren(box); refreshDrill(); return;
