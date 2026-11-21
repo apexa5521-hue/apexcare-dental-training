@@ -176,6 +176,9 @@
    if(view && !view.querySelector('.catalog-mode-controls')){
     const right=view.querySelector('.two>.card+.card'),left=view.querySelector('.two>.card');
     if(right){
+     const procedurePicker=el('select');
+     procedurePicker.id='catalogProcedureSelect';
+     if(left)left.querySelector('#catalogProceduresList').before(procedurePicker);
      const modes=el('div',undefined,'catalog-mode-controls');modes.setAttribute('role','group');
      const preparation=el('section'),explorer=el('section');preparation.id='catalogProcedurePanel';explorer.id='catalogExplorePanel';
      ['procedureHeading','procedureDetail','procedureChecklist'].forEach(id=>preparation.append($(id)));
@@ -183,7 +186,7 @@
      for(const mode of ['procedure','explore']){const button=el('button','', 'btn sub');button.type='button';button.dataset.catalogMode=mode;button.onclick=()=>{
       right.dataset.activeCatalogMode=mode;preparation.hidden=mode!=='procedure';explorer.hidden=mode!=='explore';
       modes.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
-      if(left){$('catalogProceduresList').hidden=mode==='explore';left.querySelector('h3').hidden=mode==='explore';}
+      if(left){$('catalogProceduresList').hidden=procedurePicker.hidden=mode==='explore';left.querySelector('h3').hidden=mode==='explore';}
      };modes.append(button);}
      right.prepend(modes);right.append(preparation,explorer);modes.querySelector('button').click();
     }
@@ -196,8 +199,32 @@
    const procs=cat.procedures.filter(x=>x.specialtyId===sp);
    const tools=cat.tools.filter(x=>x.specialtyId===sp);
    const list=$("catalogProceduresList");list.replaceChildren();
-   procs.filter(p=>translated(p).name.toLowerCase().includes(search)).forEach(p=>{
-      const b=el("button",translated(p).name,"btn sub");b.style.textAlign="start";b.dataset.procedureId=String(p.id);b.setAttribute("aria-pressed",String(state.selectedProcedure?.id===p.id));b.onclick=()=>{state.selectedProcedure=p;view?.querySelector('[data-catalog-mode="procedure"]')?.click();renderProcedure()};list.append(b);
+   const matchingProcedures=procs.filter(p=>translated(p).name.toLowerCase().includes(search));
+   const pickProcedure=p=>{
+      state.selectedProcedure=p;
+      view?.querySelector('[data-catalog-mode="procedure"]')?.click();
+      renderProcedure();
+   };
+   const procedurePicker=$('catalogProcedureSelect');
+   if(procedurePicker){
+      procedurePicker.setAttribute('aria-label',arabic?'اختاري الإجراء':'Choose a procedure');
+      const placeholder=el('option',matchingProcedures.length?(arabic?'اختاري الإجراء':'Choose a procedure'):(arabic?'لا توجد إجراءات مطابقة':'No procedures found'));
+      placeholder.value='';
+      placeholder.disabled=true;
+      procedurePicker.replaceChildren(placeholder);
+      matchingProcedures.forEach(p=>{
+         const option=el('option',translated(p).name);
+         option.value=String(p.id);
+         procedurePicker.append(option);
+      });
+      procedurePicker.disabled=!matchingProcedures.length;
+      procedurePicker.onchange=()=>{
+         const selected=matchingProcedures.find(p=>String(p.id)===procedurePicker.value);
+         if(selected)pickProcedure(selected);
+      };
+   }
+   matchingProcedures.forEach(p=>{
+      const b=el("button",translated(p).name,"btn sub");b.style.textAlign="start";b.dataset.procedureId=String(p.id);b.setAttribute("aria-pressed",String(state.selectedProcedure?.id===p.id));b.onclick=()=>pickProcedure(p);list.append(b);
    });
    if(!list.childElementCount)list.append(el("p","No procedures found.","small"));
    const toolList=$("catalogToolList");toolList.replaceChildren();
@@ -222,6 +249,11 @@
  function asIds(v){if(Array.isArray(v))return v.map(String);if(typeof v==="string"){try{const x=JSON.parse(v);return Array.isArray(x)?x.map(String):[]}catch{return []}}return []}
  function renderProcedure(){
   const p=state.selectedProcedure,root=$("procedureChecklist");root.replaceChildren();
+  const procedurePicker=$('catalogProcedureSelect');
+  if(procedurePicker){
+    procedurePicker.value=String(p?.id??'');
+    if(procedurePicker.selectedIndex===-1)procedurePicker.value='';
+  }
   document.querySelectorAll("#catalogProceduresList [data-procedure-id]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.procedureId===String(p?.id))));
   if(!p){setText("procedureHeading","Procedure preparation");setText("procedureDetail","Choose a procedure.");return}
   setText("procedureHeading",translated(p).name);
