@@ -61,3 +61,13 @@
   .catalog-mode-controls{margin-bottom:12px}
   .catalog-mode-controls button{min-width:0;line-height:1.4}
 }
+
+:root[data-theme] #procedureChecklist[data-practice="false"] .skill-row{
+  grid-template-columns:100px minmax(0,1fr);
+}
+#procedureChecklist .procedure-practice-toggle{justify-self:start;min-height:44px}
+@media(max-width:760px){
+  :root[data-theme] #procedureChecklist[data-practice="false"] .skill-row{
+    grid-template-columns:64px minmax(0,1fr);
+  }
+}

@@ -247,7 +247,7 @@
    renderProcedure();
  }
  function asIds(v){if(Array.isArray(v))return v.map(String);if(typeof v==="string"){try{const x=JSON.parse(v);return Array.isArray(x)?x.map(String):[]}catch{return []}}return []}
- function renderProcedure(){
+ function renderProcedure(practice=false){
   const p=state.selectedProcedure,root=$("procedureChecklist");root.replaceChildren();
   const procedurePicker=$('catalogProcedureSelect');
   if(procedurePicker){
@@ -258,16 +258,40 @@
   if(!p){setText("procedureHeading","Procedure preparation");setText("procedureDetail","Choose a procedure.");return}
   setText("procedureHeading",translated(p).name);
   const tools=state.catalog.tools,tid=asIds(p.toolIds),cid=asIds(p.consumableIds),all=[...new Set([...tid,...cid])];
-  setText("procedureDetail",all.length+" curated items · Practice checklist only; not an official exam result.");
+  const arabic=$("language").value==='ar';
+  const available=all.filter(id=>tools.some(t=>String(t.id)===id));
+  root.dataset.practice=String(practice);
+  setText("procedureDetail",practice
+    ? (arabic?'راجعي تجهيز الصينية وعلّمي على كل أداة تأكدتِ منها.':'Check off each item as you review the tray. Practice only.')
+    : (arabic?'عدد الأدوات والمستهلكات: ':'Tools and consumables: ')+all.length);
+  if(available.length){
+    const toggle=el("button",practice
+      ? (arabic?'العودة للمذاكرة':'Back to studying')
+      : (arabic?'تدرّبي على تجهيز الصينية':'Practice tray setup'),"btn sub procedure-practice-toggle");
+    toggle.type="button";
+    toggle.onclick=()=>{
+      renderProcedure(!practice);
+      root.querySelector(".procedure-practice-toggle")?.focus();
+    };
+    root.append(toggle);
+  }
   const checked=new Set();
-  const progress=el("p","0 / "+all.length+" checked","good");
-  root.append(progress);
+  const progress=el("p",undefined,"good");
+  progress.setAttribute("role","status");
+  const updateProgress=()=>{
+    progress.textContent=checked.size+" / "+available.length+(arabic?" تمت مراجعتها":" checked");
+  };
+  if(practice){updateProgress();root.append(progress);}
   all.forEach(id=>{
     const item=tools.find(t=>String(t.id)===id);if(!item){root.append(el('p','Source item '+id+' is missing. This procedure needs clinical review before use.','warning'));return;}
-    const label=el("label",undefined,"skill-row"),cb=el("input");cb.type="checkbox";cb.className="skill-checkbox";
-    cb.onchange=()=>{if(cb.checked)checked.add(id);else checked.delete(id);progress.textContent=checked.size+" / "+all.length+" checked"+(all.length&&checked.size===all.length?" · Great work!":"")};
-    const text=el("div");text.append(el("strong",translated(item).name),el("small",(cid.includes(id)?"Consumable · ":"Instrument · ")+translated(item).use));
-    label.append(cb);
+    const label=el(practice?"label":"div",undefined,"skill-row");
+    if(practice){
+      const cb=el("input");cb.type="checkbox";cb.className="skill-checkbox";
+      cb.onchange=()=>{if(cb.checked)checked.add(id);else checked.delete(id);updateProgress()};
+      label.append(cb);
+    }
+    const category=cid.includes(id)?(arabic?"مستهلك":"Consumable"):(arabic?"أداة":"Instrument");
+    const text=el("div");text.append(el("strong",translated(item).name),el("small",category+" · "+translated(item).use));
     if(item.imageUrl&&/^https:\/\//i.test(item.imageUrl)){
      const image=el('img');image.src=item.imageUrl;image.alt=translated(item).name;image.loading='lazy';image.className='checklist-tool-image';
      image.onerror=()=>{image.hidden=true;};label.append(image);
