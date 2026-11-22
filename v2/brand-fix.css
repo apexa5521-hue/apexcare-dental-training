@@ -71,3 +71,67 @@
     grid-template-columns:64px minmax(0,1fr);
   }
 }
+
+/* Color marks the learning activity and its progress. */
+:root[data-theme] {
+  --nse-study-blue: #234eaa;
+  --nse-study-blue-bg: #edf4ff;
+  --nse-study-purple: #6941a5;
+  --nse-study-purple-bg: #f5efff;
+  --nse-study-amber: #8a4908;
+  --nse-study-amber-bg: #fff2db;
+}
+:root[data-theme="dark"] {
+  --nse-study-blue: #b8d2ff;
+  --nse-study-blue-bg: #20355a;
+  --nse-study-purple: #e0c8ff;
+  --nse-study-purple-bg: #392950;
+  --nse-study-amber: #ffda9e;
+  --nse-study-amber-bg: #473421;
+}
+:root[data-theme] .learning-empty,
+:root[data-theme] #modules .route-summary,
+:root[data-theme] #learningJourney .daily-task {
+  background: var(--nse-study-blue-bg);
+  border: 1px solid var(--nse-line);
+  border-inline-start: 4px solid var(--nse-study-blue);
+  color: var(--nse-ink);
+  border-radius: 16px;
+}
+:root[data-theme] .learning-empty {
+  padding: clamp(16px, 4vw, 32px);
+  margin-block: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.learning-empty h3{color:var(--nse-study-blue);margin:0}
+.learning-empty p{margin:8px 0 16px}
+:root[data-theme] #modules .route-summary strong{color:var(--nse-study-blue)}
+:root[data-theme] :is(#modules .learning-stop.current,#procedureChecklist .procedure-practice-toggle){
+  background:var(--nse-study-purple-bg);
+  border-color:var(--nse-study-purple);
+}
+:root[data-theme] :is(#modules .learning-stop.current .learning-node,#procedureChecklist .procedure-practice-toggle){
+  color:var(--nse-study-purple);
+}
+:root[data-theme] #modules .learning-stop.completed .learning-node{
+  color:var(--nse-study-blue);
+  background:var(--nse-study-blue-bg);
+}
+:root[data-theme] #modules > .notice.section{
+  color:var(--nse-ink);
+  background:var(--nse-study-amber-bg);
+  border-inline-start:4px solid var(--nse-study-amber);
+}
+:root[data-theme] #learningJourney .path-node{
+  color:var(--nse-study-blue);
+  background:var(--nse-study-blue-bg);
+}
+:root[data-theme] #learningJourney .path-stop:nth-child(2) .path-node{
+  color:var(--nse-study-purple);
+  background:var(--nse-study-purple-bg);
+}
+:root[data-theme] #learningJourney .path-stop:nth-child(3) .path-node{
+  color:var(--nse-study-amber);
+  background:var(--nse-study-amber-bg);
+}
