@@ -11,8 +11,14 @@ window.nseMountSearch = ({ host, request, el, center, language, openLesson, disp
     style.textContent = `
 #nseLucyWidget{position:fixed;inset-inline-end:22px;bottom:22px;z-index:100;display:flex;flex-direction:column;align-items:flex-end;gap:12px;max-width:calc(100vw - 24px);color:var(--nse-ink)}
 #nseLucyWidget[hidden],#nseLucyWidget #nseSearch[hidden],body:has(#login:not([hidden])) #nseLucyWidget{display:none!important}
-#nseLucyWidget .lucy-launcher{width:64px;height:64px;padding:0;border:2px solid var(--nse-line);border-radius:50%;background:var(--nse-surface);box-shadow:0 6px 22px #142b4b30;overflow:hidden}
-#nseLucyWidget .lucy-launcher img{width:100%;height:100%;object-fit:cover;object-position:center 30%;display:block}
+#nseLucyWidget .lucy-launcher{display:flex;align-items:center;gap:12px;padding:6px 10px;min-height:56px;border:1px solid var(--nse-line);border-radius:999px;background:var(--nse-surface);color:var(--nse-ink);box-shadow:0 6px 22px #142b4b30;text-align:start}
+#nseLucyWidget .lucy-portrait{position:relative;width:48px;height:48px;flex:none;border:2px solid var(--nse-green);border-radius:50%}
+#nseLucyWidget .lucy-portrait::after{content:"";position:absolute;inset:-5px;border:2px solid var(--nse-bright);border-radius:50%;pointer-events:none}
+#nseLucyWidget .lucy-portrait img{width:100%;height:100%;object-fit:cover;object-position:center 30%;border-radius:50%;display:block}
+#nseLucyWidget .lucy-launcher-label{display:grid;gap:2px;line-height:1.25;font-size:13px}
+#nseLucyWidget .lucy-launcher-status{color:var(--nse-muted);font-size:12px}
+#nseLucyWidget .lucy-launcher-status::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--nse-green);margin-inline-end:5px}
+@media(prefers-reduced-motion:no-preference){#nseLucyWidget .lucy-portrait::after{animation:lucy-ring 2.6s ease-out 3}@keyframes lucy-ring{0%{transform:scale(.92);opacity:.9}80%,100%{transform:scale(1.18);opacity:.25}}}
 #nseLucyWidget #nseSearch{width:420px;max-width:calc(100vw - 24px);height:min(610px,calc(100dvh - 112px));display:flex;flex-direction:column;padding:0!important;margin:0!important;background:var(--nse-surface);border:1px solid var(--nse-line);border-radius:22px!important;box-shadow:0 14px 50px #10243f30;overflow:hidden}
 #nseLucyWidget .lucy-header{display:flex;align-items:center;gap:10px;padding:14px;background:var(--nse-surface);border-bottom:1px solid var(--nse-line);flex-wrap:wrap}
 #nseLucyWidget .lucy-avatar{width:44px;height:44px;border-radius:50%;object-fit:cover;object-position:center 30%}
@@ -39,7 +45,7 @@ window.nseMountSearch = ({ host, request, el, center, language, openLesson, disp
 #nseLucyWidget .group{font-size:13px;font-weight:600;margin:4px 0}
 #nseLucyWidget .chips{display:flex;gap:5px;flex-wrap:wrap}
 #nseLucyWidget :focus-visible{outline:3px solid var(--nse-bright);outline-offset:3px}
-@media(max-width:760px){#nseLucyWidget{bottom:calc(88px + env(safe-area-inset-bottom));inset-inline-end:12px}#nseLucyWidget #nseSearch{height:min(560px,calc(100dvh - 180px))}#nseLucyWidget .lucy-launcher{width:56px;height:56px}}
+@media(max-width:760px){#nseLucyWidget{bottom:calc(88px + env(safe-area-inset-bottom));inset-inline-end:12px}#nseLucyWidget #nseSearch{height:min(560px,calc(100dvh - 180px))}#nseLucyWidget .lucy-portrait{width:42px;height:42px}}
 @media(prefers-reduced-motion:no-preference){#nseLucyWidget #nseSearch{animation:lucy-open .18s ease-out}@keyframes lucy-open{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}}`;
     document.head.append(style);
   }
@@ -53,7 +59,11 @@ window.nseMountSearch = ({ host, request, el, center, language, openLesson, disp
   const widget=el('div');widget.id='nseLucyWidget';
   const card = el('section'); card.id = 'nseSearch';card.hidden=true;card.dataset.lucyPortal='true';card.setAttribute('role','dialog');card.setAttribute('aria-labelledby','nseLucyTitle');
   const launcher=el('button',undefined,'lucy-launcher');launcher.type='button';launcher.setAttribute('aria-controls','nseSearch');launcher.setAttribute('aria-expanded','false');
-  const launcherImage=el('img');launcherImage.src='/assets/nurse-lucy.jpg';launcherImage.alt='';launcher.append(launcherImage);
+  const launcherImage=el('img');launcherImage.src='/assets/nurse-lucy.jpg';launcherImage.alt='';
+  const portrait=el('span',undefined,'lucy-portrait');portrait.append(launcherImage);
+  const launcherLabel=el('span',undefined,'lucy-launcher-label');
+  const launcherName=el('strong'),launcherStatus=el('span',undefined,'lucy-launcher-status');
+  launcherLabel.append(launcherName,launcherStatus);launcher.append(portrait,launcherLabel);
   const close=el('button','×','lucy-window-control');close.type='button';
   const minimize=el('button','−','lucy-window-control');minimize.type='button';
   const setOpen = open => {card.hidden=!open;launcher.setAttribute('aria-expanded',String(open));if(open){input.focus();log.scrollTop=log.scrollHeight}else launcher.focus()};
@@ -85,6 +95,8 @@ window.nseMountSearch = ({ host, request, el, center, language, openLesson, disp
     widget.dir=lang()==='ar'?'rtl':'ltr';
     card.lang = lang(); card.dir = lang() === 'ar' ? 'rtl' : 'ltr'; picker.value = lang();
     picker.setAttribute('aria-label', lang() === 'ar' ? 'لغة المحادثة' : 'Conversation language');
+    launcherName.textContent=lang()==='ar'?'لوسي · مساعد التمريض':'Lucy · Nursing assistant';
+    launcherStatus.textContent=lang()==='ar'?'متصلة':'Online';
     head.textContent = 'Nurse Lucy';launcher.setAttribute('aria-label',lang()==='ar'?'افتحي محادثة لوسي':'Open Nurse Lucy chat');close.setAttribute('aria-label',lang()==='ar'?'إغلاق المحادثة':'Close chat');minimize.setAttribute('aria-label',lang()==='ar'?'تصغير المحادثة':'Minimize chat'); hint.textContent = t('hint'); btn.textContent = lang() === 'ar' ? 'إرسال' : 'Send';
     input.placeholder = lang() === 'ar' ? 'اكتبي اسم أداة أو إجراء…' : 'Type an instrument or procedure…'; input.setAttribute('aria-label',t('title'));
     presence.textContent = lang() === 'ar' ? 'متصلة · مساعدة تعليمية' : 'Online · Learning assistant';
@@ -137,6 +149,12 @@ window.nseMountSearch = ({ host, request, el, center, language, openLesson, disp
       const r = await request('/api/search?centerId=' + encodeURIComponent(center()) + '&q=' + encodeURIComponent(q));
       if (mine !== ticket) return;
       msg.textContent = '';
+      if(r.clarification==='surgery'){
+        hits.textContent=lang()==='ar'
+          ? 'أي إجراء جراحي تقصدين؟ اكتبي اسمه مثل خلع ضرس العقل أو زراعة الأسنان عشان أبحث لك عن الإجراء وأدواته.'
+          : 'Which surgical procedure do you mean? Enter its name, such as wisdom tooth extraction or dental implant placement, so I can look up the procedure and its instruments.';
+        return;
+      }
       const add = (name, list, render) => { if (!list.length) return; hits.append(el('p', t(name), 'group')); list.forEach(x => hits.append(render(x))); };
       add('tools', r.tools, x => row(label(x.names), [text(x.uses).value], x.imageUrl, chips(t('usedIn'), x.procedures.map(p => p.names)), x.id));
       add('procs', r.procedures, x => row(label(x.names), [x.unresolvedItems ? x.unresolvedItems + ' ' + t('unresolved') : ''], null, chips(t('needs'), x.tools.map(i => i.names)), x.id));

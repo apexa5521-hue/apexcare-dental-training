@@ -13,13 +13,16 @@ function norm(text) {
 const parse = v => { if (Array.isArray(v)) return v; try { const x = JSON.parse(v || '[]'); return Array.isArray(x) ? x : []; } catch { return []; } };
 const pick = (row, field) => Object.fromEntries(LANGS.map(l => [l, String(row[field + CAP[l]] || '').trim()]));
 
-// Higher is better: whole-name match, name prefix, every term in name, every term anywhere.
+const contains = (text, phrase) => (' ' + text + ' ').includes(' ' + phrase + ' ');
+const surgeryTopics = new Set(['surgery', 'oral surgery', 'dental surgery', 'surgical', 'جراحه', 'الجراحه', 'جراحه الفم', 'جراحه الاسنان', 'جراحه الفم والاسنان']);
+const ppeTerms = ['ppe', 'personal protective equipment', 'معدات الوقايه الشخصيه', 'معدات الوقايه', 'وسائل الوقايه الشخصيه'];
+const isPpe = value => ppeTerms.some(term => contains(norm(value), term));
 function score(names, extra, terms, phrase) {
-  const n = names.map(norm).filter(Boolean), all = n.join(' ') + ' ' + extra.map(norm).join(' ');
-  if (n.some(x => x === phrase)) return 100;
-  if (n.some(x => x.startsWith(phrase))) return 80;
-  if (terms.every(t => n.some(x => x.includes(t)))) return 60;
-  if (terms.every(t => all.includes(t))) return 30;
+  const titles = names.map(norm).filter(Boolean);
+  if (titles.includes(phrase)) return 100;
+  if (titles.some(x => x.startsWith(phrase + ' '))) return 80;
+  if (titles.some(x => terms.every(t => contains(x, t)))) return 60;
+  if (extra.map(norm).some(x => terms.every(t => contains(x, t)))) return 30;
   return 0;
 }
 const top = (items, limit) => items.filter(x => x.score > 0).sort((a, b) => b.score - a.score).slice(0, limit).map(({ score: _, ...rest }) => rest);
@@ -36,7 +39,7 @@ function querySubject(q) {
   const original=norm(q);
   const subject=original
     .replace(/^(?:what is|what are) (?:the )?(?:use|uses|purpose|function) of (?:the )?/, '')
-    .replace(/^(?:tell me about|explain|how do i use) (?:the )?/, '')
+    .replace(/^(?:tell me about|explain|how do i use|what is|what are) (?:the )?/, '')
     .replace(/^(?:وش|ايش|ما هي|ما هو|ما) (?:فائده|فايده|فوائد|استخدام|وظيفه) /, '')
     .replace(/^(?:اشرح لي|علمني عن|كيف استخدم) /, '')
     .replace(/ please$/, '').trim();
@@ -45,30 +48,38 @@ function querySubject(q) {
 function search({ q, tools, procedures, ipcModules, ipcSteps, lessons }) {
   const phrase = querySubject(q), terms = phrase.split(' ').filter(Boolean);
   if (phrase.length < 2 || terms.length > 8) fail('INVALID_SEARCH');
+  const empty = { query: q, tools: [], procedures: [], infectionPrevention: [], lessons: [], sourceBound: true, aiUsed: false };
+  if (surgeryTopics.has(phrase)) return { ...empty, clarification: 'surgery' };
+  const ppe = ppeTerms.includes(phrase);
   const toolById = new Map(tools.map(t => [String(t.id), t]));
-  const toolHits = top(tools.map(t => {
+  const toolHits = ppe ? [] : top(tools.map(t => {
     const names = pick(t, 'name'), uses = pick(t, 'use');
     return { score: score(Object.values(names), Object.values(uses), terms, phrase), id: String(t.id), specialtyId: String(t.specialtyId || ''), names, uses, imageUrl: /^https:\/\//i.test(t.imageUrl || '') ? t.imageUrl : null, t };
   }), 8).map(({ t, ...hit }) => ({
     ...hit,
     procedures: procedures.filter(p => [...parse(p.toolIds), ...parse(p.consumableIds)].map(String).includes(hit.id)).slice(0, 6).map(p => ({ id: String(p.id), names: pick(p, 'name') }))
   }));
-  const procHits = top(procedures.map(p => {
+  const procHits = ppe ? [] : top(procedures.map(p => {
     const names = pick(p, 'name'), ids = [...parse(p.toolIds), ...parse(p.consumableIds)].map(String);
     const linked = ids.map(id => toolById.get(id)).filter(Boolean);
-    return { score: score(Object.values(names), linked.map(t => t.nameEn), terms, phrase), id: String(p.id), specialtyId: String(p.specialtyId || ''), names, tools: linked.slice(0, 15).map(t => ({ id: String(t.id), names: pick(t, 'name') })), unresolvedItems: ids.length - linked.length };
+    return { score: score(Object.values(names), [], terms, phrase), id: String(p.id), specialtyId: String(p.specialtyId || ''), names, tools: linked.slice(0, 15).map(t => ({ id: String(t.id), names: pick(t, 'name') })), unresolvedItems: ids.length - linked.length };
   }), 6);
   const ipcHits = top(ipcModules.map(m => {
     const names = Object.fromEntries(LANGS.map(l => [l, String(m['name' + CAP[l]] || m['title' + CAP[l]] || '').trim()]));
     const steps = ipcSteps.filter(s => String(s.moduleId) === String(m.id)).sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
-    return { score: score(Object.values(names), steps.flatMap(s => LANGS.map(l => s['text' + CAP[l]])), terms, phrase), id: String(m.id), names, steps: steps.slice(0, 12).map(s => pick(s, 'text')) };
+    const titleMatch = Object.values(names).some(isPpe);
+    const relevant = ppe && !titleMatch
+      ? steps.filter(s => Object.values(pick(s, 'text')).some(isPpe)) : steps;
+    const rank = ppe ? (titleMatch ? 100 : relevant.length ? 30 : 0)
+      : score(Object.values(names), steps.flatMap(s => Object.values(pick(s, 'text'))), terms, phrase);
+    return { score: rank, id: String(m.id), names, steps: relevant.slice(0, 12).map(s => pick(s, 'text')) };
   }), 4);
   const lessonHits = top(lessons.map(m => {
     const t = m.translations || {}, titles = Object.fromEntries(LANGS.map(l => [l, String(t[l]?.title || '')]));
-    const bodyLang = LANGS.find(l => terms.every(x => norm(t[l]?.body).includes(x))) || 'en';
-    return { score: score(Object.values(titles), LANGS.map(l => t[l]?.body), terms, phrase), id: m.id, titles, snippet: snippet(t[bodyLang]?.body, terms), snippetLanguage: bodyLang };
+    const bodyLang = LANGS.find(l => terms.every(x => contains(norm(t[l]?.body), x))) || 'en';
+    return { score: ppe ? (Object.values(titles).some(isPpe) ? 100 : 0) : score(Object.values(titles), LANGS.map(l => t[l]?.body), terms, phrase), id: m.id, titles, snippet: snippet(t[bodyLang]?.body, terms), snippetLanguage: bodyLang };
   }), 6);
-  return { query: q, tools: toolHits, procedures: procHits, infectionPrevention: ipcHits, lessons: lessonHits, sourceBound: true, aiUsed: false };
+  return { ...empty, tools: toolHits, procedures: procHits, infectionPrevention: ipcHits, lessons: lessonHits };
 }
 
 module.exports = async ({ req, url, c, userId, centerId, role }) => {
