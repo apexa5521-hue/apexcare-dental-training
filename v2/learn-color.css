@@ -1,0 +1,116 @@
+/* Learning colours. Loaded after consistency.css.
+   Direction: a clinical classroom. Each learning area has its own subject colour, like the
+   colour-coded notebooks and instrument trays nurses already know. Surfaces stay ivory and calm;
+   colour lives in the subject marks: menu tiles, the page highlighter, journey steps and progress.
+   Signature: a highlighter stroke under the page heading, in the colour of the current area.
+   Built with the unslop process (Damir Sokolovsky, @heydamir, CC BY 4.0). */
+
+:root[data-theme]{
+  --c-blue:#2f63d6;--c-sky:#0a84c6;--c-coral:#e0552f;--c-teal:#0c9484;--c-green:#2b9348;
+  --c-amber:#e39a00;--c-rose:#d43f73;--c-plum:#8848c2;--c-slate:#2f7896;--c-indigo:#4f5fd3;
+  --ink-mix:#0b1730;--ink-amt:28%;--tile-amt:13%;--hl-amt:30%;
+}
+:root[data-theme="dark"]{
+  --c-blue:#86a8ff;--c-sky:#5cc0f5;--c-coral:#ff8b68;--c-teal:#4fd6c4;--c-green:#6cd38a;
+  --c-amber:#ffc44d;--c-rose:#ff7fa9;--c-plum:#c39bff;--c-slate:#7cc4e0;--c-indigo:#9aa6ff;
+  --ink-mix:#ffffff;--ink-amt:12%;--tile-amt:18%;--hl-amt:34%;
+}
+
+/* Subject colour of each area. Menu buttons, bottom bar buttons and views all carry data-page. */
+[data-page="home"]{--subj:var(--c-blue)}
+[data-page="learning"]{--subj:var(--c-sky)}
+[data-page="catalog"]{--subj:var(--c-coral)}
+[data-page="clinic"]{--subj:var(--c-teal)}
+[data-page="ipc"]{--subj:var(--c-green)}
+[data-page="assessments"]{--subj:var(--c-amber)}
+[data-page="achievements"]{--subj:var(--c-rose)}
+[data-page="team"]{--subj:var(--c-plum)}
+[data-page="studio"]{--subj:var(--c-slate)}
+[data-page="reports"]{--subj:var(--c-indigo)}
+[data-page]{--subj-ink:color-mix(in srgb,var(--subj) calc(100% - var(--ink-amt)),var(--ink-mix))}
+
+/* The area that is open sets the page colour for the header. */
+:root{--page:var(--c-blue);--nse-clinic-welcome:url("/study-scene.svg")}
+:root:has(.view[data-page="learning"]:not([hidden])){--page:var(--c-sky)}
+:root:has(.view[data-page="catalog"]:not([hidden])){--page:var(--c-coral)}
+:root:has(.view[data-page="clinic"]:not([hidden])){--page:var(--c-teal)}
+:root:has(.view[data-page="ipc"]:not([hidden])){--page:var(--c-green)}
+:root:has(.view[data-page="assessments"]:not([hidden])){--page:var(--c-amber)}
+:root:has(.view[data-page="achievements"]:not([hidden])){--page:var(--c-rose)}
+:root:has(.view[data-page="team"]:not([hidden])){--page:var(--c-plum)}
+:root:has(.view[data-page="studio"]:not([hidden])){--page:var(--c-slate)}
+:root:has(.view[data-page="reports"]:not([hidden])){--page:var(--c-indigo)}
+
+/* Menu: every area has its own colour tile, the open one is tinted in that colour. */
+:root[data-theme] #nav button>svg{width:18px;height:18px;padding:7px;box-sizing:content-box;flex:0 0 auto;border-radius:10px;
+  color:var(--subj-ink);background:color-mix(in srgb,var(--subj) var(--tile-amt),transparent);transition:background-color .2s,color .2s}
+:root[data-theme] #nav button.selected{color:var(--subj-ink);background:color-mix(in srgb,var(--subj) 9%,transparent);border-inline-start-color:var(--subj);box-shadow:inset -3px 0 0 var(--subj)}
+:root[dir="ltr"][data-theme] #nav button.selected,:root:not([dir])[data-theme] #nav button.selected{box-shadow:inset 3px 0 0 var(--subj)}
+:root[data-theme] #nav button.selected>svg{background:var(--subj);color:var(--nse-surface,#fff)}
+:root[data-theme] #nav button:hover:not(.selected)>svg{background:color-mix(in srgb,var(--subj) 22%,transparent)}
+
+/* Phone bottom bar: the open area takes its colour. */
+:root[data-theme] .nse-bottom button[aria-current="page"]{color:var(--subj-ink)}
+:root[data-theme] .nse-bottom button[aria-current="page"] svg{color:var(--subj)}
+
+/* Signature: highlighter stroke under the page heading. */
+:root[data-theme] #heading{text-decoration-line:underline;text-decoration-thickness:.34em;text-underline-offset:-.16em;text-decoration-skip-ink:none;
+  text-decoration-color:color-mix(in srgb,var(--page) var(--hl-amt),transparent)}
+:root[data-theme] #breadcrumb{color:color-mix(in srgb,var(--page) 75%,var(--ink-mix))}
+
+/* Home hero: a page of a ruled study notebook, with the margin line on the reading side. */
+:root[data-theme] .view[data-page="home"] .hero{position:relative;
+  background-image:repeating-linear-gradient(to bottom,transparent 0 31px,color-mix(in srgb,var(--c-sky) 16%,transparent) 31px 32px)}
+:root[data-theme] .view[data-page="home"] .hero::after{content:"";position:absolute;top:0;bottom:0;inset-inline-start:28px;width:2px;background:color-mix(in srgb,var(--c-coral) 45%,transparent);pointer-events:none}
+:root[data-theme] .view[data-page="home"] .hero .over{color:var(--c-coral)}
+:root[data-theme] .view[data-page="home"] .hero>*{position:relative;z-index:1}
+
+/* Progress fills in the colour of growth. */
+:root[data-theme] #progressBar{background:var(--c-green)}
+
+/* Today's row: three practice cards, three colours. */
+#nseDrillCard{--subj:var(--c-amber)}
+#nseTrayCard{--subj:var(--c-coral)}
+#nseItemCard{--subj:var(--c-teal)}
+#nseDrillCard,#nseTrayCard,#nseItemCard{--subj-ink:color-mix(in srgb,var(--subj) calc(100% - var(--ink-amt)),var(--ink-mix))}
+:root[data-theme] #nseDrillCard .icon,:root[data-theme] #nseTrayCard .icon,:root[data-theme] #nseItemCard .ph{
+  background:color-mix(in srgb,var(--subj) var(--tile-amt),transparent);color:var(--subj-ink)}
+:root[data-theme] #nseDrillCard .dots i.on{background:var(--subj)}
+:root[data-theme] #nseItemCard .over{color:var(--subj-ink)}
+:root[data-theme] #nseItemCard .chips .pill{background:color-mix(in srgb,var(--subj) 12%,transparent);color:var(--subj-ink)}
+
+/* Overview figures: each one in its own colour. */
+:root[data-theme] .view[data-page="home"] .grid>.card:nth-child(1){--subj:var(--c-sky)}
+:root[data-theme] .view[data-page="home"] .grid>.card:nth-child(2){--subj:var(--c-green)}
+:root[data-theme] .view[data-page="home"] .grid>.card:nth-child(3){--subj:var(--c-amber)}
+:root[data-theme] .view[data-page="home"] .grid>.card:nth-child(4){--subj:var(--c-rose)}
+:root[data-theme] .view[data-page="home"] .grid>.card .kpi-icon{background:color-mix(in srgb,var(--subj,var(--c-blue)) var(--tile-amt),transparent);color:var(--subj,var(--c-blue))}
+
+/* Learning journey: four stages, four colours. The current stage is filled. */
+:root[data-theme] .path-list .path-stop:nth-child(1){--step:var(--c-sky)}
+:root[data-theme] .path-list .path-stop:nth-child(2){--step:var(--c-coral)}
+:root[data-theme] .path-list .path-stop:nth-child(3){--step:var(--c-amber)}
+:root[data-theme] .path-list .path-stop:nth-child(4){--step:var(--c-green)}
+:root[data-theme] .view[data-page] .path-list .path-node{border-color:color-mix(in srgb,var(--step,var(--c-blue)) 55%,transparent);color:color-mix(in srgb,var(--step,var(--c-blue)) calc(100% - var(--ink-amt)),var(--ink-mix));background:color-mix(in srgb,var(--step,var(--c-blue)) 10%,var(--nse-surface,#fff))}
+:root[data-theme] .view[data-page] .path-list .path-stop.current .path-node{background:var(--step,var(--c-blue));border-color:var(--step,var(--c-blue));color:var(--nse-surface,#fff);box-shadow:0 0 0 5px color-mix(in srgb,var(--step,var(--c-blue)) 16%,transparent)}
+
+/* Learning library: lessons cycle through the subject colours, completed ones turn green. */
+:root[data-theme] .learning-route .learning-stop:nth-of-type(6n+1){--step:var(--c-sky)}
+:root[data-theme] .learning-route .learning-stop:nth-of-type(6n+2){--step:var(--c-coral)}
+:root[data-theme] .learning-route .learning-stop:nth-of-type(6n+3){--step:var(--c-teal)}
+:root[data-theme] .learning-route .learning-stop:nth-of-type(6n+4){--step:var(--c-amber)}
+:root[data-theme] .learning-route .learning-stop:nth-of-type(6n+5){--step:var(--c-rose)}
+:root[data-theme] .learning-route .learning-stop:nth-of-type(6n+6){--step:var(--c-plum)}
+:root[data-theme] .learning-route .learning-stop.completed{--step:var(--c-green)}
+:root[data-theme] .learning-route .learning-node{background:color-mix(in srgb,var(--step) 14%,var(--nse-surface,#fff));color:var(--step);border-color:color-mix(in srgb,var(--step) 50%,transparent)}
+:root[data-theme] .learning-route .learning-stop.current .learning-node{background:var(--step);color:var(--nse-surface,#fff);border-color:var(--step)}
+:root[data-theme] .learning-route .learning-stop{border-inline-start:4px solid color-mix(in srgb,var(--step) 70%,transparent)}
+
+/* Page tabs pick up the colour of their area. */
+:root[data-theme] .view[data-page] .nse-tab[aria-selected=true] .nse-tab-icon{color:var(--subj)}
+
+@media (prefers-reduced-motion:reduce){:root[data-theme] #nav button>svg{transition:none}}
+
+/* The step-of-the-day card shows the study desk illustration in its art slot. */
+:root[data-theme] .view[data-page="home"] .daily-task::after{border-radius:16px}
+:root[data-theme] .view[data-page="home"] .daily-task .eyebrow{color:var(--c-coral)}
