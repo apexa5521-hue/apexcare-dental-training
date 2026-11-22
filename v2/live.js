@@ -148,9 +148,29 @@
    if(!state.catalog){const data=await request("/api/catalog?centerId="+encodeURIComponent(state.center));state.catalog=data.catalog;state.catalog.integrityIssues=data.integrityIssues||[];}
    const cat=state.catalog,select=$("catalogSpecialty");
    setText("catalogSpecialties",cat.specialties.length);setText("catalogTools",cat.tools.length);setText("catalogProcedures",cat.procedures.length);
-   const previous=select.value;
-   select.replaceChildren(...cat.specialties.map(x=>{const o=el("option",translated(x).name);o.value=x.id;return o}));
-   if(cat.specialties.some(x=>x.id===previous))select.value=previous;
+   const previous=select.dataset.catalogCenter===state.center?select.value:'';
+   const ar=$("language").value==="ar";
+   const dentalIds=new Set(['gp','endo','surgery','ortho','pedo','perio','prostho','restorative','dental']);
+   const groups=[
+    ['dermatology',ar?'تمريض الجلدية':'Dermatology Nursing',x=>x.id==='dermatology'],
+    ['dental',ar?'تمريض الأسنان':'Dental Nursing',x=>dentalIds.has(x.id)],
+    ['other',ar?'تخصصات أخرى':'Other specialties',x=>x.id!=='dermatology'&&!dentalIds.has(x.id)]
+   ];
+   if(cat.primarySpecialty!=='dermatology')groups.unshift(groups.splice(1,1)[0]);
+   select.replaceChildren();
+   for(const [key,label,includes] of groups){
+    const items=cat.specialties.filter(includes);
+    if(!items.length)continue;
+    const group=el('optgroup');group.label=label;
+    for(const item of items){
+     const option=el('option',key==='dental'&&item.id==='dental'?(ar?'أساسيات الأسنان':'Dental foundations'):translated(item).name);
+     option.value=item.id;group.append(option);
+    }
+    select.append(group);
+   }
+   const preferred=previous||cat.primarySpecialty;
+   if(cat.specialties.some(x=>x.id===preferred))select.value=preferred;
+   select.dataset.catalogCenter=state.center;
    renderCatalog();
  }
  async function loadIPC(){
@@ -249,7 +269,7 @@
     previous.onclick=()=>{if(view){view.dataset.toolsPage=String(page-1);renderCatalog()}};next.onclick=()=>{if(view){view.dataset.toolsPage=String(page+1);renderCatalog()}};
     pager.append(previous,count,next);toolList.append(pager);
    }
-   if(!toolList.childElementCount)toolList.append(el("p","No tools found.","small"));
+   if(!toolList.childElementCount)toolList.append(el("p",arabic?"لا توجد أدوات متاحة لهذا التخصص أو البحث.":"No tools available for this specialty or search.","small"));
    if(!state.selectedProcedure||state.selectedProcedure.specialtyId!==sp)state.selectedProcedure=procs[0]||null;
    renderProcedure();
  }

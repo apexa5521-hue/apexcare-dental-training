@@ -127,15 +127,21 @@ async function handler(req,res){
    const mapping={Specialties:'specialties',Tools:'tools',Procedures:'procedures',IPC_Modules:'ipcModules',IPC_Steps:'ipcSteps'};
    for(const x of r.rows)by[mapping[x.source_name]].push(x.payload);
    if(role.role==="nurse"){
-    const assigned=await c.query("select s.code from qib.assignments a join qib.specialties s on s.id=a.specialty_id where a.user_id=$1 and a.center_id=$2",[userId,centerId]);
-    const allowed=new Set(assigned.rows.map(x=>x.code));
+    const assigned=await c.query("select s.code,s.label from qib.assignments a join qib.specialties s on s.id=a.specialty_id where a.user_id=$1 and a.center_id=$2",[userId,centerId]);
+    const assignedCodes=assigned.rows.map(x=>x.code);
+    const allowed=require('./nursing-tracks').browseCodes(assignedCodes);
+    by.primarySpecialty=assignedCodes.includes('dermatology')?'dermatology':assignedCodes.find(code=>code!=='dental')||'';
+    const dermatology=assigned.rows.find(x=>x.code==='dermatology');
+    if(dermatology&&!by.specialties.some(x=>String(x.id)==='dermatology')){
+     by.specialties.push({id:'dermatology',nameEn:dermatology.label,nameAr:'تمريض الجلدية'});
+    }
     by.specialties=by.specialties.filter(x=>allowed.has(String(x.id)));
     by.tools=by.tools.filter(x=>allowed.has(String(x.specialtyId)));
     by.procedures=by.procedures.filter(x=>allowed.has(String(x.specialtyId)));
    }
    const issues=await c.query("select source_name,legacy_id,field,missing_id from qib.migration_issues where resolved_at is null");
    const procedureIds=new Set(by.procedures.map(x=>String(x.id)));
-   return {catalog:by,source:'legacy-import',integrityIssues:issues.rows.filter(x=>x.source_name==='Procedures'&&procedureIds.has(x.legacy_id)),counts:Object.fromEntries(Object.entries(by).map(([k,v])=>[k,v.length]))};
+   return {catalog:by,source:'legacy-import',integrityIssues:issues.rows.filter(x=>x.source_name==='Procedures'&&procedureIds.has(x.legacy_id)),counts:Object.fromEntries(Object.entries(by).filter(([,v])=>Array.isArray(v)).map(([k,v])=>[k,v.length]))};
   }
   if(req.method==="GET"&&url.pathname==="/api/modules"){
    const rows=await c.query("select id,slug,specialty_id,translations,status,version from qib.modules where center_id=$1 or (center_id is null and status='published') order by slug",[centerId]);

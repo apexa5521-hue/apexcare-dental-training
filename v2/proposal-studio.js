@@ -253,13 +253,22 @@ window.nseMountCoverage = async ({ root, after, request, el, ctx }) => {
     const table = el('table'); table.style.cssText = 'width:100%;border-collapse:collapse;font-size:13.5px';
     const head = el('tr'); ['التخصص · Specialty', 'أدوات', 'بفائدة موثقة', 'بصورة', 'إجراءات', 'جاهز للتدريب'].forEach(h => { const th = el('th', h); th.style.cssText = 'text-align:start;padding:6px 8px;border-bottom:1px solid var(--nse-line);font-size:12px'; head.append(th); });
     table.append(head);
-    r.specialties.forEach(s => {
+    const dentalCodes = new Set(['gp','endo','surgery','ortho','pedo','perio','prostho','restorative']);
+    const dental = r.specialties.find(s => s.code === 'dental' || s.label === 'Dental Nursing');
+    const children = r.specialties.filter(s => dentalCodes.has(s.code));
+    if(dental){
+      const heading=el('tr'), cell=el('th','تمريض الأسنان · Dental Nursing');
+      cell.colSpan=6;cell.scope='rowgroup';heading.append(cell);table.append(heading);
+    }
+    const entries = [...(dental && dental.tools ? [dental] : []), ...children,
+      ...r.specialties.filter(s => s!==dental && !dentalCodes.has(s.code))];
+    entries.forEach(s => {
       const tr = el('tr'), cell = (t, bold) => { const td = el('td', String(t)); td.style.cssText = 'padding:6px 8px;border-bottom:1px solid var(--nse-line)' + (bold ? ';font-weight:700' : ''); return td; };
       tr.append(cell(s.label + (s.assignedToMe ? ' ← مسند لك' : ''), s.assignedToMe), cell(s.tools), cell(s.toolsWithUse), cell(s.toolsWithImage), cell(s.procedures), cell(s.practiceReady ? '✓ نعم' : '✗ لا — بدون محتوى كافٍ'));
       table.append(tr);
     });
     const wrap = el('div'); wrap.style.cssText = 'overflow-x:auto'; wrap.append(table); box.append(wrap);
-    const empty = r.specialties.filter(s => !s.practiceReady && s.assignedToMe);
+    const empty = entries.filter(s => !s.practiceReady && s.assignedToMe);
     if (empty.length) box.append(el('p', 'أنتِ مسندة لتخصص بدون أدوات كافية (' + empty.map(s => s.label).join('، ') + '). من «فريق التمريض ← إسناد تخصص» اختاري تخصصًا جاهزًا للتدريب، أو أضيفي محتوى لهذا التخصص.', 'small'));
     box.append(el('p', 'التدريب اليومي والتري يحتاجان ٤ أدوات على الأقل بفائدة موثقة في التخصص المسند.', 'small'));
     const diag = el('button', 'تشخيص المنصة · Platform diagnostics', 'btn sub'); diag.type = 'button';
