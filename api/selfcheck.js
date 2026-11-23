@@ -13,6 +13,9 @@ const CHECKS = [
   ['drill_query', "select count(*)::int as n from qib.daily_drills where center_id=$1", 'center'],
   ['coverage_query', "select s.id, count(*) filter (where l.source_name='Tools')::int as tools from qib.specialties s left join qib.legacy_catalog l on l.specialty_legacy_id=s.code and l.source_name in ('Tools','Procedures') group by s.id limit 1", 'none']
 ];
+const recent = [];
+// Last unexpected server errors since this instance started (route, error code, database message).
+const recordError = e => { recent.unshift({ at: new Date().toISOString(), ...e }); recent.length = Math.min(recent.length, 20); };
 module.exports = async ({ req, url, c, userId, centerId, deny }) => {
   if (req.method !== 'GET' || url.pathname !== '/api/admin/selfcheck') return { handled: false };
   if (!(await c.query('select 1 from qib.platform_owners where user_id=$1', [userId])).rowCount) deny();
@@ -29,5 +32,6 @@ module.exports = async ({ req, url, c, userId, centerId, deny }) => {
       results.push({ check: name, ok: false, error: String(e.message).slice(0, 300) });
     }
   }
-  return { handled: true, data: { results, at: new Date().toISOString() } };
+  return { handled: true, data: { results, recentErrors: recent.slice(), at: new Date().toISOString() } };
 };
+module.exports.recordError = recordError;

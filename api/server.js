@@ -327,6 +327,14 @@ async function handler(req,res){
  });
  send(res,200,result);
 }
-const server=http.createServer((req,res)=>handler(req,res).catch(e=>{console.error(e.message);if(!res.headersSent)send(res,e.status||500,{error:e.status?e.message:"SERVER_ERROR"})}));
+const server=http.createServer((req,res)=>handler(req,res).catch(e=>{
+ if(e.status){if(!res.headersSent)send(res,e.status,{error:e.message});return}
+ // Unexpected failure: keep a short reference (database error code or error type) so the screen
+ // and the owner diagnostics say what failed, without exposing data or stack traces.
+ const route=String(req.url||"").split("?")[0],ref=String(e.code||e.name||"ERROR").slice(0,24);
+ console.error("NSE_SERVER_ERROR",req.method,route,ref,String(e.message||"").slice(0,300));
+ selfcheck.recordError({method:req.method,route,ref,message:String(e.message||"").slice(0,300)});
+ if(!res.headersSent)send(res,500,{error:"SERVER_ERROR",ref});
+}));
 if(require.main===module){require('./upgrade-staging').upgradeStaging(pool,process.env.SUPABASE_URL).then(()=>server.listen(process.env.PORT||10000,()=>{console.log("NSE API ready");const reminders=()=>transaction(c=>growth.reminderSweep(c)).catch(()=>console.error("NSE_REMINDER_SWEEP_FAILED"));reminders();setInterval(reminders,3600000).unref()})).catch(e=>{console.error('NSE_SCHEMA_UPGRADE_FAILED',e.code||e.message);pool.end().finally(()=>process.exit(1))})}
 module.exports={server,handler,pool};

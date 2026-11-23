@@ -266,7 +266,7 @@ window.nseMountCoverage = async ({ root, after, request, el, ctx }) => {
     const out = el('div', undefined, 'small'); out.style.cssText = 'white-space:pre-wrap;direction:ltr;text-align:left;font-family:ui-monospace,monospace;font-size:12px;margin-top:8px';
     diag.onclick = async () => {
       diag.disabled = true; out.textContent = '…';
-      try { const d = await request('/api/admin/selfcheck?centerId=' + encodeURIComponent(ctx.center)); out.textContent = d.results.map(x => (x.ok ? '✓ ' : '✗ ') + x.check + (x.ok ? '\n   ' + JSON.stringify(x.rows) : '\n   ' + x.error)).join('\n'); }
+      try { const d = await request('/api/admin/selfcheck?centerId=' + encodeURIComponent(ctx.center)); out.textContent = d.results.map(x => (x.ok ? '✓ ' : '✗ ') + x.check + (x.ok ? '\n   ' + JSON.stringify(x.rows) : '\n   ' + x.error)).join('\n') + '\n\n' + (d.recentErrors && d.recentErrors.length ? 'Recent server errors:\n' + d.recentErrors.map(e => '✗ ' + e.at.slice(0, 16).replace('T', ' ') + ' ' + e.method + ' ' + e.route + ' [' + e.ref + '] ' + e.message).join('\n') : 'No server errors since the last restart.'); }
       catch (e) { out.textContent = e.message === 'FORBIDDEN' ? 'التشخيص لمالك المنصة فقط.' : e.message; }
       finally { diag.disabled = false; }
     };
