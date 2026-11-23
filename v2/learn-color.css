@@ -63,7 +63,7 @@
   background-image:repeating-linear-gradient(to bottom,transparent 0 31px,color-mix(in srgb,var(--c-sky) 16%,transparent) 31px 32px)}
 :root[data-theme] .view[data-page="home"] .hero::after{content:"";position:absolute;top:0;bottom:0;inset-inline-start:28px;width:2px;background:color-mix(in srgb,var(--c-coral) 45%,transparent);pointer-events:none}
 :root[data-theme] .view[data-page="home"] .hero .over{color:var(--c-coral)}
-:root[data-theme] .view[data-page="home"] .hero>*{position:relative;z-index:1}
+:root[data-theme] .view[data-page="home"] .hero>:not(canvas){position:relative;z-index:1}
 
 /* Progress fills in the colour of growth. */
 :root[data-theme] #progressBar{background:var(--c-green)}
