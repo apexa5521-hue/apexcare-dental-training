@@ -371,3 +371,9 @@ Owner decision: no paid AI subscription is required. Added free, content-bound f
 - Reuses existing server-only provider credentials and structured translation service. No credentials added to client or repository. Translation remains clinically/language reviewable, never guarantees correctness or awards competency.
 - Validation: npm ci and full API suite, including mocked-provider authorization/input checks and DOM tests for automatic fill, explicit replacement, stale responses and manual edits. No real provider call or authenticated browser acceptance yet.
 - Render connector exposes only workspace `tea-d7c39bfavr4c73e99vag`, not the previously approved second NSE workspace. No Render resource or environment changed. Live service configuration and deployment remain unverified.
+
+## Design pass approved (merged from design/unslop-pass)
+- Line icons replace emoji (`v2/line-icons.js`); interface buttons translated to ar/ur/id (`v2/ui-text.js`, exam panel stays English).
+- Learning colours (`v2/learn-color.css`): one subject colour per area, highlighter under page headings, study-desk illustration (`v2/study-scene.svg`).
+- `v2/consistency.css` cleaned: tool-output junk lines and a truncated logo data URI removed. The logo shows the NSE tile and wordmark until the original logo file is supplied.
+- Not deployed yet. Studio SERVER_ERROR still waits on the "Platform diagnostics" output after deployment.
