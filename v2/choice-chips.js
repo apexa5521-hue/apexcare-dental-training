@@ -3,7 +3,7 @@
 // The original <select> stays in the form (visually hidden) and remains the value the form
 // submits; chips only set it and fire "change". Options filled later are picked up automatically.
 (() => {
-  const TARGETS = ['inviteRole', 'inviteSpecialty', 'assignSpecialty'];
+  const TARGETS = ['inviteRole', 'assignSpecialty'];
   const style = document.createElement('style');
   style.textContent = `
 .nse-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}

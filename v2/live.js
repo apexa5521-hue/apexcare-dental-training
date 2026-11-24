@@ -371,11 +371,32 @@
  }
  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&state.attempt)lockExam("visibility_hidden")});
  window.addEventListener("pagehide",()=>{if(state.attempt)lockExam("pagehide")});
+ const inviteDepartments={dental:['gp','endo','surgery','ortho','pedo','perio','prostho','restorative'],dermatology:['derm_laser','derm_skin_care','derm_assistance']};
+ function configureInvite(){
+  const primary=$("inviteSpecialty"),label=primary.closest('label'),ar=$("language").value==='ar';
+  let department=$("inviteDepartment"),additional=$("inviteAdditional");
+  if(!department){
+   department=el('select');department.id='inviteDepartment';department.required=true;
+   const field=el('label',undefined,'field');field.append(el('span'),department);label.before(field);
+   additional=el('div');additional.id='inviteAdditional';label.after(additional);
+   department.onchange=()=>configureInvite();primary.onchange=()=>configureInvite();
+  }
+  department.closest('label').firstChild.textContent=ar?'القسم الرئيسي':'Nursing department';
+  fill(department,[{id:'',name:ar?'اختر القسم':'Choose department'},{id:'dental',name:ar?'تمريض الأسنان':'Dental Nursing'},{id:'dermatology',name:ar?'تمريض الجلدية':'Dermatology Nursing'}]);
+  label.firstChild.textContent=ar?'التخصص الأساسي':'Primary specialty';primary.required=true;
+  const items=state.specialties.filter(s=>(inviteDepartments[department.value]||[]).includes(s.code));
+  fill(primary,[{id:'',name:ar?'اختر التخصص':'Choose specialty'},...items.map(s=>({id:s.id,name:s.label}))]);
+  const checked=new Set([...additional.querySelectorAll('input:checked')].map(x=>x.value));
+  additional.replaceChildren(el('p',ar?'تخصصات إضافية (اختياري)':'Additional specialties (optional)','small'));
+  for(const s of items.filter(s=>s.id!==primary.value)){const option=el('label',undefined,'field'),box=el('input');box.type='checkbox';box.value=s.id;box.checked=checked.has(s.id);option.append(el('span'),box);option.firstChild.textContent=s.label;additional.append(option);}
+ }
  async function loadTeam(){
   request("/api/catalog/coverage?centerId="+encodeURIComponent(state.center)).then(r=>window.nseAnnotateSpecialties?.(r.specialties)).catch(()=>{});
   $("inviteArea").hidden=state.role!=="admin";$("legacyLinkArea").hidden=state.role!=="admin";$("assignmentForm").hidden=state.role!=="admin";
   const data=await request("/api/learners?centerId="+encodeURIComponent(state.center)),list=$("teamList");
-  list.replaceChildren(...data.learners.map(x=>{const row=el("div",undefined,"row");row.append(el("span",x.display_name),el("span",x.role,"pill"));return row}));
+  const grouped=new Map();for(const x of data.learners){if(!grouped.has(x.user_id))grouped.set(x.user_id,{...x,specialtyIds:[]});if(x.specialty_id)grouped.get(x.user_id).specialtyIds.push(x.specialty_id);}
+  list.replaceChildren(...[...grouped.values()].map(x=>{const row=el("div",undefined,"row"),copy=el('div');copy.append(el("strong",x.display_name));const assigned=state.specialties.filter(s=>x.specialtyIds.includes(s.id));copy.append(el('p',assigned.map(s=>s.label+(s.id===x.primary_specialty_id?' ★':'')).join(' · '),'small'));row.append(copy,el("span",x.role,"pill"));return row}));
+  configureInvite();
   const users=new Map(data.learners.map(x=>[x.user_id,x.display_name]));fill($("assignUser"),[...users].map(([id,name])=>({id,name})));fill($("legacyTarget"),[...users].map(([id,name])=>({id,name})));if(state.role==="admin"){const historic=await request("/api/legacy-history/unlinked?centerId="+encodeURIComponent(state.center));fill($("legacyUsername"),historic.unlinked.map(name=>({id:name,name})))}
  }
  async function loadStudio(){
@@ -399,7 +420,7 @@
   [["Nursing staff",data.learners],["Submitted assessments",data.assessments.total],["Average score",data.assessments.average??"—"]].forEach(([label,value])=>{const card=el("div",undefined,"card");card.append(el("span",label,"over"),el("div",value,"metric"));root.append(card)});
   $("reviewQueue").replaceChildren(el("p","Clinical assessment review requires an authorized supervisor and a documented reason.","muted"))
  }
- $("inviteForm").onsubmit=async e=>{e.preventDefault();try{const result=await post("/api/team/invite",{email:$("inviteEmail").value,displayName:$("inviteName").value,role:$("inviteRole").value,specialtyId:$("inviteSpecialty").value});$("inviteForm").reset();await loadTeam();alert("Invitation sent to "+result.userId)}catch(ex){showError(ex)}};
+ $("inviteForm").onsubmit=async e=>{e.preventDefault();try{const result=await post("/api/team/invite",{email:$("inviteEmail").value,displayName:$("inviteName").value,role:$("inviteRole").value,department:$("inviteDepartment").value,specialtyId:$("inviteSpecialty").value,additionalSpecialtyIds:[...$("inviteAdditional").querySelectorAll('input:checked')].map(x=>x.value)});$("inviteForm").reset();await loadTeam();alert("Invitation sent to "+result.userId)}catch(ex){showError(ex)}};
  async function loadDraftExams(){
   const root=$("draftExamList");root.replaceChildren();
   const data=await request("/api/exams/drafts?centerId="+encodeURIComponent(state.center));

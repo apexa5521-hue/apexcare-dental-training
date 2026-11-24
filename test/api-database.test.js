@@ -25,6 +25,7 @@ before(async()=>{
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/tray-practice-upgrade.sql'),'utf8'));
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/daily-practice-upgrade.sql'),'utf8'));
  await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/clinic-practice-upgrade.sql'),'utf8'));
+ await db.exec(fs.readFileSync(path.join(__dirname,'../deploy/nursing-accounts-upgrade.sql'),'utf8'));
  const query=async(sql,args)=>{const r=await db.query(sql,args);return {...r,rowCount:r.rows.length||r.affectedRows||0}};
  mock.method(pool,'query',query);
  mock.method(pool,'connect',async()=>({query,release(){}}));
