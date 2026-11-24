@@ -107,12 +107,23 @@ async function handler(req,res){
    const email=String(body.email||"").trim().toLowerCase(),displayName=String(body.displayName||"").trim(),targetRole=body.role||"nurse";
    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||displayName.length<2||displayName.length>100||!["nurse","supervisor","admin"].includes(targetRole))throw Object.assign(Error("INVALID_INVITATION"),{status:400});
    const sid=body.specialtyId?mustUUID(body.specialtyId):null;
+   let assignmentIds=sid?[sid]:[];
+   if(body.department){
+    if(!sid||!Array.isArray(body.additionalSpecialtyIds||[]))throw Object.assign(Error('INVALID_NURSING_SPECIALTY'),{status:400});
+    const requested=[...new Set([sid,...(body.additionalSpecialtyIds||[]).map(mustUUID)])];
+    const specialties=await c.query('select id,code from qib.specialties where id=any($1::uuid[]) or code=$2',[requested,body.department]);
+    const selected=requested.map(id=>specialties.rows.find(s=>s.id===id)?.code);
+    const codes=require('./nursing-tracks').departmentCodes(body.department,selected);
+    if(!codes||!specialties.rows.some(s=>s.code===body.department))throw Object.assign(Error('INVALID_NURSING_SPECIALTY'),{status:400});
+    assignmentIds=codes.map(code=>specialties.rows.find(s=>s.code===code).id);
+   }
    const client=createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SECRET_KEY,{auth:{autoRefreshToken:false,persistSession:false,detectSessionInUrl:false}});
    const invited=await client.auth.admin.inviteUserByEmail(email,{data:{display_name:displayName}});
    if(invited.error||!invited.data?.user?.id)throw Object.assign(Error("INVITATION_FAILED"),{status:409});
    const uid=invited.data.user.id;
    await c.query("insert into qib.memberships(user_id,center_id,role,display_name) values($1,$2,$3,$4) on conflict(user_id,center_id) do update set role=excluded.role,display_name=excluded.display_name",[uid,centerId,targetRole,displayName]);
-   if(sid)await c.query("insert into qib.assignments(user_id,center_id,specialty_id) values($1,$2,$3) on conflict do nothing",[uid,centerId,sid]);
+   for(const id of assignmentIds)await c.query("insert into qib.assignments(user_id,center_id,specialty_id) values($1,$2,$3) on conflict do nothing",[uid,centerId,id]);
+   if(sid)await c.query('update qib.memberships set primary_specialty_id=$3 where user_id=$1 and center_id=$2',[uid,centerId,sid]);
    return {invited:true,userId:uid};
   }
   if(req.method==="POST"&&url.pathname==="/api/team/enroll"){
@@ -130,7 +141,8 @@ async function handler(req,res){
     const assigned=await c.query("select s.code,s.label from qib.assignments a join qib.specialties s on s.id=a.specialty_id where a.user_id=$1 and a.center_id=$2",[userId,centerId]);
     const assignedCodes=assigned.rows.map(x=>x.code);
     const allowed=require('./nursing-tracks').browseCodes(assignedCodes);
-    by.primarySpecialty=assignedCodes.includes('dermatology')?'dermatology':assignedCodes.find(code=>code!=='dental')||'';
+    const primary=(await c.query('select s.code from qib.memberships m join qib.specialties s on s.id=m.primary_specialty_id where m.user_id=$1 and m.center_id=$2',[userId,centerId])).rows[0]?.code;
+    by.primarySpecialty=primary&&assignedCodes.includes(primary)?primary:assignedCodes.includes('dermatology')?'dermatology':assignedCodes.find(code=>code!=='dental')||'';
     const dermatology=assigned.rows.find(x=>x.code==='dermatology');
     if(dermatology&&!by.specialties.some(x=>String(x.id)==='dermatology')){
      by.specialties.push({id:'dermatology',nameEn:dermatology.label,nameAr:'تمريض الجلدية'});
@@ -237,7 +249,7 @@ async function handler(req,res){
   }
   if(req.method==="GET"&&url.pathname==="/api/learners"){
    if(!["supervisor","admin"].includes(role.role))deny();
-   const r=await c.query("select m.user_id,m.display_name,m.role,a.specialty_id from qib.memberships m left join qib.assignments a on a.center_id=m.center_id and a.user_id=m.user_id where m.center_id=$1 order by display_name",[centerId]);return {learners:r.rows};
+   const r=await c.query("select m.user_id,m.display_name,m.role,m.primary_specialty_id,a.specialty_id from qib.memberships m left join qib.assignments a on a.center_id=m.center_id and a.user_id=m.user_id where m.center_id=$1 order by display_name",[centerId]);return {learners:r.rows};
   }
   if(req.method==="POST"&&url.pathname==="/api/assign"){
    if(role.role!=="admin")deny();
