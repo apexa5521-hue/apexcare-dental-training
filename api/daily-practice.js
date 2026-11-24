@@ -37,7 +37,7 @@ async function context(c, userId, centerId, role) {
   const assigned = (await c.query('select s.code from qib.assignments a join qib.specialties s on s.id=a.specialty_id where a.user_id=$1 and a.center_id=$2 order by s.code', [userId, centerId])).rows.map(r => String(r.code));
   const rows = await c.query("select source_name,payload from qib.legacy_catalog l where source_name=any($1::text[]) and not exists(select 1 from qib.migration_issues i where i.source_name=l.source_name and i.legacy_id=l.legacy_id and i.resolved_at is null)", [['Tools', 'Procedures']]);
   const tools = rows.rows.filter(r => r.source_name === 'Tools').map(r => r.payload), procedures = rows.rows.filter(r => r.source_name === 'Procedures').map(r => r.payload);
-  let codes = assigned;
+  let codes = require('./nursing-tracks').practiceCodes(assigned, role.role === 'nurse');
   if (!codes.length && role.role !== 'nurse') codes = [...new Set(tools.map(t => String(t.specialtyId)))].sort();
   return { codes, tools, procedures };
 }

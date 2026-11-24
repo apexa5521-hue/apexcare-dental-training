@@ -950,12 +950,7 @@
 /* Unslop polish pass (skill "unslop" by Damir Sokolovsky, @heydamir, CC BY 4.0).
    Keeps the approved blue-ivory identity; fixes only what the audit found. */
 
-/* Logo: the embedded logo image was truncated in commit 6d42616 and cannot render.
-   Until the logo file is re-added, show the product name as text instead of an empty box. */
-:root[data-theme] .side .brand::before,:root[data-theme] #login form .brand::before{display:none}
-:root[data-theme] .side .brand,:root[data-theme] #login form .brand{display:flex;align-items:center;gap:10px;padding:8px 4px;background:transparent}
-:root[data-theme] .side .brand>span,:root[data-theme] #login form .brand>span{position:static!important;inline-size:auto!important;block-size:auto!important;width:auto!important;height:auto!important;clip-path:none;overflow:visible;white-space:normal}
-:root[data-theme] .side .brand .q,:root[data-theme] #login form .brand .q{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:10px;background:var(--nse-green);color:var(--nse-surface);font:600 13px Inter,sans-serif;letter-spacing:0}
+/* Logo: served as /assets/nse-logo.webp (see brand-fix.css); the wordmark spans stay visually hidden. */
 
 /* Labels: sentence case, no wide tracking (tracking also breaks joined Arabic letters) */
 :root[data-theme] .over,:root[data-theme] .eyebrow,:root[data-theme] #breadcrumb,:root[data-theme] .view .card .over{text-transform:none!important;letter-spacing:0!important;font-size:12px}

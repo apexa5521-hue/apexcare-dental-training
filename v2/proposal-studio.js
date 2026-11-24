@@ -253,13 +253,22 @@ window.nseMountCoverage = async ({ root, after, request, el, ctx }) => {
     const table = el('table'); table.style.cssText = 'width:100%;border-collapse:collapse;font-size:13.5px';
     const head = el('tr'); ['التخصص · Specialty', 'أدوات', 'بفائدة موثقة', 'بصورة', 'إجراءات', 'جاهز للتدريب'].forEach(h => { const th = el('th', h); th.style.cssText = 'text-align:start;padding:6px 8px;border-bottom:1px solid var(--nse-line);font-size:12px'; head.append(th); });
     table.append(head);
-    r.specialties.forEach(s => {
+    const dentalCodes = new Set(['gp','endo','surgery','ortho','pedo','perio','prostho','restorative']);
+    const dental = r.specialties.find(s => s.code === 'dental' || s.label === 'Dental Nursing');
+    const children = r.specialties.filter(s => dentalCodes.has(s.code));
+    if(dental){
+      const heading=el('tr'), cell=el('th','تمريض الأسنان · Dental Nursing');
+      cell.colSpan=6;cell.scope='rowgroup';heading.append(cell);table.append(heading);
+    }
+    const entries = [...(dental && dental.tools ? [dental] : []), ...children,
+      ...r.specialties.filter(s => s!==dental && !dentalCodes.has(s.code))];
+    entries.forEach(s => {
       const tr = el('tr'), cell = (t, bold) => { const td = el('td', String(t)); td.style.cssText = 'padding:6px 8px;border-bottom:1px solid var(--nse-line)' + (bold ? ';font-weight:700' : ''); return td; };
       tr.append(cell(s.label + (s.assignedToMe ? ' ← مسند لك' : ''), s.assignedToMe), cell(s.tools), cell(s.toolsWithUse), cell(s.toolsWithImage), cell(s.procedures), cell(s.practiceReady ? '✓ نعم' : '✗ لا — بدون محتوى كافٍ'));
       table.append(tr);
     });
     const wrap = el('div'); wrap.style.cssText = 'overflow-x:auto'; wrap.append(table); box.append(wrap);
-    const empty = r.specialties.filter(s => !s.practiceReady && s.assignedToMe);
+    const empty = entries.filter(s => !s.practiceReady && s.assignedToMe);
     if (empty.length) box.append(el('p', 'أنتِ مسندة لتخصص بدون أدوات كافية (' + empty.map(s => s.label).join('، ') + '). من «فريق التمريض ← إسناد تخصص» اختاري تخصصًا جاهزًا للتدريب، أو أضيفي محتوى لهذا التخصص.', 'small'));
     box.append(el('p', 'التدريب اليومي والتري يحتاجان ٤ أدوات على الأقل بفائدة موثقة في التخصص المسند.', 'small'));
     const diag = el('button', 'تشخيص المنصة · Platform diagnostics', 'btn sub'); diag.type = 'button';
@@ -271,5 +280,23 @@ window.nseMountCoverage = async ({ root, after, request, el, ctx }) => {
       finally { diag.disabled = false; }
     };
     box.append(diag, out);
+    const integrity = el('button', 'مراجعة نقص المحتوى والروابط · Content integrity', 'btn sub'); integrity.type = 'button';
+    const integrityOut = el('div');
+    integrity.onclick = async () => {
+      integrity.disabled = true; integrityOut.textContent = '…';
+      try {
+        const audit = await request('/api/catalog/integrity?centerId=' + encodeURIComponent(ctx.center));
+        integrityOut.replaceChildren(el('p', audit.totals.tools + ' tools · ' + audit.totals.procedures + ' procedures · ' + audit.totalIssues + ' content issues', 'small'));
+        const details = el('details'), summary = el('summary', 'تفاصيل النواقص · Missing content details'); details.append(summary);
+        const list = el('ul');
+        Object.entries(audit.counts).forEach(([kind,count]) => list.append(el('li', kind + ': ' + count)));
+        details.append(list); integrityOut.append(details);
+        const records = el('details'); records.append(el('summary', 'السجلات المتأثرة · Affected records'));
+        const recordList = el('ul'); audit.issues.forEach(i => recordList.append(el('li', [i.source, i.id, i.name, i.kind, i.detail].join(' · ')))); records.append(recordList); integrityOut.append(records);
+        integrityOut.append(el('p', 'قراءة فقط؛ لا يتم تعديل المصدر أو اعتماد المحتوى. فحص الصور يتحقق من الرابط، وليس من مطابقة الصورة أو توفرها. Read-only; no clinical approval or source changes.', 'small'));
+        if (audit.detailsTruncated) integrityOut.append(el('p', 'معروضة أول 200 ملاحظة؛ الأعداد تشمل جميع السجلات. First 200 details; totals cover all records.', 'small'));
+      } catch(e) { integrityOut.textContent = e.message; } finally { integrity.disabled = false; }
+    };
+    box.append(integrity, integrityOut);
   } catch (e) { box.append(el('p', e.message, 'small')); }
 };

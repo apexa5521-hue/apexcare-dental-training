@@ -51,12 +51,13 @@ module.exports = async ({ req, url, body, c, userId, centerId, role }) => {
   if (req.method === 'POST' && route === '/api/tray/start') {
     let codes;
     const assigned = (await c.query('select s.code from qib.assignments a join qib.specialties s on s.id=a.specialty_id where a.user_id=$1 and a.center_id=$2', [userId, centerId])).rows.map(r => String(r.code));
+    const eligible = require('./nursing-tracks').practiceCodes(assigned, role.role === 'nurse');
     if (body.specialtyId) {
       const s = (await c.query('select code from qib.specialties where id=$1', [String(body.specialtyId)])).rows[0];
       if (!s) fail('INVALID_SPECIALTY');
-      if (role.role === 'nurse' && !assigned.includes(String(s.code))) fail('SPECIALTY_NOT_ASSIGNED', 403);
+      if (role.role === 'nurse' && !eligible.includes(String(s.code))) fail('SPECIALTY_NOT_ASSIGNED', 403);
       codes = [String(s.code)];
-    } else codes = assigned.length ? assigned : role.role === 'nurse' ? [] : null;
+    } else codes = eligible.length ? eligible : role.role === 'nurse' ? [] : null;
     if (codes && !codes.length) fail('NO_ASSIGNED_SPECIALTY', 409);
     const rows = await c.query("select source_name,payload from qib.legacy_catalog l where source_name=any($1::text[]) and not exists(select 1 from qib.migration_issues i where i.source_name=l.source_name and i.legacy_id=l.legacy_id and i.resolved_at is null)", [['Tools', 'Procedures']]);
     const tools = rows.rows.filter(r => r.source_name === 'Tools').map(r => r.payload), procedures = rows.rows.filter(r => r.source_name === 'Procedures').map(r => r.payload);

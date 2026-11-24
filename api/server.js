@@ -52,7 +52,7 @@ async function handler(req,res){
  if(req.method==='GET'&&url.pathname==='/supabase-client.js'){
   return fs.readFile(path.join(__dirname,'node_modules/@supabase/supabase-js/dist/umd/supabase.js'),(e,bytes)=>{if(e)return send(res,503,{error:'AUTH_CLIENT_UNAVAILABLE'});res.writeHead(200,{'Content-Type':'application/javascript; charset=utf-8','Cache-Control':'public, max-age=3600','X-Content-Type-Options':'nosniff'});res.end(bytes)});
  }
- if(req.method==="GET"&&["/","/clinic-preview","/verify","/verify.js","/competency-demo","/demo","/preview","/preview.js","/experience.js","/development.js","/content-studio.js","/proposal-studio.js","/content-search.js","/gradient-wave.js","/tray-practice.js","/daily-practice.js","/page-tabs.js","/line-icons.js","/ui-text.js","/notifications.js","/nav-layout.js","/choice-chips.js","/supervisor.js","/clinic-practice.js","/clinic-practice.css","/study-reader.js","/passport-path.js","/journey-art.svg","/study-scene.svg","/live.js","/live-theme.css","/design-21.css","/consistency.css","/learn-color.css","/learning-achievements.js","/api-bridge.js","/interface-i18n.js"].includes(url.pathname)){const fp=url.pathname==="/clinic-preview"?path.join(__dirname,"../v2/NSE-Clinic-Preview.html"):url.pathname==="/verify"?path.join(__dirname,"../v2/verify.html"):url.pathname==="/competency-demo"?path.join(__dirname,"../v2/NSE-Competency-Demo.html"):url.pathname==="/"?path.join(__dirname,"../v2/live.html"):url.pathname==="/demo"?path.join(__dirname,"../v2/index.html"):url.pathname==="/preview"?path.join(__dirname,"../v2/preview.html"):path.join(__dirname,"../v2",url.pathname.slice(1));return fs.readFile(fp,(err,bytes)=>{if(err)return send(res,404,{error:"NOT_FOUND"});res.writeHead(200,{"Content-Type":url.pathname.endsWith(".js")?"application/javascript; charset=utf-8":url.pathname.endsWith(".css")?"text/css; charset=utf-8":url.pathname.endsWith(".svg")?"image/svg+xml":"text/html; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"});res.end(bytes)})}
+ if(req.method==="GET"&&["/brand-fix.css","/assets/nse-logo.webp","/assets/nurse-lucy.jpg","/","/clinic-preview","/verify","/verify.js","/competency-demo","/demo","/preview","/preview.js","/experience.js","/development.js","/content-studio.js","/proposal-studio.js","/content-search.js","/gradient-wave.js","/tray-practice.js","/daily-practice.js","/page-tabs.js","/notifications.js","/nav-layout.js","/choice-chips.js","/supervisor.js","/clinic-practice.js","/clinic-practice.css","/study-reader.js","/passport-path.js","/journey-art.svg","/live.js","/live-theme.css","/design-21.css","/consistency.css","/learning-achievements.js","/api-bridge.js","/interface-i18n.js","/line-icons.js","/ui-text.js","/study-scene.svg","/learn-color.css"].includes(url.pathname)){const fp=url.pathname==="/clinic-preview"?path.join(__dirname,"../v2/NSE-Clinic-Preview.html"):url.pathname==="/verify"?path.join(__dirname,"../v2/verify.html"):url.pathname==="/competency-demo"?path.join(__dirname,"../v2/NSE-Competency-Demo.html"):url.pathname==="/"?path.join(__dirname,"../v2/live.html"):url.pathname==="/demo"?path.join(__dirname,"../v2/index.html"):url.pathname==="/preview"?path.join(__dirname,"../v2/preview.html"):path.join(__dirname,"../v2",url.pathname.slice(1));return fs.readFile(fp,(err,bytes)=>{if(err)return send(res,404,{error:"NOT_FOUND"});res.writeHead(200,{"Content-Type":url.pathname.endsWith(".js")?"application/javascript; charset=utf-8":url.pathname.endsWith(".css")?"text/css; charset=utf-8":url.pathname.endsWith(".svg")?"image/svg+xml":url.pathname.endsWith(".jpg")?"image/jpeg":url.pathname.endsWith(".webp")?"image/webp":"text/html; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"});res.end(bytes)})}
  if(url.pathname==="/health"){
   try{await pool.query('select timing_mode,seconds_per_question from qib.assessments limit 1');return send(res,200,{ok:true,service:"NSE",status:"ready"})}
   catch(e){if(Date.now()-lastReadinessErrorAt>30000){console.error('NSE_DB_READINESS',e.code||e.name||'DATABASE_ERROR');lastReadinessErrorAt=Date.now()}return send(res,503,{ok:false,service:"NSE",status:"database_unavailable"})}
@@ -127,15 +127,21 @@ async function handler(req,res){
    const mapping={Specialties:'specialties',Tools:'tools',Procedures:'procedures',IPC_Modules:'ipcModules',IPC_Steps:'ipcSteps'};
    for(const x of r.rows)by[mapping[x.source_name]].push(x.payload);
    if(role.role==="nurse"){
-    const assigned=await c.query("select s.code from qib.assignments a join qib.specialties s on s.id=a.specialty_id where a.user_id=$1 and a.center_id=$2",[userId,centerId]);
-    const allowed=new Set(assigned.rows.map(x=>x.code));
+    const assigned=await c.query("select s.code,s.label from qib.assignments a join qib.specialties s on s.id=a.specialty_id where a.user_id=$1 and a.center_id=$2",[userId,centerId]);
+    const assignedCodes=assigned.rows.map(x=>x.code);
+    const allowed=require('./nursing-tracks').browseCodes(assignedCodes);
+    by.primarySpecialty=assignedCodes.includes('dermatology')?'dermatology':assignedCodes.find(code=>code!=='dental')||'';
+    const dermatology=assigned.rows.find(x=>x.code==='dermatology');
+    if(dermatology&&!by.specialties.some(x=>String(x.id)==='dermatology')){
+     by.specialties.push({id:'dermatology',nameEn:dermatology.label,nameAr:'تمريض الجلدية'});
+    }
     by.specialties=by.specialties.filter(x=>allowed.has(String(x.id)));
     by.tools=by.tools.filter(x=>allowed.has(String(x.specialtyId)));
     by.procedures=by.procedures.filter(x=>allowed.has(String(x.specialtyId)));
    }
    const issues=await c.query("select source_name,legacy_id,field,missing_id from qib.migration_issues where resolved_at is null");
    const procedureIds=new Set(by.procedures.map(x=>String(x.id)));
-   return {catalog:by,source:'legacy-import',integrityIssues:issues.rows.filter(x=>x.source_name==='Procedures'&&procedureIds.has(x.legacy_id)),counts:Object.fromEntries(Object.entries(by).map(([k,v])=>[k,v.length]))};
+   return {catalog:by,source:'legacy-import',integrityIssues:issues.rows.filter(x=>x.source_name==='Procedures'&&procedureIds.has(x.legacy_id)),counts:Object.fromEntries(Object.entries(by).filter(([,v])=>Array.isArray(v)).map(([k,v])=>[k,v.length]))};
   }
   if(req.method==="GET"&&url.pathname==="/api/modules"){
    const rows=await c.query("select id,slug,specialty_id,translations,status,version from qib.modules where center_id=$1 or (center_id is null and status='published') order by slug",[centerId]);

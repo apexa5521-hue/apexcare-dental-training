@@ -377,3 +377,39 @@ Owner decision: no paid AI subscription is required. Added free, content-bound f
 - Learning colours (`v2/learn-color.css`): one subject colour per area, highlighter under page headings, study-desk illustration (`v2/study-scene.svg`).
 - `v2/consistency.css` cleaned: tool-output junk lines and a truncated logo data URI removed. The logo shows the NSE tile and wordmark until the original logo file is supplied.
 - Not deployed yet. Studio SERVER_ERROR still waits on the "Platform diagnostics" output after deployment.
+
+## 2026-11-18 — Lucy conversation and catalog integrity draft
+
+- Work remains on `feature/nurse-lucy-draft`; no production merge or live deployment in this round.
+- Lucy now has the approved modest illustrated portrait with Nurse Lucy badge, conversation bubbles, page-language defaults, an Arabic/English switch retaining message history, source record IDs and published lesson navigation. It is deterministic catalog search without a model/API provider, not unrestricted natural-language AI.
+- Search is server-blocked for active or paused-review assessments across centers. Starting an exam clears local Lucy results and invalidates pending answers. Local UI checks verify that a late response cannot reappear after locking.
+- Admin/supervisor-only, read-only `/api/catalog/integrity` reports missing translations, image URLs, unresolved links, malformed lists and duplicate IDs. Detail output is capped, counts are complete. It neither changes source data nor verifies image availability/clinical correctness.
+- Snapshot audit (not live): 8 specialties, 443 tools, 300 procedures, 80 missing tool associations, 2 absent image URLs, 104 missing Arabic purposes and 28 missing English purposes. No guessed repairs or credential imports.
+- Verified: clean dependency install; 114 automated tests; JavaScript syntax and whitespace checks. These are local checks, not deployed multi-role/device acceptance.
+- Live browser reaches the NSE sign-in page after Render free-instance wake-up. No application user session is currently present. Supabase connector denies access to the dedicated NSE project. Authenticated acceptance, live data reconciliation, independent clinical/language review, staff identity verification and deployment remain blocked/pending. Do not report platform ready or issue practical competency from theory.
+
+## 2026-11-19 — Verified second accounts, live inventory and Lucy staging deployment
+
+- Verified signed-in second Render workspace `tea-dbiu3aetlv9c73bnilt0` and Supabase organization `urvtectymucevnafswah`, dedicated project `btehppfdtnajzmxtdhzk` Healthy. Connectors still lack access; verification used the user's signed-in cloud browser. No changes to other projects.
+- Read-only live inventory query: Tools 443, Procedures 300, Specialties 8, IPC_Modules 10, IPC_Steps 88, Quizzes 132, AssessmentConfig 11, Doctors 23, DoctorPrefs 21. History: Users 38, AssessmentResults 39, DrillProgress 58, Mastery 11, Logs 10,309. Unresolved migration issues: 81. Preserved source counts; no guessed repairs.
+- Live Auth users: 1. Live modules: 19 draft, 1 review, zero published. Staff onboarding and independent clinical/language approval are still required; archive counts are not active staff accounts.
+- Fixed exact static allowlist/MIME for the approved Lucy portrait. Clean dependency install and 115 automated tests passed, including actual JPEG delivery and refusal of unlisted assets.
+- Deployed exact commit `4f6b0037e6d39c8a8c3331c3e30e5737c19be101` from the draft branch via Render's specific-commit deployment. Deployment `dep-dbvelnmc6qcc73b2la1g` reached `Deploy succeeded | Live` on 2026-11-19 at 15:27:06 Asia/Riyadh, duration 1 minute. Render remains configured against the development branch; no main merge.
+- Build audited 60 packages and reported zero vulnerabilities. Startup: `NSE exam schema ready; historical attempt counts and score totals unchanged.` followed by `NSE API ready`.
+- Live browser `/health` returned `{"ok":true,"service":"NSE","status":"ready"}`. The portrait `/assets/nurse-lucy.jpg` rendered at 1863x844. Public sign-in page loads.
+- Application administration session remains absent in the cloud browser. Authenticated Lucy, specialty tools, lesson publishing/review, nurse/supervisor isolation, exam-to-practical-to-card acceptance, and phone/iPad browser acceptance are not yet verified. Deployment success is not full release acceptance.
+
+## 2026-11-19 — Owner requested content publication; source comparison correction
+
+- Owner explicitly requested publication. The NSE application still displays its login form, so no authenticated module publication action has been performed and no clinical sign-off has been recorded.
+- Compared the dental instrument package-check passage with CDC Dental Sterilization and Sterilization/Disinfection guidance. Corrected all four language versions to distinguish reusable heat-tolerant instruments from single-use devices, reject wet/torn/punctured packaging, require the applicable monitoring results, and state that chemical indicator colour change alone does not prove sterility. Updated the associated English question/options/rationale.
+- Added source-verification metadata that explicitly describes AI-assisted source comparison and retains clinical, translation and local-policy reviews as pending. Existing live drafts were not overwritten; publication must compare their versions and apply corrections through the authenticated editor before review/publication. The preparation endpoint is idempotent and does not update existing modules.
+- 115 local automated tests passed after the correction. This is a repository draft correction, not a published lesson or complete review of all live scientific content.
+
+## 2026-11-19 — Floating Lucy and unambiguous clinical catalogue
+
+- Replaced the inline Lucy home section with a portrait launcher and a non-modal floating chat window. Close/minimize and Escape preserve the conversation; opening focuses the input and closing returns focus to the launcher. Greeting uses the authenticated membership display name via text nodes. Language follows the page with an in-chat Arabic/English selector. Processing shows Typing without a fake delay.
+- Portal is kept outside the home layout; daily-card arrangement cannot move it back into the page. Sign-out/session expiry removes it and invalidates pending results. Starting an assessment hides/locks the widget and discards pending responses; the existing global server exam lock remains.
+- Clinical skills now defaults to the selected procedure's documented tools only. A separate explicit mode shows all specialty tools, labelled as not a procedure checklist, with four tools per group, Previous/Next and search reset. Source IDs and associations are unchanged. Existing preparation checkboxes remain practice-only.
+- Lucy recognizes a small bounded set of Arabic/English question introductions before source search. This is deterministic retrieval, not a general LLM. Unsupported or absent facts are not fabricated.
+- Clean dependency install, 118 automated tests and syntax/whitespace checks passed. New tests cover popup focus/history/cleanup, late-response exam lock, exclusive catalogue modes, pagination and bounded question search. Authenticated browser visual acceptance is pending; the cloud NSE page is currently in password recovery/sign-in, while the user's screenshot shows the old inline presentation.

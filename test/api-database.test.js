@@ -340,6 +340,10 @@ test('rule-based drafting and content search respect roles, centers and specialt
    const rowsOut=(await db.query("select * from qib.question_candidates where origin='catalog_rule_draft' and center_id=$1",[ids.center])).rows;assert.equal(rowsOut.length,made.body.created);assert.ok(rowsOut.every(r=>r.status==='draft'&&r.category==='instrument_use'&&r.source_quote));
    assert.equal((await call('/api/content/rule-candidates',{token:'supervisor',body:{specialtyId:specialty,count:50,categories:['instrument_use']}})).body.created,0);
   }finally{await db.query("update qib.memberships set role='supervisor' where user_id=$1",[ids.supervisor])}
+  const examLock=await call('/api/search?q=mirror');
+  assert.equal(examLock.status,409);assert.equal(examLock.body.error,'NURSE_LUCY_UNAVAILABLE_DURING_ASSESSMENT');
+  // End unfinished synthetic attempts from preceding test scenarios before testing learning access.
+  await db.query("update qib.attempts set status='void' where user_id=$1 and status=any($2::text[])",[ids.nurse,['active','paused_review']]);
   const nurse=await call('/api/search?q='+encodeURIComponent('synthetic mirror'));assert.equal(nurse.status,200);assert.equal(nurse.body.tools[0].id,'rt0');
   assert.equal((await call('/api/search?q=laser')).body.tools.length,0);
   assert.equal((await call('/api/search?q=laser',{token:'supervisor'})).body.tools.length,1);
@@ -479,4 +483,12 @@ test('platform diagnostics are owner-only and report each check without failing 
 test('revoked Supabase session cannot reuse an unexpired token',async()=>{
  await db.query('delete from auth.sessions where id=$1',[sessions.nurse]);
  assert.equal((await call('/api/bootstrap')).status,401);
+});
+
+test('approved Lucy portrait is served as a JPEG without exposing arbitrary files',async()=>{
+ const response=await nativeFetch(base+'/assets/nurse-lucy.jpg');
+ assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'image/jpeg');
+ const bytes=new Uint8Array(await response.arrayBuffer());assert.equal(bytes[0],255);assert.equal(bytes[1],216);
+ const logo=await nativeFetch(base+'/assets/nse-logo.webp');assert.equal(logo.status,200);assert.equal(logo.headers.get('content-type'),'image/webp');assert.ok((await logo.arrayBuffer()).byteLength>1000);
+ const unknown=await nativeFetch(base+'/assets/unknown.jpg');assert.equal(unknown.status,401);
 });

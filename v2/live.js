@@ -72,7 +72,7 @@
   const [p,exams]=await Promise.all([request("/api/progress?centerId="+encodeURIComponent(state.center)),request("/api/exams?centerId="+encodeURIComponent(state.center))]);
   state.completed=new Set((p.completedModules||[]).map(x=>x.module_id));state.certificates=p.certificates||[];state.exams=exams.assessments||[];
   setText("connection",state.centers.find(c=>c.id===state.center)?.name+" · "+state.role);
-  renderDashboard();renderModules();renderAchievements();if(window.nseMountSearch)window.nseMountSearch({host:document.querySelector('section.view[data-page="home"]'),request,el,center:()=>state.center,language:()=>$("language").value,openLesson:id=>{const m=state.modules.find(x=>x.id===id);if(m)openLesson(m)}});if(window.nseMountDaily)window.nseMountDaily({host:document.querySelector('section.view[data-page="home"]'),request,post,el,center:()=>state.center,language:()=>$("language").value});if(window.nseMountNotifications)window.nseMountNotifications({request,post,center:()=>state.center,language:()=>$("language").value,initial:data.notifications||[]});if(window.nseMountTray)window.nseMountTray({host:document.querySelector('section.view[data-page="home"]'),request,post,el,center:()=>state.center,language:()=>$("language").value});if(window.nseArrangeHome)window.nseArrangeHome(document.querySelector('section.view[data-page="home"]'));fill($("assignSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("moduleSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("draftExamSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("inviteSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));updateLanguage();displayPage("home");
+  renderDashboard();renderModules();renderAchievements();if(window.nseMountSearch)window.nseMountSearch({host:document.querySelector('section.view[data-page="home"]'),request,el,center:()=>state.center,language:()=>$("language").value,displayName:()=>state.displayName,openLesson:id=>{const m=state.modules.find(x=>x.id===id);if(m)openLesson(m)}});if(window.nseMountDaily)window.nseMountDaily({host:document.querySelector('section.view[data-page="home"]'),request,post,el,center:()=>state.center,language:()=>$("language").value});if(window.nseMountNotifications)window.nseMountNotifications({request,post,center:()=>state.center,language:()=>$("language").value,initial:data.notifications||[]});if(window.nseMountTray)window.nseMountTray({host:document.querySelector('section.view[data-page="home"]'),request,post,el,center:()=>state.center,language:()=>$("language").value});if(window.nseArrangeHome)window.nseArrangeHome(document.querySelector('section.view[data-page="home"]'));fill($("assignSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("moduleSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("draftExamSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));fill($("inviteSpecialty"),state.specialties.map(x=>({id:x.id,name:x.label})));updateLanguage();displayPage("home");
  }
  function renderJourney(){
   const root=$("learningJourney"),ar=$("language").value==="ar";root.replaceChildren();const grid=el("div",undefined,"journey-grid"),path=el("article",undefined,"card"),aside=el("article",undefined,"card journey-aside");
@@ -90,7 +90,14 @@
  function translation(m){const l=$("language").value,t=m.translations||{};return t[l]||t.en||{title:m.slug,body:""}}
  function renderModules(){
   const out=$("modules"),ar=$("language").value==="ar";out.replaceChildren();out.className="learning-route";setText("learningHeading",ar?"رحلتك التعليمية":"Your learning journey");
-  if(!state.modules.length){out.append(el("p",ar?"تجهّز الإدارة خطوات رحلتك الآن. يمكنك استكشاف أدوات تخصصك حتى تُنشر الدروس.":"Your learning steps are being prepared. Explore your specialty tools while lessons await publication.","notice"));return}
+  if(!state.modules.length){
+    const empty=el("div",undefined,"learning-empty");
+    empty.append(el("h3",ar?"الدروس بانتظار النشر":"Lessons awaiting publication"),
+      el("p",ar?"ابدئي بالتعرف على أدوات تخصصك والتدرّب على تجهيز الصينية.":"Explore the instruments in your specialty and practice setting up a tray."));
+    const browse=el("button",ar?"استكشفي أدوات تخصصك":"Explore your specialty tools","btn");
+    browse.type="button";browse.onclick=()=>displayPage("catalog");
+    empty.append(browse);out.append(empty);return;
+  }
   const completed=state.modules.filter(m=>state.completed.has(m.id)).length;const header=el("div",undefined,"route-summary");header.append(el("strong",Math.round(completed/state.modules.length*100)+"%"),el("span",completed+" / "+state.modules.length+(ar?" دروس مكتملة":" lessons complete")));out.append(header);
   const pending=state.modules.find(m=>!state.completed.has(m.id));if(pending){const start=el("button",(ar?"تابعي رحلتك: ":"Continue your journey: ")+(translation(pending).title||pending.slug),"btn continue-journey");start.onclick=()=>openLesson(pending);out.append(start)}
   state.modules.forEach((m,i)=>{const done=state.completed.has(m.id),current=m===pending,row=el("article",undefined,"learning-stop "+(done?"completed":current?"current":"upcoming")),node=el("span",done?"✓":String(i+1),"learning-node"),copy=el("div");copy.append(el("span",done?(ar?"مكتمل":"Completed"):current?(ar?"خطوتك القادمة":"Your next step"):(ar?"في مسارك":"On your path"),"pill"),el("h3",translation(m).title||m.slug));const b=el("button",done?(ar?"مراجعة":"Review"):(ar?"ابدئي الخطوة":"Start step"),current?"btn":"btn sub");b.onclick=()=>openLesson(m);row.append(node,copy,b);out.append(row)});
@@ -141,9 +148,29 @@
    if(!state.catalog){const data=await request("/api/catalog?centerId="+encodeURIComponent(state.center));state.catalog=data.catalog;state.catalog.integrityIssues=data.integrityIssues||[];}
    const cat=state.catalog,select=$("catalogSpecialty");
    setText("catalogSpecialties",cat.specialties.length);setText("catalogTools",cat.tools.length);setText("catalogProcedures",cat.procedures.length);
-   const previous=select.value;
-   select.replaceChildren(...cat.specialties.map(x=>{const o=el("option",translated(x).name);o.value=x.id;return o}));
-   if(cat.specialties.some(x=>x.id===previous))select.value=previous;
+   const previous=select.dataset.catalogCenter===state.center?select.value:'';
+   const ar=$("language").value==="ar";
+   const dentalIds=new Set(['gp','endo','surgery','ortho','pedo','perio','prostho','restorative','dental']);
+   const groups=[
+    ['dermatology',ar?'تمريض الجلدية':'Dermatology Nursing',x=>x.id==='dermatology'],
+    ['dental',ar?'تمريض الأسنان':'Dental Nursing',x=>dentalIds.has(x.id)],
+    ['other',ar?'تخصصات أخرى':'Other specialties',x=>x.id!=='dermatology'&&!dentalIds.has(x.id)]
+   ];
+   if(cat.primarySpecialty!=='dermatology')groups.unshift(groups.splice(1,1)[0]);
+   select.replaceChildren();
+   for(const [key,label,includes] of groups){
+    const items=cat.specialties.filter(includes);
+    if(!items.length)continue;
+    const group=el('optgroup');group.label=label;
+    for(const item of items){
+     const option=el('option',key==='dental'&&item.id==='dental'?(ar?'أساسيات الأسنان':'Dental foundations'):translated(item).name);
+     option.value=item.id;group.append(option);
+    }
+    select.append(group);
+   }
+   const preferred=previous||cat.primarySpecialty;
+   if(cat.specialties.some(x=>x.id===preferred))select.value=preferred;
+   select.dataset.catalogCenter=state.center;
    renderCatalog();
  }
  async function loadIPC(){
@@ -173,41 +200,125 @@
     if(left){left.querySelector('h2').textContent=arabic?'01 · اختاري التخصص':'01 · Choose a specialty';left.querySelector('h3').textContent=arabic?'02 · اختاري الإجراء':'02 · Choose a procedure';}
     const heading=right?.querySelector('h3');if(heading)heading.textContent=arabic?'اكتشفي الأدوات وفوائدها':'Explore tools and their purpose';
    }
+   if(view && !view.querySelector('.catalog-mode-controls')){
+    const right=view.querySelector('.two>.card+.card'),left=view.querySelector('.two>.card');
+    if(right){
+     const procedurePicker=el('select');
+     procedurePicker.id='catalogProcedureSelect';
+     if(left)left.querySelector('#catalogProceduresList').before(procedurePicker);
+     const modes=el('div',undefined,'catalog-mode-controls');modes.setAttribute('role','group');
+     const preparation=el('section'),explorer=el('section');preparation.id='catalogProcedurePanel';explorer.id='catalogExplorePanel';
+     ['procedureHeading','procedureDetail','procedureChecklist'].forEach(id=>preparation.append($(id)));
+     const title=right.querySelector('h3');if(title)explorer.append(title);explorer.append($('catalogToolList'));
+     for(const mode of ['procedure','explore']){const button=el('button','', 'btn sub');button.type='button';button.dataset.catalogMode=mode;button.onclick=()=>{
+      right.dataset.activeCatalogMode=mode;preparation.hidden=mode!=='procedure';explorer.hidden=mode!=='explore';
+      modes.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+      if(left){$('catalogProceduresList').hidden=procedurePicker.hidden=mode==='explore';left.querySelector('h3').hidden=mode==='explore';}
+     };modes.append(button);}
+     right.prepend(modes);right.append(preparation,explorer);modes.querySelector('button').click();
+    }
+   }
+   if(view){view.querySelectorAll('.catalog-mode-controls [data-catalog-mode]').forEach(b=>b.textContent=b.dataset.catalogMode==='procedure'?(arabic?'أدوات الإجراء المختار':'Selected procedure tools'):(arabic?'جميع أدوات التخصص':'All specialty tools'));
+    const spName=$('catalogSpecialty').selectedOptions?.[0]?.textContent||'';
+    const h=view.querySelector('#catalogExplorePanel h3');if(h)h.textContent=(arabic?'تصفح أدوات التخصص — ليست قائمة إجراء':'Browse specialty tools — not a procedure checklist')+(spName?' · '+spName:'');
+   }
    if(!state.catalog)return;const cat=state.catalog,sp=$("catalogSpecialty").value,search=$("catalogSearch").value.toLowerCase().trim();
    const procs=cat.procedures.filter(x=>x.specialtyId===sp);
    const tools=cat.tools.filter(x=>x.specialtyId===sp);
    const list=$("catalogProceduresList");list.replaceChildren();
-   procs.filter(p=>translated(p).name.toLowerCase().includes(search)).forEach(p=>{
-      const b=el("button",translated(p).name,"btn sub");b.style.textAlign="start";b.dataset.procedureId=String(p.id);b.setAttribute("aria-pressed",String(state.selectedProcedure?.id===p.id));b.onclick=()=>{state.selectedProcedure=p;renderProcedure()};list.append(b);
+   const matchingProcedures=procs.filter(p=>translated(p).name.toLowerCase().includes(search));
+   const pickProcedure=p=>{
+      state.selectedProcedure=p;
+      view?.querySelector('[data-catalog-mode="procedure"]')?.click();
+      renderProcedure();
+   };
+   const procedurePicker=$('catalogProcedureSelect');
+   if(procedurePicker){
+      procedurePicker.setAttribute('aria-label',arabic?'اختاري الإجراء':'Choose a procedure');
+      const placeholder=el('option',matchingProcedures.length?(arabic?'اختاري الإجراء':'Choose a procedure'):(arabic?'لا توجد إجراءات مطابقة':'No procedures found'));
+      placeholder.value='';
+      placeholder.disabled=true;
+      procedurePicker.replaceChildren(placeholder);
+      matchingProcedures.forEach(p=>{
+         const option=el('option',translated(p).name);
+         option.value=String(p.id);
+         procedurePicker.append(option);
+      });
+      procedurePicker.disabled=!matchingProcedures.length;
+      procedurePicker.onchange=()=>{
+         const selected=matchingProcedures.find(p=>String(p.id)===procedurePicker.value);
+         if(selected)pickProcedure(selected);
+      };
+   }
+   matchingProcedures.forEach(p=>{
+      const b=el("button",translated(p).name,"btn sub");b.style.textAlign="start";b.dataset.procedureId=String(p.id);b.setAttribute("aria-pressed",String(state.selectedProcedure?.id===p.id));b.onclick=()=>pickProcedure(p);list.append(b);
    });
    if(!list.childElementCount)list.append(el("p","No procedures found.","small"));
    const toolList=$("catalogToolList");toolList.replaceChildren();
-   tools.filter(t=>[translated(t).name,translated(t).use,t.nameEn,t.nameAr].some(v=>String(v||" ").toLowerCase().includes(search))).forEach(t=>{
+   const filteredTools=tools.filter(t=>[translated(t).name,translated(t).use,t.nameEn,t.nameAr].some(v=>String(v||" ").toLowerCase().includes(search)));
+   if(view && view.dataset.toolSignature!==sp+'|'+search){view.dataset.toolSignature=sp+'|'+search;view.dataset.toolsPage='0';}
+   const page=Number(view?.dataset.toolsPage||0),pageSize=4;
+   filteredTools.slice(page*pageSize,(page+1)*pageSize).forEach(t=>{
       const card=el("div",undefined,"skill-row");
       if(t.imageUrl&&/^https:\/\//i.test(t.imageUrl)){const img=el("img");img.src=t.imageUrl;img.loading="lazy";img.alt=translated(t).name;const zoom=el("button",undefined,"tool-image-button");zoom.type="button";zoom.setAttribute("aria-label","View image: "+translated(t).name);zoom.append(img);zoom.onclick=()=>{const body=$("modalBody");body.replaceChildren(el("h2",translated(t).name));const large=el("img");large.src=t.imageUrl;large.alt=translated(t).name;large.className="tool-zoom";body.append(large,el("p",translated(t).use,"muted"));$("modal").showModal()};card.append(zoom)}
       const block=el("div");block.append(el("strong",translated(t).name),el("small",translated(t).use));card.append(block);toolList.append(card)
    });
-   if(!toolList.childElementCount)toolList.append(el("p","No tools found.","small"));
+   if(filteredTools.length>pageSize){const pager=el('div',undefined,'catalog-tool-pages');
+    const previous=el('button',arabic?'السابق':'Previous','btn sub'),next=el('button',arabic?'التالي':'Next','btn sub'),count=el('span',(page+1)+' / '+Math.ceil(filteredTools.length/pageSize),'small');
+    previous.type=next.type='button';previous.disabled=page===0;next.disabled=(page+1)*pageSize>=filteredTools.length;
+    previous.onclick=()=>{if(view){view.dataset.toolsPage=String(page-1);renderCatalog()}};next.onclick=()=>{if(view){view.dataset.toolsPage=String(page+1);renderCatalog()}};
+    pager.append(previous,count,next);toolList.append(pager);
+   }
+   if(!toolList.childElementCount)toolList.append(el("p",arabic?"لا توجد أدوات متاحة لهذا التخصص أو البحث.":"No tools available for this specialty or search.","small"));
    if(!state.selectedProcedure||state.selectedProcedure.specialtyId!==sp)state.selectedProcedure=procs[0]||null;
    renderProcedure();
  }
  function asIds(v){if(Array.isArray(v))return v.map(String);if(typeof v==="string"){try{const x=JSON.parse(v);return Array.isArray(x)?x.map(String):[]}catch{return []}}return []}
- function renderProcedure(){
+ function renderProcedure(practice=false){
   const p=state.selectedProcedure,root=$("procedureChecklist");root.replaceChildren();
+  const procedurePicker=$('catalogProcedureSelect');
+  if(procedurePicker){
+    procedurePicker.value=String(p?.id??'');
+    if(procedurePicker.selectedIndex===-1)procedurePicker.value='';
+  }
   document.querySelectorAll("#catalogProceduresList [data-procedure-id]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.procedureId===String(p?.id))));
   if(!p){setText("procedureHeading","Procedure preparation");setText("procedureDetail","Choose a procedure.");return}
   setText("procedureHeading",translated(p).name);
   const tools=state.catalog.tools,tid=asIds(p.toolIds),cid=asIds(p.consumableIds),all=[...new Set([...tid,...cid])];
-  setText("procedureDetail",all.length+" curated items · Practice checklist only; not an official exam result.");
+  const arabic=$("language").value==='ar';
+  const available=all.filter(id=>tools.some(t=>String(t.id)===id));
+  root.dataset.practice=String(practice);
+  setText("procedureDetail",practice
+    ? (arabic?'راجعي تجهيز الصينية وعلّمي على كل أداة تأكدتِ منها.':'Check off each item as you review the tray. Practice only.')
+    : (arabic?'عدد الأدوات والمستهلكات: ':'Tools and consumables: ')+all.length);
+  if(available.length){
+    const toggle=el("button",practice
+      ? (arabic?'العودة للمذاكرة':'Back to studying')
+      : (arabic?'تدرّبي على تجهيز الصينية':'Practice tray setup'),"btn sub procedure-practice-toggle");
+    toggle.type="button";
+    toggle.onclick=()=>{
+      renderProcedure(!practice);
+      root.querySelector(".procedure-practice-toggle")?.focus();
+    };
+    root.append(toggle);
+  }
   const checked=new Set();
-  const progress=el("p","0 / "+all.length+" checked","good");
-  root.append(progress);
+  const progress=el("p",undefined,"good");
+  progress.setAttribute("role","status");
+  const updateProgress=()=>{
+    progress.textContent=checked.size+" / "+available.length+(arabic?" تمت مراجعتها":" checked");
+  };
+  if(practice){updateProgress();root.append(progress);}
   all.forEach(id=>{
     const item=tools.find(t=>String(t.id)===id);if(!item){root.append(el('p','Source item '+id+' is missing. This procedure needs clinical review before use.','warning'));return;}
-    const label=el("label",undefined,"skill-row"),cb=el("input");cb.type="checkbox";cb.className="skill-checkbox";
-    cb.onchange=()=>{if(cb.checked)checked.add(id);else checked.delete(id);progress.textContent=checked.size+" / "+all.length+" checked"+(all.length&&checked.size===all.length?" · Great work!":"")};
-    const text=el("div");text.append(el("strong",translated(item).name),el("small",(cid.includes(id)?"Consumable · ":"Instrument · ")+translated(item).use));
-    label.append(cb);
+    const label=el(practice?"label":"div",undefined,"skill-row");
+    if(practice){
+      const cb=el("input");cb.type="checkbox";cb.className="skill-checkbox";
+      cb.onchange=()=>{if(cb.checked)checked.add(id);else checked.delete(id);updateProgress()};
+      label.append(cb);
+    }
+    const category=cid.includes(id)?(arabic?"مستهلك":"Consumable"):(arabic?"أداة":"Instrument");
+    const text=el("div");text.append(el("strong",translated(item).name),el("small",category+" · "+translated(item).use));
     if(item.imageUrl&&/^https:\/\//i.test(item.imageUrl)){
      const image=el('img');image.src=item.imageUrl;image.alt=translated(item).name;image.loading='lazy';image.className='checklist-tool-image';
      image.onerror=()=>{image.hidden=true;};label.append(image);
@@ -234,7 +345,7 @@
   try{
    const data=await post("/api/exams/start",{assessmentId:a.id});setText("examMessage","");
    if(data.status!=="active"){$("examPanel").replaceChildren(el("p","Assessment "+data.status.replace("_"," ")+" — contact your supervisor.","warning"));return}
-   state.attempt=data.attemptId;const root=$("examPanel");root.replaceChildren();
+   state.attempt=data.attemptId;window.nseLockLucy?.();const root=$("examPanel");root.replaceChildren();
    root.className="exam-focus";root.dir="ltr";const examProgress=el("progress"),examPercent=el("p",undefined,"exam-progress-label");examProgress.max=data.questions.length;examProgress.value=0;const timer=el("p",undefined,"exam-timer"),position=el("p",undefined,"exam-position"),questionHost=el("div",undefined,"exam-question-host"),nav=el("div",undefined,"exam-nav"),jump=el("div",undefined,"exam-grid");timer.setAttribute("role","timer");const examHead=el("div",undefined,"exam-head"),examHeadText=el("div",undefined,"exam-head-text");examHeadText.append(el("strong",a.title||"Clinical assessment","exam-title"),examPercent,examProgress);examHead.append(examHeadText,timer);root.append(examHead);
    const previous=el("button","Previous","btn sub"),next=el("button","Next","btn sub"),flag=el("button","Flag for review","btn sub");
    let cursor=0,pendingSaves=0;const flags=new Set(data.questions.map((q,i)=>data.flags?.[q.id]?i:null).filter(i=>i!==null)),panels=[],jumpButtons=[];
@@ -272,7 +383,14 @@
   await Promise.resolve().then(()=>contentStudio.mount()).catch(showError);
   await loadDraftExams().catch(showError);
   const data=await request("/api/modules?centerId="+encodeURIComponent(state.center)).catch(e=>{showError(e);return {modules:[]}}),root=$("manageModules");root.replaceChildren(el("h3","Drafts and published modules"));
-  const importButton=el("button","Prepare imported IPC drafts","btn sub");importButton.onclick=async()=>{importButton.disabled=true;try{const result=await post("/api/modules/import-ipc",{});alert(result.created+" draft modules prepared. Translation and clinical review required.");await loadStudio()}catch(e){showError(e)}finally{importButton.disabled=false}};root.append(importButton);const dentalPack=el("button","Prepare 6 multilingual dental chairside drafts (into the specialty selected in the form above)","btn sub");dentalPack.onclick=async()=>{const sp=$("moduleSpecialty");const label=sp?.selectedOptions?.[0]?.textContent||"";if(!confirm("Add the 6 dental lessons as drafts under: "+label+" ?"))return;dentalPack.disabled=true;try{const r=await post("/api/modules/prepare-foundations",{pack:"dental",specialtyId:sp?.value||undefined});alert(r.created+" dental lesson drafts and "+r.questionDraftsCreated+" English question drafts prepared. Clinical and translation review required.");await loadStudio()}catch(e){showError(e)}finally{dentalPack.disabled=false}};root.append(dentalPack);const foundations=el("button","Prepare 6 multilingual foundation drafts","btn sub");foundations.onclick=async()=>{foundations.disabled=true;try{const r=await post("/api/modules/prepare-foundations",{});alert(r.created+" lesson drafts and "+r.questionDraftsCreated+" English question drafts prepared. Clinical and translation review required.");await loadStudio()}catch(e){showError(e)}finally{foundations.disabled=false}};root.append(foundations);
+  const preparationMessage=(result,label)=>{
+    const added=result.created || result.questionDraftsCreated;
+    const detail=result.created+" new lessons · "+result.existing+" already in this center"
+      +(result.questionDraftsCreated==null?"":" · "+result.questionDraftsCreated+" new English questions");
+    return label+". "+(added?detail:"No new drafts added. "+detail)
+      +". Find existing lessons under Drafts and published modules. Open a draft to review it before publication.";
+  };
+  const importButton=el("button","Prepare imported IPC drafts","btn sub");importButton.onclick=async()=>{importButton.disabled=true;try{const result=await post("/api/modules/import-ipc",{});alert(preparationMessage(result,"Imported infection control"));await loadStudio()}catch(e){showError(e)}finally{importButton.disabled=false}};root.append(importButton);const dentalPack=el("button","Prepare 6 multilingual dental chairside drafts (into the specialty selected in the form above)","btn sub");dentalPack.onclick=async()=>{const sp=$("moduleSpecialty");const label=sp?.selectedOptions?.[0]?.textContent||"";if(!confirm("Add the 6 dental lessons as drafts under: "+label+" ?"))return;dentalPack.disabled=true;try{const r=await post("/api/modules/prepare-foundations",{pack:"dental",specialtyId:sp?.value||undefined});alert(preparationMessage(r,"Dental chairside pack"));await loadStudio()}catch(e){showError(e)}finally{dentalPack.disabled=false}};root.append(dentalPack);const foundations=el("button","Prepare 6 multilingual foundation drafts","btn sub");foundations.onclick=async()=>{foundations.disabled=true;try{const r=await post("/api/modules/prepare-foundations",{});alert(preparationMessage(r,"Foundations pack"));await loadStudio()}catch(e){showError(e)}finally{foundations.disabled=false}};root.append(foundations);
   data.modules.forEach(m=>{const row=el("div",undefined,"row"),copy=el("div");copy.append(el("strong",m.translations?.en?.title||m.slug),el("p","Version "+m.version+" · "+m.status,"small"));row.append(copy);const edit=el("button",m.status==="published"?"Edit a new draft version":"Edit translations","btn sub");edit.onclick=async()=>{let editSlug=m.slug;if(m.status==="published"){try{editSlug=(await post("/api/authoring/fork",{moduleId:m.id})).module.slug}catch(e){showError(e);return}}setText("heading","Content studio");$("moduleSlug").value=editSlug;if(m.specialty_id)$("moduleSpecialty").value=m.specialty_id;for(const [l,cap] of [["en","En"],["ar","Ar"],["ur","Ur"],["id","Id"]]){$("title"+cap).value=m.translations?.[l]?.title||"";$("body"+cap).value=m.translations?.[l]?.body||""}$("moduleForm").scrollIntoView({behavior:"smooth",block:"start"})};row.append(edit);const review=el("button","Open & review content","btn sub");review.onclick=()=>{const panel=$("modalBody");panel.replaceChildren(el("h2",m.translations?.en?.title||m.slug));for(const lang of ["en","ar","ur","id"]){const block=el("article",undefined,"card section");block.append(el("h3",lang.toUpperCase()+" · "+(m.translations?.[lang]?.title||"Title missing")),el("p",m.translations?.[lang]?.body||"Translation missing","muted"));panel.append(block)}if(m.status==="draft"){const send=el("button","Send for clinical review","btn");send.onclick=async()=>{try{await post("/api/modules/request-review",{moduleId:m.id});$("modal").close();await loadStudio()}catch(e){showError(e)}};panel.append(send)}if(m.status==="review"){const note=el("textarea");note.className="input";note.placeholder="Document clinical and translation review rationale";const approve=el("button","Approve reviewed content & publish","btn");approve.onclick=async()=>{try{await post("/api/modules/publish",{moduleId:m.id,reviewerNote:note.value});$("modal").close();await loadStudio();await changeCenter()}catch(e){showError(e)}};panel.append(note,approve)}$("modal").showModal()};row.append(review);root.append(row)})
  }
  async function loadReports(){
@@ -346,7 +464,7 @@
    state.client=supabase.createClient(state.auth.supabaseUrl,state.auth.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
    state.client.auth.onAuthStateChange((event,session)=>{
     state.token=session?.access_token||null;
-    if(!session){clearInterval(state.heartbeat);state.attempt=null;state.center=null;state.user=null;workspace.inert=true;$("login").hidden=false;return}
+    if(!session){window.nseUnmountLucy?.();clearInterval(state.heartbeat);state.attempt=null;state.center=null;state.user=null;workspace.inert=true;$("login").hidden=false;return}
     if(event==='PASSWORD_RECOVERY')passwordSetupRequired=true;
     if(passwordSetupRequired){showPasswordSetup();return}
     if((event==='INITIAL_SESSION'||event==='SIGNED_IN')&&!state.center)setTimeout(()=>openWorkspace(),0);

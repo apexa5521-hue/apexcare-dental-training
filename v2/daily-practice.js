@@ -132,5 +132,5 @@ window.nseArrangeHome = host => {
   const hero = host.querySelector(':scope > .hero');
   if (hero) hero.after(row); else host.prepend(row);
   ['nseDrillCard', 'nseTrayCard', 'nseItemCard'].forEach(id => { const n = document.getElementById(id); if (n) row.append(n); });
-  const search = document.getElementById('nseSearch'); if (search) row.after(search);
+  const search = document.getElementById('nseSearch'); if (search && !search.dataset.lucyPortal) row.after(search);
 };

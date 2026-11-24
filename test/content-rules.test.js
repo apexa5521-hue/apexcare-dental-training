@@ -32,3 +32,29 @@ test('search card labels missing translations instead of presenting English as t
  assert.match(asked,/\/api\/search\?centerId=c1&q=mirror/);assert.match(d.querySelector('#nseSearch').textContent,/Translation not available/);assert.equal(d.querySelector('#nseSearch h4 span').lang,'en');
  [...d.querySelectorAll('#nseSearch button')].find(b=>b.textContent==='Open lesson').click();assert.equal(opened,'l1');w.close();
 });
+
+test('Lucy recognizes bounded question introductions without inventing absent answers',()=>{
+ const context={tools,procedures,ipcModules,ipcSteps,lessons:[]};
+ const r=search({...context,q:'What is the purpose of the mouth mirror?'});assert.equal(r.tools[0].id,'t0');assert.equal(r.aiUsed,false);
+ assert.equal(search({...context,q:'وش فائدة مرآة الفم؟'}).tools[0].id,'t0');
+ const missing=search({...context,q:'Tell me about a nonexistent instrument'});assert.equal(missing.tools.length,0);
+});
+
+test('Lucy clarifies broad surgery and limits PPE results to relevant material',()=>{
+ const context={tools:[...tools,{id:'noise',nameEn:'Tray',useEn:'Used in surgery with PPE'}],procedures,
+  ipcModules:[...ipcModules,{id:'m2',nameEn:'Room setup'},{id:'m3',nameEn:'Personal Protective Equipment'}],
+  ipcSteps:[...ipcSteps,{moduleId:'m2',textEn:'Collect PPE for setup'},{moduleId:'m2',textEn:'Set out instruments'}],
+  lessons:[]};
+ for(const q of ['Surgery','What is oral surgery?','الجراحة']){
+   const result=search({...context,q});
+   assert.equal(result.clarification,'surgery');
+   assert.equal(result.tools.length+result.procedures.length+result.infectionPrevention.length,0);
+ }
+ for(const q of ['PPE','What is personal protective equipment?','معدات الوقاية الشخصية']){
+   const result=search({...context,q});
+   assert.deepEqual(result.tools,[]);
+   assert.deepEqual(result.procedures,[]);
+   assert.deepEqual(result.infectionPrevention.map(x=>x.id),['m3','m2']);
+   assert.deepEqual(result.infectionPrevention[1].steps.map(x=>x.en),['Collect PPE for setup']);
+ }
+});
