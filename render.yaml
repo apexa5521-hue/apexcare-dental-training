@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: nse-staging
+    runtime: node
+    plan: free
+    region: singapore
+    branch: feature/qib-platform-v2-security-ux
+    buildCommand: npm ci --prefix api --omit=dev
+    startCommand: node api/server.js
+    healthCheckPath: /health
+    autoDeployTrigger: 'off'
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: DB_SSL
+        value: require

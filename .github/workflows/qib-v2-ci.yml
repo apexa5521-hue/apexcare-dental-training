@@ -1,0 +1,72 @@
+name: NSE v2 validation
+on:
+  push:
+    branches: [feature/qib-platform-v2-security-ux]
+  pull_request:
+    paths: ['src/**','test/**','preview/**','v2/**','api/**','deploy/**','.github/workflows/qib-v2-ci.yml']
+permissions:
+  contents: read
+jobs:
+  security-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: |
+          node --check src/secure-exam.js
+          node --check test/secure-exam.test.js
+          node --check src/tenant-access.js
+          node --check test/tenant-access.test.js
+          node --check v2/learning-achievements.js
+          node --check test/learning-achievements.test.js
+          node --check v2/interface-i18n.js
+          node --check test/interface-i18n.test.js
+          node --check v2/api-bridge.js
+          node --check api/content-intake.js
+          node --check api/document-worker.js
+          node --check api/study-workflows.js
+          node --check api/exam-workflows.js
+          node --check v2/content-studio.js
+          node --check v2/proposal-studio.js
+          node --check api/content-proposals.js
+          node --check api/content-rules.js
+          node --check api/content-search.js
+          node --check v2/content-search.js
+          node --check v2/gradient-wave.js
+          node --check api/tray-practice.js
+          node --check v2/tray-practice.js
+          node --check api/daily-practice.js
+          node --check v2/daily-practice.js
+          node --check v2/page-tabs.js
+          node --check api/notifications.js
+          node --check v2/notifications.js
+          node --check v2/nav-layout.js
+          node --check v2/choice-chips.js
+          node --check api/supervisor.js
+          node --check api/content-bridge.js
+          node --check api/selfcheck.js
+          node --check v2/supervisor.js
+          node --check v2/study-reader.js
+          node --check api/clinic-practice.js
+          node --check v2/clinic-practice.js
+          node --check api/server.js
+          node --check api/build-specialty-exam.js
+          node --check test/specialty-exam.test.js
+          node --check v2/live.js
+          node --check deploy/import-catalog.js
+          node --check deploy/import-history.js
+          node --check test/catalog-migration.test.js
+          node --check test/history-migration.test.js
+      - name: Install pinned API and database test dependencies
+        run: npm ci --prefix api
+      - name: Server exam state machine tests
+        run: node --test test/*.test.js
+      - name: Detect unsafe accidental content
+        shell: bash
+        run: |
+          if grep -RInE 'ADMIN_PW[[:space:]]*=|const SS_ID[[:space:]]*=' src preview test; then
+            echo "Do not publish embedded admin passwords or spreadsheet IDs"; exit 1
+          fi
