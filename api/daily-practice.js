@@ -39,7 +39,8 @@ async function context(c, userId, centerId, role) {
   const tools = rows.rows.filter(r => r.source_name === 'Tools').map(r => r.payload), procedures = rows.rows.filter(r => r.source_name === 'Procedures').map(r => r.payload);
   let codes = require('./nursing-tracks').practiceCodes(assigned, role.role === 'nurse');
   if (!codes.length && role.role !== 'nurse') codes = [...new Set(tools.map(t => String(t.specialtyId)))].sort();
-  return { codes, tools, procedures };
+  const focus=(await c.query('select s.code from qib.memberships m join qib.specialties s on s.id=m.primary_specialty_id where m.user_id=$1 and m.center_id=$2',[userId,centerId])).rows[0]?.code;
+  return { codes, tools, procedures, focus:codes.includes(focus)?focus:null };
 }
 
 async function streak(c, userId, centerId, today) {
@@ -58,7 +59,7 @@ module.exports = async ({ req, url, body, c, userId, centerId, role }) => {
   if (req.method === 'GET' && route === '/api/daily/item') {
     const ctx = await context(c, userId, centerId, role);
     if (!ctx.codes.length) fail('NO_ASSIGNED_SPECIALTY', 409);
-    return done({ day: today, item: pickItem({ ...ctx, specialtyCodes: ctx.codes, day: today }) });
+    return done({ day: today, item: (ctx.focus&&pickItem({...ctx,specialtyCodes:[ctx.focus],day:today}))||pickItem({ ...ctx, specialtyCodes: ctx.codes, day: today }) });
   }
 
   if (req.method === 'GET' && route === '/api/daily/drill') {
@@ -71,7 +72,7 @@ module.exports = async ({ req, url, body, c, userId, centerId, role }) => {
     if (existing) return done({ ...drillView(existing), streak: await streak(c, userId, centerId, today) });
     const ctx = await context(c, userId, centerId, role);
     if (!ctx.codes.length) fail('NO_ASSIGNED_SPECIALTY', 409);
-    for (const code of [...ctx.codes].sort((a, b) => seeded(today + userId + a, 1000) - seeded(today + userId + b, 1000))) {
+    for (const code of [...ctx.codes].sort((a, b) => (b===ctx.focus)-(a===ctx.focus)||seeded(today + userId + a, 1000) - seeded(today + userId + b, 1000))) {
       const pool = buildRuleCandidates({ tools: ctx.tools, procedures: ctx.procedures, specialtyCode: code, categories: ['instrument_name', 'instrument_use', 'procedure_preparation'] });
       const questions = pickDrill(pool, today + '|' + userId);
       if (!questions) continue;

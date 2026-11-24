@@ -4,10 +4,10 @@ const dentalChildren = ['gp','endo','surgery','ortho','pedo','perio','prostho','
 const dermatologyChildren = ['derm_laser','derm_skin_care','derm_assistance'];
 const departments = { dental: dentalChildren, dermatology: dermatologyChildren };
 
-function departmentCodes(department, selected) {
+function departmentCodes(department, selected = []) {
   const children = departments[department];
-  if (!children || !selected.length || selected.some(code => !children.includes(code))) return null;
-  return [department, ...new Set(selected)];
+  if (!children || selected.some(code => !children.includes(code))) return null;
+  return [department, ...children];
 }
 
 function practiceCodes(assigned, isNurse) {

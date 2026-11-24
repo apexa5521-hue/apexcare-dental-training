@@ -109,12 +109,11 @@ async function handler(req,res){
    const sid=body.specialtyId?mustUUID(body.specialtyId):null;
    let assignmentIds=sid?[sid]:[];
    if(body.department){
-    if(!sid||!Array.isArray(body.additionalSpecialtyIds||[]))throw Object.assign(Error('INVALID_NURSING_SPECIALTY'),{status:400});
-    const requested=[...new Set([sid,...(body.additionalSpecialtyIds||[]).map(mustUUID)])];
-    const specialties=await c.query('select id,code from qib.specialties where id=any($1::uuid[]) or code=$2',[requested,body.department]);
+    const requested=sid?[sid]:[];
+    const specialties=await c.query('select id,code from qib.specialties');
     const selected=requested.map(id=>specialties.rows.find(s=>s.id===id)?.code);
     const codes=require('./nursing-tracks').departmentCodes(body.department,selected);
-    if(!codes||!specialties.rows.some(s=>s.code===body.department))throw Object.assign(Error('INVALID_NURSING_SPECIALTY'),{status:400});
+    if(!codes||!codes.every(code=>specialties.rows.some(s=>s.code===code)))throw Object.assign(Error('INVALID_NURSING_SPECIALTY'),{status:400});
     assignmentIds=codes.map(code=>specialties.rows.find(s=>s.code===code).id);
    }
    const client=createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SECRET_KEY,{auth:{autoRefreshToken:false,persistSession:false,detectSessionInUrl:false}});
@@ -123,7 +122,7 @@ async function handler(req,res){
    const uid=invited.data.user.id;
    await c.query("insert into qib.memberships(user_id,center_id,role,display_name) values($1,$2,$3,$4) on conflict(user_id,center_id) do update set role=excluded.role,display_name=excluded.display_name",[uid,centerId,targetRole,displayName]);
    for(const id of assignmentIds)await c.query("insert into qib.assignments(user_id,center_id,specialty_id) values($1,$2,$3) on conflict do nothing",[uid,centerId,id]);
-   if(sid)await c.query('update qib.memberships set primary_specialty_id=$3 where user_id=$1 and center_id=$2',[uid,centerId,sid]);
+   await c.query('update qib.memberships set primary_specialty_id=$3 where user_id=$1 and center_id=$2',[uid,centerId,sid]);
    return {invited:true,userId:uid};
   }
   if(req.method==="POST"&&url.pathname==="/api/team/enroll"){
@@ -142,7 +141,7 @@ async function handler(req,res){
     const assignedCodes=assigned.rows.map(x=>x.code);
     const allowed=require('./nursing-tracks').browseCodes(assignedCodes);
     const primary=(await c.query('select s.code from qib.memberships m join qib.specialties s on s.id=m.primary_specialty_id where m.user_id=$1 and m.center_id=$2',[userId,centerId])).rows[0]?.code;
-    by.primarySpecialty=primary&&assignedCodes.includes(primary)?primary:assignedCodes.includes('dermatology')?'dermatology':assignedCodes.find(code=>code!=='dental')||'';
+    by.primarySpecialty=primary&&assignedCodes.includes(primary)?primary:assignedCodes.includes('dermatology')?'dermatology':'';
     const dermatology=assigned.rows.find(x=>x.code==='dermatology');
     if(dermatology&&!by.specialties.some(x=>String(x.id)==='dermatology')){
      by.specialties.push({id:'dermatology',nameEn:dermatology.label,nameAr:'تمريض الجلدية'});
@@ -256,6 +255,13 @@ async function handler(req,res){
    const target=mustUUID(body.userId),specialty=mustUUID(body.specialtyId);
    const exists=await c.query("select 1 from qib.memberships where user_id=$1 and center_id=$2",[target,centerId]);if(!exists.rowCount)deny();
    await c.query("insert into qib.assignments(user_id,center_id,specialty_id) values($1,$2,$3) on conflict do nothing",[target,centerId,specialty]);return {ok:true};
+  }
+  if(req.method==="POST"&&url.pathname==="/api/team/focus"){
+   if(role.role!=="admin")deny();
+   const target=mustUUID(body.userId),specialty=body.specialtyId?mustUUID(body.specialtyId):null;
+   const member=await c.query("select 1 from qib.memberships where user_id=$1 and center_id=$2 and role='nurse'",[target,centerId]);if(!member.rowCount)deny();
+   if(specialty){const assigned=await c.query("select 1 from qib.assignments where user_id=$1 and center_id=$2 and specialty_id=$3",[target,centerId,specialty]);if(!assigned.rowCount)deny();}
+   await c.query('update qib.memberships set primary_specialty_id=$3 where user_id=$1 and center_id=$2',[target,centerId,specialty]);return {ok:true};
   }
   if(req.method==="POST"&&url.pathname==="/api/exams/draft-from-specialty"){
    if(role.role!=="admin")deny();

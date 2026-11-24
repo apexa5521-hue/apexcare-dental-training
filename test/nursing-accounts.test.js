@@ -4,10 +4,10 @@ const assert=require('node:assert/strict');
 const {departmentCodes,practiceCodes}=require('../api/nursing-tracks');
 
 test('department accepts only its own specialties and preserves the primary order',()=>{
-  assert.deepEqual(departmentCodes('dental',['endo','gp','endo']),['dental','endo','gp']);
-  assert.deepEqual(departmentCodes('dermatology',['derm_skin_care','derm_laser']),['dermatology','derm_skin_care','derm_laser']);
+  assert.deepEqual(departmentCodes('dental',['endo']),['dental','gp','endo','surgery','ortho','pedo','perio','prostho','restorative']);
+  assert.deepEqual(departmentCodes('dermatology',['derm_skin_care']),['dermatology','derm_laser','derm_skin_care','derm_assistance']);
   assert.equal(departmentCodes('dental',['derm_laser']),null);
-  assert.equal(departmentCodes('dermatology',[]),null);
+  assert.deepEqual(departmentCodes('dermatology',[]),['dermatology','derm_laser','derm_skin_care','derm_assistance']);
   assert.equal(departmentCodes('unknown',['gp']),null);
 });
 

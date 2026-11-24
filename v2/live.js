@@ -379,23 +379,21 @@
    department=el('select');department.id='inviteDepartment';department.required=true;
    const field=el('label',undefined,'field');field.append(el('span'),department);label.before(field);
    additional=el('div');additional.id='inviteAdditional';label.after(additional);
-   department.onchange=()=>configureInvite();primary.onchange=()=>configureInvite();
+   department.onchange=()=>{primary.value='';configureInvite();};
   }
   department.closest('label').firstChild.textContent=ar?'القسم الرئيسي':'Nursing department';
   fill(department,[{id:'',name:ar?'اختر القسم':'Choose department'},{id:'dental',name:ar?'تمريض الأسنان':'Dental Nursing'},{id:'dermatology',name:ar?'تمريض الجلدية':'Dermatology Nursing'}]);
-  label.firstChild.textContent=ar?'التخصص الأساسي':'Primary specialty';primary.required=true;
+  label.firstChild.textContent=ar?'تركيز التدريب (اختياري)':'Training focus (optional)';primary.required=false;
   const items=state.specialties.filter(s=>(inviteDepartments[department.value]||[]).includes(s.code));
-  fill(primary,[{id:'',name:ar?'اختر التخصص':'Choose specialty'},...items.map(s=>({id:s.id,name:s.label}))]);
-  const checked=new Set([...additional.querySelectorAll('input:checked')].map(x=>x.value));
-  additional.replaceChildren(el('p',ar?'تخصصات إضافية (اختياري)':'Additional specialties (optional)','small'));
-  for(const s of items.filter(s=>s.id!==primary.value)){const option=el('label',undefined,'field'),box=el('input');box.type='checkbox';box.value=s.id;box.checked=checked.has(s.id);option.append(el('span'),box);option.firstChild.textContent=s.label;additional.append(option);}
+  fill(primary,[{id:'',name:ar?'جميع التخصصات':'All specialties'},...items.map(s=>({id:s.id,name:s.label}))]);
+  additional.replaceChildren(el('p',items.length?(ar?'تُسند جميع تخصصات القسم تلقائيًا. ':'All department specialties are included automatically. ')+items.map(s=>s.label).join(' · '):'', 'small'));
  }
  async function loadTeam(){
   request("/api/catalog/coverage?centerId="+encodeURIComponent(state.center)).then(r=>window.nseAnnotateSpecialties?.(r.specialties)).catch(()=>{});
   $("inviteArea").hidden=state.role!=="admin";$("legacyLinkArea").hidden=state.role!=="admin";$("assignmentForm").hidden=state.role!=="admin";
   const data=await request("/api/learners?centerId="+encodeURIComponent(state.center)),list=$("teamList");
   const grouped=new Map();for(const x of data.learners){if(!grouped.has(x.user_id))grouped.set(x.user_id,{...x,specialtyIds:[]});if(x.specialty_id)grouped.get(x.user_id).specialtyIds.push(x.specialty_id);}
-  list.replaceChildren(...[...grouped.values()].map(x=>{const row=el("div",undefined,"row"),copy=el('div');copy.append(el("strong",x.display_name));const assigned=state.specialties.filter(s=>x.specialtyIds.includes(s.id));copy.append(el('p',assigned.map(s=>s.label+(s.id===x.primary_specialty_id?' ★':'')).join(' · '),'small'));row.append(copy,el("span",x.role,"pill"));return row}));
+  list.replaceChildren(...[...grouped.values()].map(x=>{const row=el("div",undefined,"row"),copy=el('div');copy.append(el("strong",x.display_name));const assigned=state.specialties.filter(s=>x.specialtyIds.includes(s.id));copy.append(el('p',assigned.map(s=>s.label+(s.id===x.primary_specialty_id?' ★':'')).join(' · '),'small'));row.append(copy,el("span",x.role,"pill"));if(state.role==='admin'&&x.role==='nurse'){const ar=$("language").value==='ar',focus=el('select'),field=el('label',undefined,'field');field.append(el('span',ar?'تركيز التدريب':'Training focus'),focus);fill(focus,[{id:'',name:ar?'جميع التخصصات':'All specialties'},...assigned.filter(s=>!['dental','dermatology'].includes(s.code)).map(s=>({id:s.id,name:s.label}))]);focus.value=x.primary_specialty_id||'';const save=el('button',ar?'حفظ التركيز':'Save focus','btn sub');save.type='button';save.onclick=async()=>{try{await post('/api/team/focus',{userId:x.user_id,specialtyId:focus.value});await loadTeam()}catch(e){showError(e)}};row.append(field,save)}return row}));
   configureInvite();
   const users=new Map(data.learners.map(x=>[x.user_id,x.display_name]));fill($("assignUser"),[...users].map(([id,name])=>({id,name})));fill($("legacyTarget"),[...users].map(([id,name])=>({id,name})));if(state.role==="admin"){const historic=await request("/api/legacy-history/unlinked?centerId="+encodeURIComponent(state.center));fill($("legacyUsername"),historic.unlinked.map(name=>({id:name,name})))}
  }
